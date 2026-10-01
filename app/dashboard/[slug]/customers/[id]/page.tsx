@@ -440,6 +440,7 @@ export default function CustomerDetailPage() {
   // Sección C: edición inline de nota clínica
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [newNoteApptId, setNewNoteApptId] = useState<string | null>(null);
+  const savingClinicalRef = useRef(false);
   const [viewingNoteId, setViewingNoteId] = useState<string | null>(null);
 
   // Clínica humana (isClinica): edición de datos del paciente
@@ -813,7 +814,7 @@ export default function CustomerDetailPage() {
   }
 
   async function handleCreateNote() {
-    if (!customerId || !newNoteForm.date) return;
+    if (!customerId || !newNoteForm.date || savingNewNote) return;
     try {
       setSavingNewNote(true);
       setNewNoteError("");
@@ -1252,6 +1253,10 @@ const lastValidAppointment = validAppointments[0] || null;
     follow_up_notes?: string | null,
     extra_fields?: Record<string, any> | null
   ) {
+    // Guardia contra doble toque: el estado `savingClinicalId` llega un render
+    // tarde, el ref bloquea de inmediato un segundo PATCH.
+    if (savingClinicalRef.current) return;
+    savingClinicalRef.current = true;
     try {
       setSavingClinicalId(appointmentId);
       setClinicalMessage("");
@@ -1326,6 +1331,7 @@ const lastValidAppointment = validAppointments[0] || null;
     } catch (err: any) {
       setClinicalMessage("error: " + (err?.message || "No se pudo guardar la ficha clínica."));
     } finally {
+      savingClinicalRef.current = false;
       setSavingClinicalId(null);
     }
   }
@@ -1679,7 +1685,7 @@ const lastValidAppointment = validAppointments[0] || null;
                         type="button"
                         aria-current={isActive ? "page" : undefined}
                         onClick={() => setActiveVetTab(tab.id as VetCustomerTab)}
-                        className="cursor-pointer rounded-xl border px-3 py-2.5 text-center text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+                        className="cursor-pointer rounded-md border px-3 py-2.5 text-center text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
                         style={{
                           borderColor: isActive
                             ? "rgba(37,99,235,0.38)"
@@ -1777,7 +1783,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             onChange={(e) =>
                               setPetForm((prev) => ({ ...prev, name: e.target.value }))
                             }
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -1803,7 +1809,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                 species_base: e.target.value as "perro" | "gato" | "otro",
                               }))
                             }
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -1830,7 +1836,7 @@ const lastValidAppointment = validAppointments[0] || null;
                               onChange={(e) =>
                                 setPetForm((prev) => ({ ...prev, species_custom: e.target.value }))
                               }
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                               style={{
                                 borderColor: "var(--border-color)",
                                 background: "var(--bg-card)",
@@ -1855,7 +1861,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             onChange={(e) =>
                               setPetForm((prev) => ({ ...prev, breed: e.target.value }))
                             }
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -1877,7 +1883,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             onChange={(e) =>
                               setPetForm((prev) => ({ ...prev, sex: e.target.value }))
                             }
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -1905,7 +1911,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             onChange={(e) =>
                               setPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))
                             }
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -1947,7 +1953,7 @@ const lastValidAppointment = validAppointments[0] || null;
                             onChange={(e) =>
                               setPetForm((prev) => ({ ...prev, notes: e.target.value }))
                             }
-                            className="min-h-[110px] w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                            className="min-h-[110px] w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                             style={{
                               borderColor: "var(--border-color)",
                               background: "var(--bg-card)",
@@ -1960,7 +1966,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
                       {petError ? (
                         <div
-                          className="mt-4 rounded-xl border px-3 py-2 text-sm"
+                          className="mt-4 rounded-md border px-3 py-2 text-sm"
                           style={{
                             borderColor: "rgba(244,63,94,0.28)",
                             background: "rgba(244,63,94,0.08)",
@@ -1973,7 +1979,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
                       {petSuccess ? (
                         <div
-                          className="mt-4 rounded-xl border px-3 py-2 text-sm"
+                          className="mt-4 rounded-md border px-3 py-2 text-sm"
                           style={{
                             borderColor: "rgba(16,185,129,0.28)",
                             background: "rgba(16,185,129,0.08)",
@@ -2264,7 +2270,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                           type="text"
                                           value={editPetForm.name}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, name: e.target.value }))}
-                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                         />
                                       </div>
@@ -2275,7 +2281,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         <select
                                           value={editPetForm.species_base}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, species_base: e.target.value as "perro" | "gato" | "otro" }))}
-                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                         >
                                           <option value="perro">Perro</option>
@@ -2292,7 +2298,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                             type="text"
                                             value={editPetForm.species_custom}
                                             onChange={(e) => setEditPetForm((prev) => ({ ...prev, species_custom: e.target.value }))}
-                                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                            className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                             style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                           />
                                         </div>
@@ -2305,7 +2311,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                           type="text"
                                           value={editPetForm.breed}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, breed: e.target.value }))}
-                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                         />
                                       </div>
@@ -2316,7 +2322,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         <select
                                           value={editPetForm.sex}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, sex: e.target.value }))}
-                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                         >
                                           <option value="">Seleccionar</option>
@@ -2334,7 +2340,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                           min="0"
                                           value={editPetForm.weight_kg}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, weight_kg: e.target.value }))}
-                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                          className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                         />
                                       </div>
@@ -2357,7 +2363,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                       <textarea
                                         value={editPetForm.notes}
                                         onChange={(e) => setEditPetForm((prev) => ({ ...prev, notes: e.target.value }))}
-                                        className="min-h-[80px] w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                        className="min-h-[80px] w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition"
                                         style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                       />
                                     </div>
@@ -2418,7 +2424,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                         <div key={note.id} id={note.appointment_id ? `vet-note-${note.appointment_id}` : undefined}>
                                           {/* Note card */}
                                           <div
-                                            className="overflow-hidden rounded-xl border transition-all duration-200"
+                                            className="overflow-hidden rounded-none border transition-all duration-200"
                                             style={{
                                               borderColor: isEditingThisNote
                                                 ? "rgba(37,99,235,0.45)"
@@ -2432,19 +2438,19 @@ const lastValidAppointment = validAppointments[0] || null;
                                             }}
                                           >
                                             {/* Header */}
-                                            <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3">
-                                              <div className="flex min-w-0 items-center gap-2">
+                                            <div className="flex flex-col gap-2 px-3 pb-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                                 <span
                                                   className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
                                                   style={badge}
                                                 >
                                                   {note.control_type || "Atención"}
                                                 </span>
-                                                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                                                <p className="whitespace-nowrap text-xs" style={{ color: "var(--text-muted)" }}>
                                                   {formatDate(note.date)}
                                                 </p>
                                               </div>
-                                              <div className="flex shrink-0 gap-1.5">
+                                              <div className="flex shrink-0 flex-wrap gap-1.5">
                                                 <button
                                                   type="button"
                                                   onClick={() => setViewingNoteId(isViewingThisNote ? null : note.id)}
@@ -2502,13 +2508,15 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 </div>
                                               ) : null}
                                               {note.next_control_at ? (
-                                                <p className="flex items-center gap-1 text-xs font-medium" style={{ color: "#1D9E75" }}>
-                                                  <span>📅</span>
-                                                  <span>
-                                                    {formatDateLong(note.next_control_at)}
-                                                    {note.next_control_label ? ` · ${note.next_control_label}` : ""}
-                                                  </span>
-                                                </p>
+                                                <div className="border-t pt-2" style={{ borderColor: "var(--border-color)" }}>
+                                                  <p className="flex items-start gap-1.5 text-xs font-medium leading-snug" style={{ color: "#1D9E75" }}>
+                                                    <span className="shrink-0">📅</span>
+                                                    <span className="min-w-0">
+                                                      Próximo control: {formatDateLong(note.next_control_at)}
+                                                      {note.next_control_label ? ` · ${note.next_control_label}` : ""}
+                                                    </span>
+                                                  </p>
+                                                </div>
                                               ) : null}
                                             </div>
                                           </div>
@@ -2519,7 +2527,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                             style={{ maxHeight: isViewingThisNote && !isEditingThisNote ? "600px" : "0" }}
                                           >
                                             {isViewingThisNote && !isEditingThisNote ? (
-                                              <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
+                                              <div className="mt-2 rounded-none border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
                                                 <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                                                   {[
                                                     { label: "Tipo de control", value: note.control_type },
@@ -2558,7 +2566,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                           >
                                             {isEditingThisNote && note.appointment_id ? (
                                               <div
-                                                className="mt-2 rounded-xl border p-4"
+                                                className="mt-2 rounded-none border p-4"
                                                 style={{
                                                   borderColor: "rgba(37,99,235,0.25)",
                                                   background: "var(--bg-soft)",
@@ -2579,14 +2587,14 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 </div>
 
                                                 {/* Fields */}
-                                                <div className="space-y-3">
+                                                <div className="grid gap-3 sm:grid-cols-2">
                                                   {[
-                                                    { key: "reason",    label: "Motivo",        rows: 1, placeholder: "Control realizado / motivo" },
-                                                    { key: "diagnosis", label: "Diagnóstico",   rows: 2, placeholder: "Diagnóstico" },
-                                                    { key: "treatment", label: "Tratamiento",   rows: 2, placeholder: "Tratamiento indicado" },
-                                                    { key: "notes",     label: "Observaciones", rows: 3, placeholder: "Observaciones / notas clínicas..." },
-                                                  ].map(({ key, label, rows, placeholder }) => (
-                                                    <div key={key}>
+                                                    { key: "reason",    label: "Motivo",        rows: 1, placeholder: "Control realizado / motivo", wide: true },
+                                                    { key: "diagnosis", label: "Diagnóstico",   rows: 2, placeholder: "Diagnóstico", wide: false },
+                                                    { key: "treatment", label: "Tratamiento",   rows: 2, placeholder: "Tratamiento indicado", wide: false },
+                                                    { key: "notes",     label: "Observaciones", rows: 2, placeholder: "Observaciones / notas clínicas...", wide: true },
+                                                  ].map(({ key, label, rows, placeholder, wide }) => (
+                                                    <div key={key} className={wide ? "sm:col-span-2" : ""}>
                                                       <label
                                                         className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]"
                                                         style={{ color: "var(--text-muted)" }}
@@ -2604,7 +2612,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                               [formKey]: { ...prev[formKey], [key]: e.target.value },
                                                             }))
                                                           }
-                                                          className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                                          className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                                         />
                                                       ) : (
@@ -2618,7 +2626,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                               [formKey]: { ...prev[formKey], [key]: e.target.value },
                                                             }))
                                                           }
-                                                          className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                                                          className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition"
                                                           style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                                         />
                                                       )}
@@ -2626,7 +2634,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                   ))}
 
                                                   {/* Próximo control */}
-                                                  <div>
+                                                  <div className="sm:col-span-2">
                                                     <label
                                                       className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]"
                                                       style={{ color: "var(--text-muted)" }}
@@ -2671,7 +2679,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                           [formKey]: { ...prev[formKey], controlDate: e.target.value },
                                                         }))
                                                       }
-                                                      className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
+                                                      className="w-full rounded-md border px-3 py-2 text-sm outline-none"
                                                       style={{
                                                         borderColor: "var(--border-color)",
                                                         background: "var(--bg-card)",
@@ -2842,19 +2850,19 @@ const lastValidAppointment = validAppointments[0] || null;
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Nombre y Apellido *</FieldLabel>
-                        <input type="text" placeholder="Nombre y Apellido" value={editPatientForm.name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="text" placeholder="Nombre y Apellido" value={editPatientForm.name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, name: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Teléfono</FieldLabel>
-                        <input type="text" placeholder="+56 9 1234 5678" value={editPatientForm.phone} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, phone: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="text" placeholder="+56 9 1234 5678" value={editPatientForm.phone} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, phone: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Email</FieldLabel>
-                        <input type="email" placeholder="correo@ejemplo.com" value={editPatientForm.email} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="email" placeholder="correo@ejemplo.com" value={editPatientForm.email} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>RUT</FieldLabel>
-                        <input type="text" placeholder="12.345.678-9" value={editPatientForm.rut} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, rut: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="text" placeholder="12.345.678-9" value={editPatientForm.rut} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, rut: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                     </div>
                   </SectionCard>
@@ -2864,11 +2872,11 @@ const lastValidAppointment = validAppointments[0] || null;
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Fecha de nacimiento</FieldLabel>
-                        <DateInputDMY value={editPatientForm.birth_date} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                        <DateInputDMY value={editPatientForm.birth_date} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, birth_date: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                       </div>
                       <div>
                         <FieldLabel>Sexo</FieldLabel>
-                        <select value={editPatientForm.sex} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                        <select value={editPatientForm.sex} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                           <option value="">Sin especificar</option>
                           <option value="masculino">Masculino</option>
                           <option value="femenino">Femenino</option>
@@ -2878,11 +2886,11 @@ const lastValidAppointment = validAppointments[0] || null;
                       </div>
                       <div>
                         <FieldLabel>Ocupación</FieldLabel>
-                        <input type="text" placeholder="ej. profesora" value={editPatientForm.occupation} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, occupation: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="text" placeholder="ej. profesora" value={editPatientForm.occupation} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, occupation: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Previsión de salud</FieldLabel>
-                        <select value={editPatientForm.health_insurance} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                        <select value={editPatientForm.health_insurance} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                           <option value="">Sin especificar</option>
                           <option value="Fonasa">Fonasa</option>
                           <option value="Isapre">Isapre</option>
@@ -2899,11 +2907,11 @@ const lastValidAppointment = validAppointments[0] || null;
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Nombre y Apellido</FieldLabel>
-                        <input type="text" placeholder="ej. María González" value={editPatientForm.emergency_contact_name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="text" placeholder="ej. María González" value={editPatientForm.emergency_contact_name} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_name: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Teléfono</FieldLabel>
-                        <input type="tel" placeholder="+56 9 8765 4321" value={editPatientForm.emergency_contact_phone} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_phone: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <input type="tel" placeholder="+56 9 8765 4321" value={editPatientForm.emergency_contact_phone} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, emergency_contact_phone: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                     </div>
                   </SectionCard>
@@ -2913,11 +2921,11 @@ const lastValidAppointment = validAppointments[0] || null;
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Alergias conocidas</FieldLabel>
-                        <textarea rows={2} placeholder="ej. penicilina, látex…" value={editPatientForm.known_allergies} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, known_allergies: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <textarea rows={2} placeholder="ej. penicilina, látex…" value={editPatientForm.known_allergies} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, known_allergies: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Patologías crónicas</FieldLabel>
-                        <textarea rows={2} placeholder="ej. hipertensión, diabetes…" value={editPatientForm.chronic_conditions} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, chronic_conditions: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <textarea rows={2} placeholder="ej. hipertensión, diabetes…" value={editPatientForm.chronic_conditions} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, chronic_conditions: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                     </div>
                     {isOdontologia ? (
@@ -2928,19 +2936,19 @@ const lastValidAppointment = validAppointments[0] || null;
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
                             <FieldLabel>Grupo sanguíneo</FieldLabel>
-                            <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
+                            <select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
                               <option value="">Seleccionar...</option>
                               {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => <option key={g}>{g}</option>)}
                             </select>
                           </div>
                           <div>
                             <FieldLabel>Alergias a anestesia</FieldLabel>
-                            <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína" value={(editPatientForm as any).extra_fields?.alergia_anestesia ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, alergia_anestesia: e.target.value } }))} />
+                            <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína" value={(editPatientForm as any).extra_fields?.alergia_anestesia ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, alergia_anestesia: e.target.value } }))} />
                           </div>
                         </div>
                         <div>
                           <FieldLabel>Observaciones generales</FieldLabel>
-                          <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Notas generales del paciente" value={(editPatientForm as any).extra_fields?.obs_generales_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, obs_generales_dental: e.target.value } }))} />
+                          <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Notas generales del paciente" value={(editPatientForm as any).extra_fields?.obs_generales_dental ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, obs_generales_dental: e.target.value } }))} />
                         </div>
                       </div>
                     ) : null}
@@ -2951,11 +2959,11 @@ const lastValidAppointment = validAppointments[0] || null;
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <FieldLabel>Enfermedades familiares</FieldLabel>
-                        <textarea rows={2} placeholder="ej. diabetes materna, cáncer…" value={editPatientForm.family_history} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, family_history: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <textarea rows={2} placeholder="ej. diabetes materna, cáncer…" value={editPatientForm.family_history} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, family_history: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                       <div>
                         <FieldLabel>Hábitos</FieldLabel>
-                        <textarea rows={2} placeholder="ej. fumador, sedentario…" value={editPatientForm.habits} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, habits: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                        <textarea rows={2} placeholder="ej. fumador, sedentario…" value={editPatientForm.habits} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, habits: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                       </div>
                     </div>
                   </SectionCard>
@@ -3077,7 +3085,7 @@ const lastValidAppointment = validAppointments[0] || null;
                       style={{ maxHeight: showNewNoteForm ? "900px" : "0" }}
                     >
                       {showNewNoteForm ? (
-                        <div className="mt-3 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
+                        <div className="mt-3 rounded-none border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-soft)" }}>
                           <p className="mb-3 text-[14px] font-medium" style={{ color: "var(--text-main)" }}>Nueva atención clínica</p>
 
                           <div className="space-y-3">
@@ -3085,11 +3093,11 @@ const lastValidAppointment = validAppointments[0] || null;
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Fecha de atención</label>
-                                <DateInputDMY value={newNoteForm.date} onChange={(e) => setNewNoteForm((p) => ({ ...p, date: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                                <DateInputDMY value={newNoteForm.date} onChange={(e) => setNewNoteForm((p) => ({ ...p, date: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                               </div>
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tipo de control</label>
-                                <select value={newNoteForm.control_type} onChange={(e) => setNewNoteForm((p) => ({ ...p, control_type: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                                <select value={newNoteForm.control_type} onChange={(e) => setNewNoteForm((p) => ({ ...p, control_type: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                                   {CONTROL_TYPES.map((opt) => (
                                     <option key={opt} value={opt}>{opt}</option>
                                   ))}
@@ -3101,29 +3109,29 @@ const lastValidAppointment = validAppointments[0] || null;
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Motivo</label>
-                                <textarea rows={2} placeholder="Motivo de la consulta" value={newNoteForm.reason} onChange={(e) => setNewNoteForm((p) => ({ ...p, reason: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                <textarea rows={2} placeholder="Motivo de la consulta" value={newNoteForm.reason} onChange={(e) => setNewNoteForm((p) => ({ ...p, reason: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                               </div>
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Síntomas</label>
-                                <textarea rows={2} placeholder="Síntomas referidos" value={newNoteForm.symptoms} onChange={(e) => setNewNoteForm((p) => ({ ...p, symptoms: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                <textarea rows={2} placeholder="Síntomas referidos" value={newNoteForm.symptoms} onChange={(e) => setNewNoteForm((p) => ({ ...p, symptoms: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                               </div>
                             </div>
 
                             {/* Diagnóstico col-span-2 */}
                             <div>
                               <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Diagnóstico</label>
-                              <textarea rows={2} placeholder="Diagnóstico" value={newNoteForm.diagnosis} onChange={(e) => setNewNoteForm((p) => ({ ...p, diagnosis: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              <textarea rows={2} placeholder="Diagnóstico" value={newNoteForm.diagnosis} onChange={(e) => setNewNoteForm((p) => ({ ...p, diagnosis: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                             </div>
 
                             {/* Tratamiento + Medicamentos */}
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tratamiento</label>
-                                <textarea rows={2} placeholder="Tratamiento indicado" value={newNoteForm.treatment} onChange={(e) => setNewNoteForm((p) => ({ ...p, treatment: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                <textarea rows={2} placeholder="Tratamiento indicado" value={newNoteForm.treatment} onChange={(e) => setNewNoteForm((p) => ({ ...p, treatment: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                               </div>
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Medicamentos</label>
-                                <textarea rows={2} placeholder="Fármacos indicados, dosis…" value={newNoteForm.medications} onChange={(e) => setNewNoteForm((p) => ({ ...p, medications: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                <textarea rows={2} placeholder="Fármacos indicados, dosis…" value={newNoteForm.medications} onChange={(e) => setNewNoteForm((p) => ({ ...p, medications: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                               </div>
                             </div>
 
@@ -3131,18 +3139,18 @@ const lastValidAppointment = validAppointments[0] || null;
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Derivaciones</label>
-                                <textarea rows={2} placeholder="Interconsultas, derivaciones…" value={newNoteForm.referrals} onChange={(e) => setNewNoteForm((p) => ({ ...p, referrals: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                <textarea rows={2} placeholder="Interconsultas, derivaciones…" value={newNoteForm.referrals} onChange={(e) => setNewNoteForm((p) => ({ ...p, referrals: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                               </div>
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Notas de seguimiento</label>
-                                <textarea rows={2} placeholder="Indicaciones para el próximo control…" value={newNoteForm.follow_up_notes} onChange={(e) => setNewNoteForm((p) => ({ ...p, follow_up_notes: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                <textarea rows={2} placeholder="Indicaciones para el próximo control…" value={newNoteForm.follow_up_notes} onChange={(e) => setNewNoteForm((p) => ({ ...p, follow_up_notes: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                               </div>
                             </div>
 
                             {/* Observaciones col-span-2 */}
                             <div>
                               <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Observaciones</label>
-                              <textarea rows={2} placeholder="Observaciones adicionales" value={newNoteForm.observations} onChange={(e) => setNewNoteForm((p) => ({ ...p, observations: e.target.value }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                              <textarea rows={2} placeholder="Observaciones adicionales" value={newNoteForm.observations} onChange={(e) => setNewNoteForm((p) => ({ ...p, observations: e.target.value }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                             </div>
 
                             {/* Próximo control */}
@@ -3160,7 +3168,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   );
                                 })}
                               </div>
-                              <DateInputDMY value={newNoteForm.next_control_at} onChange={(e) => setNewNoteForm((p) => ({ ...p, next_control_at: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                              <DateInputDMY value={newNoteForm.next_control_at} onChange={(e) => setNewNoteForm((p) => ({ ...p, next_control_at: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                             </div>
                           </div>
 
@@ -3233,7 +3241,7 @@ const lastValidAppointment = validAppointments[0] || null;
                               return (
                                 <div key={appt.id}>
                                   <div
-                                    className="overflow-hidden rounded-xl border transition-all duration-200"
+                                    className="overflow-hidden rounded-none border transition-all duration-200"
                                     style={{
                                       borderColor: isEditingThisNote ? "rgba(37,99,235,0.45)" : "var(--border-color)",
                                       background: "var(--bg-card)",
@@ -3242,17 +3250,17 @@ const lastValidAppointment = validAppointments[0] || null;
                                       boxShadow: isEditingThisNote ? "0 0 0 2px rgba(37,99,235,0.10)" : "none",
                                     }}
                                   >
-                                    <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3">
-                                      <div className="flex min-w-0 items-center gap-2">
+                                    <div className="flex flex-col gap-2 px-3 pb-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                         <span className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium" style={badgeP}>
                                           {note.control_type || "Atención"}
                                         </span>
-                                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{formatDate(note.date)}</p>
+                                        <p className="whitespace-nowrap text-xs" style={{ color: "var(--text-muted)" }}>{formatDate(note.date)}</p>
                                         {appt.service_name_snapshot ? (
-                                          <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>· {appt.service_name_snapshot}</p>
+                                          <p className="min-w-0 truncate text-xs" style={{ color: "var(--text-muted)" }}>· {appt.service_name_snapshot}</p>
                                         ) : null}
                                       </div>
-                                      <div className="flex shrink-0 gap-1.5">
+                                      <div className="flex shrink-0 flex-wrap gap-1.5">
                                         <button
                                           type="button"
                                           onClick={() => setViewingNoteId(isViewingThisNote ? null : note.id)}
@@ -3297,7 +3305,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   {/* Panel detalle lectura */}
                                   <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isViewingThisNote && !isEditingThisNote ? "900px" : "0" }}>
                                     {isViewingThisNote && !isEditingThisNote ? (
-                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
+                                      <div className="mt-2 rounded-none border p-4" style={{ borderColor: "rgba(29,158,117,0.25)", background: "var(--bg-soft)" }}>
                                         <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                                           {(isOdontologia ? [
                                             { label: "Tipo de procedimiento", value: note.control_type },
@@ -3361,7 +3369,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   {/* Inline edit form */}
                                   <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isEditingThisNote ? "1800px" : "0" }}>
                                     {isEditingThisNote && note.appointment_id ? (
-                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-card)" }}>
+                                      <div className="mt-2 rounded-none border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-card)" }}>
                                         <div className="mb-3 flex items-center gap-2 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
                                           <NotebookPen size={16} style={{ color: "var(--pat-violet-solid)" }} />
                                           <div>
@@ -3371,51 +3379,51 @@ const lastValidAppointment = validAppointments[0] || null;
                                         </div>
                                         <div className="space-y-3">
                                           <NoteField icon={MessageCircle} tone="violet" label="Motivo">
-                                            <input type="text" placeholder="Motivo de la consulta" value={clinicalFormState[formKey]?.reason ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], reason: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            <input type="text" placeholder="Motivo de la consulta" value={clinicalFormState[formKey]?.reason ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], reason: e.target.value } }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                           </NoteField>
 
                                           <div className="grid gap-3 sm:grid-cols-2">
                                             <NoteField icon={ClipboardPen} tone="rose" label="Diagnóstico" tinted>
-                                              <textarea rows={2} placeholder="Diagnóstico" value={clinicalFormState[formKey]?.diagnosis ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], diagnosis: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                              <textarea rows={2} placeholder="Diagnóstico" value={clinicalFormState[formKey]?.diagnosis ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], diagnosis: e.target.value } }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                             </NoteField>
                                             <NoteField icon={HeartPulse} tone="green" label="Tratamiento" tinted>
-                                              <textarea rows={2} placeholder="Tratamiento indicado" value={clinicalFormState[formKey]?.treatment ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], treatment: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                              <textarea rows={2} placeholder="Tratamiento indicado" value={clinicalFormState[formKey]?.treatment ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], treatment: e.target.value } }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                             </NoteField>
                                           </div>
 
                                           <NoteField icon={FileEdit} tone="amber" label="Observaciones">
-                                            <textarea rows={3} placeholder="Observaciones / notas clínicas..." value={clinicalFormState[formKey]?.notes ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], notes: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            <textarea rows={2} placeholder="Observaciones / notas clínicas..." value={clinicalFormState[formKey]?.notes ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], notes: e.target.value } }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                           </NoteField>
 
                                           {!isOdontologia && (
                                             <div className="grid gap-3 sm:grid-cols-2">
                                               <NoteField icon={Activity} tone="sky" label="Síntomas">
-                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                                <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
                                               </NoteField>
                                               <NoteField icon={Pill} tone="teal" label="Medicamentos recetados">
-                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                                <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
                                               </NoteField>
                                             </div>
                                           )}
                                           {isOdontologia && (
                                             <NoteField icon={Pill} tone="teal" label="Indicaciones post-operatorias">
-                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Ibuprofeno 400mg c/8h por 3 días" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                              <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Ibuprofeno 400mg c/8h por 3 días" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
                                             </NoteField>
                                           )}
 
                                           {!isOdontologia && (
                                             <div className="grid gap-3 sm:grid-cols-2">
                                               <NoteField icon={ClipboardList} tone="violet" label="Derivaciones">
-                                                <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                                <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
                                               </NoteField>
                                               <NoteField icon={Send} tone="orange" label="Notas de seguimiento">
-                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                                <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
                                               </NoteField>
                                             </div>
                                           )}
                                           {isOdontologia && (
                                             <NoteField icon={Send} tone="orange" label="Plan de tratamiento">
-                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                              <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
                                             </NoteField>
                                           )}
 
@@ -3423,15 +3431,15 @@ const lastValidAppointment = validAppointments[0] || null;
                                             <div className="grid grid-cols-3 gap-2">
                                               <div>
                                                 <FieldLabel>Peso (kg)</FieldLabel>
-                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                                <input type="number" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
                                                 <FieldLabel>Talla (cm)</FieldLabel>
-                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                                <input type="number" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
                                                 <FieldLabel>IMC</FieldLabel>
-                                                <input type="text" readOnly className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)", cursor: "not-allowed" }} placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                                <input type="text" readOnly className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)", cursor: "not-allowed" }} placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
                                               </div>
                                             </div>
                                           )}
@@ -3441,11 +3449,11 @@ const lastValidAppointment = validAppointments[0] || null;
                                               <div className="grid gap-3 sm:grid-cols-2">
                                                 <div>
                                                   <FieldLabel>Pieza(s) dental(es)</FieldLabel>
-                                                  <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
+                                                  <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
                                                 </div>
                                                 <div>
                                                   <FieldLabel>Tipo de tratamiento</FieldLabel>
-                                                  <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
+                                                  <select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
                                                     {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
                                                   </select>
@@ -3453,7 +3461,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                               </div>
                                               <div>
                                                 <FieldLabel>Anestesia usada</FieldLabel>
-                                                <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
+                                                <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
                                               </div>
                                             </div>
                                           )}
@@ -3470,7 +3478,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 );
                                               })}
                                             </div>
-                                            <DateInputDMY value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                                            <DateInputDMY value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                                           </NoteField>
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
@@ -3489,7 +3497,7 @@ const lastValidAppointment = validAppointments[0] || null;
                               return (
                                 <div key={appt.id}>
                                   <div
-                                    className="flex items-center justify-between gap-2 rounded-xl border p-3 transition-all duration-200"
+                                    className="flex items-center justify-between gap-2 rounded-none border p-3 transition-all duration-200"
                                     style={{
                                       borderColor: isCreatingNew ? "rgba(37,99,235,0.35)" : "var(--border-color)",
                                       background: "var(--bg-card)",
@@ -3522,7 +3530,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                   {/* Inline create form */}
                                   <div className="overflow-hidden transition-all duration-200 ease-in-out" style={{ maxHeight: isCreatingNew ? "1800px" : "0" }}>
                                     {isCreatingNew ? (
-                                      <div className="mt-2 rounded-xl border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-card)" }}>
+                                      <div className="mt-2 rounded-none border p-4" style={{ borderColor: "rgba(37,99,235,0.25)", background: "var(--bg-card)" }}>
                                         <div className="mb-3 flex items-center gap-2 border-b pb-3" style={{ borderColor: "var(--border-color)" }}>
                                           <NotebookPen size={16} style={{ color: "var(--pat-violet-solid)" }} />
                                           <div>
@@ -3532,51 +3540,51 @@ const lastValidAppointment = validAppointments[0] || null;
                                         </div>
                                         <div className="space-y-3">
                                           <NoteField icon={MessageCircle} tone="violet" label="Motivo">
-                                            <input type="text" placeholder="Motivo de la consulta" value={clinicalFormState[formKey]?.reason ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], reason: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            <input type="text" placeholder="Motivo de la consulta" value={clinicalFormState[formKey]?.reason ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], reason: e.target.value } }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                           </NoteField>
 
                                           <div className="grid gap-3 sm:grid-cols-2">
                                             <NoteField icon={ClipboardPen} tone="rose" label="Diagnóstico" tinted>
-                                              <textarea rows={2} placeholder="Diagnóstico" value={clinicalFormState[formKey]?.diagnosis ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], diagnosis: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                              <textarea rows={2} placeholder="Diagnóstico" value={clinicalFormState[formKey]?.diagnosis ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], diagnosis: e.target.value } }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                             </NoteField>
                                             <NoteField icon={HeartPulse} tone="green" label="Tratamiento" tinted>
-                                              <textarea rows={2} placeholder="Tratamiento indicado" value={clinicalFormState[formKey]?.treatment ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], treatment: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                              <textarea rows={2} placeholder="Tratamiento indicado" value={clinicalFormState[formKey]?.treatment ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], treatment: e.target.value } }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                             </NoteField>
                                           </div>
 
                                           <NoteField icon={FileEdit} tone="amber" label="Observaciones">
-                                            <textarea rows={3} placeholder="Observaciones / notas clínicas..." value={clinicalFormState[formKey]?.notes ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], notes: e.target.value } }))} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
+                                            <textarea rows={2} placeholder="Observaciones / notas clínicas..." value={clinicalFormState[formKey]?.notes ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], notes: e.target.value } }))} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} />
                                           </NoteField>
 
                                           {!isOdontologia && (
                                             <div className="grid gap-3 sm:grid-cols-2">
                                               <NoteField icon={Activity} tone="sky" label="Síntomas">
-                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
+                                                <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Síntomas descritos por el paciente" value={clinicalFormState[formKey]?.symptoms ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], symptoms: e.target.value } }))} />
                                               </NoteField>
                                               <NoteField icon={Pill} tone="teal" label="Medicamentos recetados">
-                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                                <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Medicamentos, dosis e indicaciones" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
                                               </NoteField>
                                             </div>
                                           )}
                                           {isOdontologia && (
                                             <NoteField icon={Pill} tone="teal" label="Indicaciones post-operatorias">
-                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Ibuprofeno 400mg c/8h por 3 días" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
+                                              <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Ibuprofeno 400mg c/8h por 3 días" value={clinicalFormState[formKey]?.medications ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], medications: e.target.value } }))} />
                                             </NoteField>
                                           )}
 
                                           {!isOdontologia && (
                                             <div className="grid gap-3 sm:grid-cols-2">
                                               <NoteField icon={ClipboardList} tone="violet" label="Derivaciones">
-                                                <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
+                                                <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Derivado a traumatólogo" value={clinicalFormState[formKey]?.referrals ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], referrals: e.target.value } }))} />
                                               </NoteField>
                                               <NoteField icon={Send} tone="orange" label="Notas de seguimiento">
-                                                <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                                <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Indicaciones para el próximo control" value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
                                               </NoteField>
                                             </div>
                                           )}
                                           {isOdontologia && (
                                             <NoteField icon={Send} tone="orange" label="Plan de tratamiento">
-                                              <textarea rows={2} className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
+                                              <textarea rows={2} className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="Próximos pasos: sesión 2 endodoncia, sesión 3 corona..." value={clinicalFormState[formKey]?.follow_up_notes ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], follow_up_notes: e.target.value } }))} />
                                             </NoteField>
                                           )}
 
@@ -3584,15 +3592,15 @@ const lastValidAppointment = validAppointments[0] || null;
                                             <div className="grid grid-cols-3 gap-2">
                                               <div>
                                                 <FieldLabel>Peso (kg)</FieldLabel>
-                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
+                                                <input type="number" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 70" value={clinicalFormState[formKey]?.extra_fields?.peso_kg ?? ""} onChange={(e) => { const peso = parseFloat(e.target.value); const talla = parseFloat(clinicalFormState[formKey]?.extra_fields?.talla_cm ?? "0"); const imc = talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, peso_kg: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
                                                 <FieldLabel>Talla (cm)</FieldLabel>
-                                                <input type="number" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
+                                                <input type="number" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 170" value={clinicalFormState[formKey]?.extra_fields?.talla_cm ?? ""} onChange={(e) => { const talla = parseFloat(e.target.value); const peso = parseFloat(clinicalFormState[formKey]?.extra_fields?.peso_kg ?? "0"); const imc = peso > 0 && talla > 0 ? (peso / ((talla / 100) ** 2)).toFixed(1) : ""; setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, talla_cm: e.target.value, imc } } })); }} />
                                               </div>
                                               <div>
                                                 <FieldLabel>IMC</FieldLabel>
-                                                <input type="text" readOnly className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)", cursor: "not-allowed" }} placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
+                                                <input type="text" readOnly className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)", cursor: "not-allowed" }} placeholder="Auto" value={clinicalFormState[formKey]?.extra_fields?.imc ?? ""} />
                                               </div>
                                             </div>
                                           )}
@@ -3602,11 +3610,11 @@ const lastValidAppointment = validAppointments[0] || null;
                                               <div className="grid gap-3 sm:grid-cols-2">
                                                 <div>
                                                   <FieldLabel>Pieza(s) dental(es)</FieldLabel>
-                                                  <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
+                                                  <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. 16, 36" value={clinicalFormState[formKey]?.extra_fields?.pieza_dental ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, pieza_dental: e.target.value } } }))} />
                                                 </div>
                                                 <div>
                                                   <FieldLabel>Tipo de tratamiento</FieldLabel>
-                                                  <select className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
+                                                  <select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
                                                     {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
                                                   </select>
@@ -3614,12 +3622,12 @@ const lastValidAppointment = validAppointments[0] || null;
                                               </div>
                                               <div>
                                                 <FieldLabel>Anestesia usada</FieldLabel>
-                                                <input type="text" className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
+                                                <input type="text" className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} placeholder="ej. Lidocaína 2% — 1 cartucho" value={clinicalFormState[formKey]?.extra_fields?.anestesia ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, anestesia: e.target.value } } }))} />
                                               </div>
                                             </div>
                                           )}
                                           <NoteField icon={CalendarCheck} tone="green" label="Próximo control">
-                                            <DateInputDMY value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-xl border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
+                                            <DateInputDMY value={clinicalFormState[formKey]?.controlDate ?? ""} onChange={(e) => setClinicalFormState((prev) => ({ ...prev, [formKey]: { ...prev[formKey], controlDate: e.target.value } }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)", colorScheme: "dark" }} />
                                           </NoteField>
                                         </div>
                                         <div className="mt-4 flex justify-end gap-2">
@@ -3830,7 +3838,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   {editingNote ? (
                     <div>
                       <textarea
-                        className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition"
+                        className="w-full resize-none rounded-md border px-3 py-2 text-sm outline-none transition"
                         style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                         rows={4}
                         value={noteValue}
@@ -3857,7 +3865,7 @@ const lastValidAppointment = validAppointments[0] || null;
                     </div>
                   ) : (
                     <div
-                      className="cursor-pointer rounded-xl border px-3 py-2.5 text-sm transition hover:opacity-80"
+                      className="cursor-pointer rounded-md border px-3 py-2.5 text-sm transition hover:opacity-80"
                       style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: customer.notes ? "var(--text-main)" : "var(--text-muted)" }}
                       onClick={() => setEditingNote(true)}
                     >
@@ -3889,7 +3897,7 @@ const lastValidAppointment = validAppointments[0] || null;
                               {field.label}
                             </label>
                             <input
-                              className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition"
+                              className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
                               style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                               value={extraDataForm[field.key] ?? ""}
                               onChange={(e) => setExtraDataForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
