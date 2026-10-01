@@ -2429,8 +2429,8 @@ export default function DashboardLayout({
         {[
           { label: "Agenda", href: "/agenda", icon: CalendarDays },
           { label: isPacientes ? "Pacientes" : "Clientes", href: "/customers", icon: Users },
-          { label: "Servicios", href: "/services", icon: Layers3 },
-          { label: "Campañas", href: "/campaigns", icon: Megaphone },
+          { label: "Reseñas", href: "/reviews", icon: Star },
+          { label: "Mi Negocio", href: "/business", icon: Briefcase },
         ]
           .filter((item) => isOwnerOrAdmin || getModuleAccess(item.href) !== false)
           .map((item) => {
@@ -2444,7 +2444,10 @@ export default function DashboardLayout({
                 className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium"
                 style={{ color: active ? "#3B82F6" : textMuted }}
               >
-                <Icon size={20} />
+                <span className="relative inline-flex">
+                  <Icon size={20} />
+                  {item.href === "/business" ? <ContactMissingDot className="-right-1.5 -top-1" /> : null}
+                </span>
                 {item.label}
               </Link>
             );
