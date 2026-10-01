@@ -5698,6 +5698,10 @@ const hasActiveFilters =
                                   <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
                                     {isGroupSlot ? `${activeCount}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
                                   </p>
+                                  <p className="mt-0.5 flex items-center gap-1 truncate text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.85 }}>
+                                    <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                    <span className="truncate">{first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}</span>
+                                  </p>
                                 </div>
                                 <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
                                   {getStatusLabel(first)}
@@ -5836,8 +5840,12 @@ const hasActiveFilters =
                           </p>
                           <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
                             {isGroupSlot
-                              ? `${activeCount}/${capacity} inscritos · ${getStaffName(first.staff_id) || "Sin profesional"}`
-                              : `${first.service_name_snapshot || "Reserva"} · Profesional: ${getStaffName(first.staff_id) || "Sin asignar"}`}
+                              ? `${activeCount}/${capacity} inscritos`
+                              : (first.service_name_snapshot || "Reserva")}
+                          </p>
+                          <p className="mt-0.5 flex items-center gap-1 truncate text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.85 }}>
+                            <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />
+                            <span className="truncate">{first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}</span>
                           </p>
                         </div>
                         <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
