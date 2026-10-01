@@ -1008,6 +1008,7 @@ export function AddonManager({
   }
 
   async function handleOneTimeCheckout() {
+    if (oneTimeSubmitting) return;
     if (!tenantId || !buyModal) return;
     const purchase = computeOneTimePurchase(buyModal.key, buyQty);
     setOneTimeSubmitting(true);
@@ -1080,6 +1081,7 @@ export function AddonManager({
   // reporta individualmente que salio bien, que no, o que quedo incierto
   // por timeout.
   async function handleConfirmAddonCharge() {
+    if (addonSubmitting) return;
     if (!tenantId || addonPendingChanges.length === 0) return;
 
     setAddonSubmitting(true);

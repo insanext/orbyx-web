@@ -134,6 +134,7 @@ function CheckoutPremiumInner() {
   }, [step, signupIntentIdParam]);
 
   async function handleSubmit() {
+    if (submitting) return;
     if (!plan) return;
 
     if (!businessName.trim()) {

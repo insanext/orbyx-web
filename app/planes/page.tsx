@@ -882,6 +882,7 @@ function PlanesPageContent() {
   }
 
   async function applyPlanChange() {
+    if (applying) return;
     try {
       setApplying(true);
       setApplyError("");

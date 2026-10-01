@@ -823,6 +823,7 @@ function BillingPageInner() {
   // create-customer es upsert sobre la fila existente del tenant, así
   // que reintentar nunca duplica ni deja un estado peor.
   async function handleSubscribe() {
+    if (subscribing) return;
     try {
       setSubscribing(true);
       setSubscribeError("");
@@ -882,6 +883,7 @@ function BillingPageInner() {
   // "suscrito" sin ninguna tarjeta detrás (ej. tras Cancelar +
   // Eliminar tarjeta).
   async function handleReactivate() {
+    if (subscribing) return;
     try {
       setSubscribing(true);
       setSubscribeError("");
@@ -1079,6 +1081,7 @@ function BillingPageInner() {
   }
 
   async function handleCancelSubscription() {
+    if (canceling) return;
     try {
       setCanceling(true);
       setCancelError("");
@@ -1136,6 +1139,7 @@ function BillingPageInner() {
   }
 
   async function applyFullAdjustment() {
+    if (saving) return;
     try {
       setSaving(true);
       setSaveError("");
