@@ -3,7 +3,8 @@ import { BACKEND_URL } from "@/lib/backend-url";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { focusMissingFields } from "@/lib/focus-missing-fields";
 import { Building2, HelpCircle, User, Phone, Mail, Share2, Link2, Calendar } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
@@ -473,6 +474,16 @@ const days = [
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 
 export default function BusinessPage() {
+  // Deep-link del aviso "Falta completar" (?focus=phone,address): scroll + resaltado rojo.
+  const focusParam = useSearchParams()?.get("focus") ?? "";
+  useEffect(() => {
+    const ids = focusParam
+      .split(",")
+      .filter((k) => k === "phone" || k === "address")
+      .map((k) => `business-${k}`);
+    return focusMissingFields(ids);
+  }, [focusParam]);
+
   const { canEdit } = usePermissions();
   const canEditNegocio = canEdit("negocio");
   const params = useParams();
@@ -2103,6 +2114,7 @@ function updateHourByIndex(
               Teléfono
             </label>
             <input
+              id="business-phone"
               type="text"
               value={form.phone}
               onChange={(e) =>
@@ -2173,6 +2185,7 @@ function updateHourByIndex(
             Dirección
           </label>
           <input
+            id="business-address"
             type="text"
             required
             value={form.address}

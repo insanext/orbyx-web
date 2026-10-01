@@ -117,6 +117,8 @@ type BranchItem = {
   name: string;
   slug?: string | null;
   address?: string | null;
+  phone?: string | null;
+  use_global_contact?: boolean | null;
   is_active?: boolean;
 };
 
@@ -1185,6 +1187,36 @@ export default function DashboardLayout({
     missingBusinessContact.length > 0
       ? `Falta ${missingBusinessContact.join(" y ")} del negocio: complétalo en Mi Negocio para que aparezca en los correos de reserva.`
       : "";
+
+  // Avisos "Falta completar" con deep-link: negocio (teléfono/dirección) y, por
+  // separado, cada sucursal con contacto propio (use_global_contact === false).
+  // Las que usan contacto global quedan cubiertas por el chequeo del negocio.
+  const contactNotices: { key: string; text: string; href: string }[] = [];
+  if (businessContact && missingBusinessContact.length > 0) {
+    const focus = [
+      !businessContact.phone.trim() ? "phone" : null,
+      !businessContact.address.trim() ? "address" : null,
+    ].filter(Boolean).join(",");
+    contactNotices.push({
+      key: "business",
+      text: `Falta el ${[
+        !businessContact.phone.trim() ? "teléfono" : null,
+        !businessContact.address.trim() ? "dirección" : null,
+      ].filter(Boolean).join(" y la ")} de tu negocio`.replace("el dirección", "la dirección"),
+      href: `/dashboard/${slug}/business?tab=negocio&focus=${focus}`,
+    });
+  }
+  for (const branch of branches) {
+    if (branch.use_global_contact !== false) continue;
+    const noPhone = !String(branch.phone || "").trim();
+    const noAddress = !String(branch.address || "").trim();
+    if (!noPhone && !noAddress) continue;
+    contactNotices.push({
+      key: `branch-${branch.id}`,
+      text: `Falta ${[noPhone ? "el teléfono" : null, noAddress ? "la dirección" : null].filter(Boolean).join(" y ")} de la sucursal ${branch.name}`,
+      href: `/dashboard/${slug}/business?tab=sucursales&branch=${branch.id}&focus=${[noPhone ? "phone" : null, noAddress ? "address" : null].filter(Boolean).join(",")}`,
+    });
+  }
 
   // Punto rojo con pulso (solo CSS: animate-ping de Tailwind, respeta
   // prefers-reduced-motion). Sin opción de descartarlo: desaparece solo
@@ -2323,6 +2355,33 @@ export default function DashboardLayout({
                   }}
                 >
                   <AccountStatusProvider value={accountStatus}>
+                    {isOwnerOrAdmin && contactNotices.length > 0 ? (
+                      <div className="mb-4 space-y-2">
+                        {contactNotices.map((notice) => (
+                          <Link
+                            key={notice.key}
+                            href={notice.href}
+                            className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition hover:brightness-110"
+                            style={{
+                              borderColor: "rgba(239,68,68,0.45)",
+                              background: "rgba(239,68,68,0.10)",
+                              color: "#ef4444",
+                            }}
+                          >
+                            <span className="relative flex h-2.5 w-2.5 shrink-0">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-70 motion-reduce:animate-none" />
+                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                            </span>
+                            <span className="min-w-0">
+                              Falta completar: {notice.text}
+                              <span className="block text-xs font-medium opacity-80">
+                                Toca para completarlo. Sin esto no aparecerá en los correos de reserva.
+                              </span>
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
                     {currentModuleDenied ? (
                       <div
                         className="mx-auto mt-10 max-w-lg rounded-3xl border p-8 text-center"

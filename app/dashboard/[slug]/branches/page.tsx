@@ -1,9 +1,10 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-confirm";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { focusMissingFields } from "@/lib/focus-missing-fields";
 import Link from "next/link";
 import { Copy, HelpCircle, Pencil, Plus, Store, Users } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -390,6 +391,25 @@ export default function BranchesPage() {
     setBranches(rows);
     return rows;
   }
+
+  // Deep-link del aviso "Falta completar" (?branch=<id>&focus=phone,address):
+  // abre la edición de esa sucursal y resalta el/los campos faltantes.
+  const searchParams = useSearchParams();
+  const deepLinkBranchId = searchParams?.get("branch") ?? "";
+  const deepLinkFocus = searchParams?.get("focus") ?? "";
+  const deepLinkDoneRef = useRef("");
+  useEffect(() => {
+    if (!deepLinkBranchId || !canEditSucursales || deepLinkDoneRef.current === deepLinkBranchId) return;
+    const target = branches.find((b) => b.id === deepLinkBranchId);
+    if (!target) return;
+    deepLinkDoneRef.current = deepLinkBranchId;
+    beginEditBranch(target);
+    const ids = deepLinkFocus
+      .split(",")
+      .filter((k) => k === "phone" || k === "address")
+      .map((k) => `branch-edit-${k}`);
+    return focusMissingFields(ids);
+  }, [branches, deepLinkBranchId, deepLinkFocus, canEditSucursales]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadHours(currentTenantId: string, branchId?: string | null) {
     const url = branchId
@@ -1464,7 +1484,7 @@ export default function BranchesPage() {
                             <div className="space-y-3">
                               <div>
                                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Dirección</label>
-                                <input type="text" value={editForm.use_global_contact ? globalAddress : editForm.address} disabled={editForm.use_global_contact} required={!editForm.use_global_contact} onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))} placeholder={editForm.use_global_contact ? "Usando dirección global del negocio" : "Dirección local de la sucursal"} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-40" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                                <input id="branch-edit-address" type="text" value={editForm.use_global_contact ? globalAddress : editForm.address} disabled={editForm.use_global_contact} required={!editForm.use_global_contact} onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))} placeholder={editForm.use_global_contact ? "Usando dirección global del negocio" : "Dirección local de la sucursal"} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-40" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                               </div>
                               <div>
                                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Comuna</label>
@@ -1524,7 +1544,7 @@ export default function BranchesPage() {
                             <div className="grid gap-3 md:grid-cols-3">
                               <div>
                                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Teléfono</label>
-                                <input type="text" value={editForm.phone} onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Teléfono local" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
+                                <input id="branch-edit-phone" type="text" value={editForm.phone} onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Teléfono local" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                               </div>
                               <div>
                                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>WhatsApp</label>
