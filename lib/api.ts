@@ -17,8 +17,19 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
+import { trackBusy } from "@/lib/busy-feedback";
 
-export async function apiFetch(
+export function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<Response> {
+  // Se engancha al botón tocado AQUÍ (síncrono dentro del handler), porque el
+  // fetch real ocurre después de leer la sesión y podría salir fuera de la
+  // ventana de atribución del click.
+  return trackBusy(apiFetchInner(input, init));
+}
+
+async function apiFetchInner(
   input: RequestInfo | URL,
   init: RequestInit = {}
 ): Promise<Response> {

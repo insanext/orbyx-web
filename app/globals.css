@@ -291,3 +291,26 @@ summary:not(.no-press):active {
     transform: none;
   }
 }
+
+/* Estado "procesando" (lib/busy-feedback.ts): dura toda la petición, no solo
+   el instante del toque. Botones con texto muestran spinner; íconos y enlaces
+   solo se atenúan. */
+[data-busy="true"] {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+button[data-busy="true"]:not([data-busy-icon])::after,
+[role="button"][data-busy="true"]:not([data-busy-icon])::after {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
+  margin-left: 0.5em;
+  vertical-align: -0.12em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: spin 0.7s linear infinite;
+}
