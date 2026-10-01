@@ -2289,6 +2289,7 @@ async function loadPendingCloseAppointments() {
     appointmentId: string,
     newStatus: "completed" | "no_show" | "rescheduled" | "canceled"
   ) {
+    if (statusSaving) return;
     try {
       setStatusSaving(true);
       setError("");
@@ -2873,6 +2874,7 @@ next_control_custom_value:
   }
 
   async function handleConfirmManualBooking() {
+    if (manualBookingSaving) return;
     if (!manualBookingDraft) return;
 
     const validationError = validateManualBookingDraft(manualBookingDraft);

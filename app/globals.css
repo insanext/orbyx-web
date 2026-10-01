@@ -255,3 +255,39 @@ body {
   }
 }
 
+
+/* Feedback de "presionado" para todo lo tocable (botones, enlaces, pestañas,
+   selects). Se nota de inmediato con el dedo: leve hundimiento + oscurecido.
+   Se excluye lo deshabilitado y lo que pida no tenerlo con .no-press. */
+button,
+a[href],
+[role="button"],
+[role="tab"],
+[role="switch"],
+summary,
+select {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.18);
+  touch-action: manipulation;
+}
+
+button:not(:disabled):not(.no-press):active,
+a[href]:not(.no-press):active,
+[role="button"]:not([aria-disabled="true"]):not(.no-press):active,
+[role="tab"]:not(.no-press):active,
+[role="switch"]:not(.no-press):active,
+summary:not(.no-press):active {
+  transform: scale(0.97);
+  filter: brightness(0.88);
+  transition: transform 60ms ease-out, filter 60ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):not(.no-press):active,
+  a[href]:not(.no-press):active,
+  [role="button"]:not(.no-press):active,
+  [role="tab"]:not(.no-press):active,
+  [role="switch"]:not(.no-press):active,
+  summary:not(.no-press):active {
+    transform: none;
+  }
+}
