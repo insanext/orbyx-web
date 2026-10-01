@@ -1042,6 +1042,57 @@ export default function CustomerDetailPage() {
       setIncompleteProfileBanner(true);
     }
 
+    // Veterinaria: el historial por paciente vive dentro de la ficha expandida de la
+    // mascota (pestaña "Mascotas"); abrimos esa ficha y el formulario de ESTA reserva.
+    const targetAppt = appointments.find((a) => a.id === autoOpenApptId);
+    if (isVeterinaria && targetAppt?.pet_id) {
+      const petId = targetAppt.pet_id;
+      (async () => {
+        let petNotes: ClinicalNote[] = [];
+        try {
+          const res = await apiFetch(`${BACKEND_URL}/clinical-notes/${slug}?pet_id=${petId}&limit=50`);
+          if (res.ok) {
+            const data = await res.json();
+            petNotes = Array.isArray(data.notes) ? data.notes : [];
+            setClinicalNotes((prev) => ({ ...prev, [petId]: petNotes }));
+          }
+        } catch {}
+
+        const existingNote = petNotes.find((n) => n.appointment_id === autoOpenApptId);
+        setClinicalFormState((prev) => ({
+          ...prev,
+          [autoOpenApptId]: {
+            reason: existingNote?.reason || "",
+            notes: existingNote?.observations || "",
+            diagnosis: existingNote?.diagnosis || "",
+            treatment: existingNote?.treatment || "",
+            controlDate: existingNote?.next_control_at
+              ? new Date(existingNote.next_control_at).toISOString().slice(0, 10)
+              : "",
+            controlType: existingNote?.control_type || "Control general",
+            symptoms: (existingNote as any)?.symptoms || "",
+            medications: (existingNote as any)?.medications || "",
+            referrals: (existingNote as any)?.referrals || "",
+            follow_up_notes: (existingNote as any)?.follow_up_notes || "",
+            extra_fields: (existingNote as any)?.extra_fields ?? undefined,
+          },
+        }));
+        setActiveVetTab("pets");
+        setViewingPetId(petId);
+        if (existingNote) {
+          setEditingNoteId(existingNote.id);
+        } else {
+          setNewNoteApptId(autoOpenApptId);
+          setEditingNoteId(`new-${autoOpenApptId}`);
+        }
+        setTimeout(() => {
+          const el = document.getElementById(`vet-note-${autoOpenApptId}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 500);
+      })();
+      return;
+    }
+
     (async () => {
       let notes: ClinicalNote[] = [];
       try {
@@ -1512,8 +1563,8 @@ const lastValidAppointment = validAppointments[0] || null;
         </Panel>
       ) : (
 
-        <div className="grid gap-4 xl:grid-cols-[1.45fr_0.8fr]">
-          <div className={`space-y-4 ${isVeterinaria || isClinica || isOdontologia ? "xl:col-span-2" : ""}`}>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_0.8fr]">
+          <div className={`min-w-0 space-y-4 ${isVeterinaria || isClinica || isOdontologia ? "xl:col-span-2" : ""}`}>
 
 {!isVeterinaria && !isClinica && !isOdontologia && <div
   className="rounded-3xl p-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
@@ -1608,7 +1659,7 @@ const lastValidAppointment = validAppointments[0] || null;
                   background: "var(--bg-card)",
                 }}
               >
-                <div className="grid min-w-max grid-cols-3 gap-1 sm:min-w-0">
+                <div className="grid grid-cols-3 gap-1">
                   {[
                     { id: "pets", label: "Mascotas" },
                     {
@@ -1959,7 +2010,27 @@ const lastValidAppointment = validAppointments[0] || null;
                 ) : (
                   <div className="space-y-4">
                     {pets.map((pet) => {
-                      const petNotes = clinicalNotes[pet.id] || [];
+                      const savedPetNotes = clinicalNotes[pet.id] || [];
+                      // Atención recién marcada como atendida y sin nota aún: tarjeta provisional
+                      // para que el formulario inline de edición se abra directo sobre esa reserva.
+                      const pendingAppt = newNoteApptId
+                        ? appointments.find((a) => a.id === newNoteApptId)
+                        : null;
+                      const petNotes: ClinicalNote[] =
+                        pendingAppt &&
+                        pendingAppt.pet_id === pet.id &&
+                        !savedPetNotes.some((n) => n.appointment_id === pendingAppt.id)
+                          ? [
+                              {
+                                id: `new-${pendingAppt.id}`,
+                                pet_id: pet.id,
+                                appointment_id: pendingAppt.id,
+                                date: pendingAppt.start_at,
+                                control_type: "Control general",
+                              } as ClinicalNote,
+                              ...savedPetNotes,
+                            ]
+                          : savedPetNotes;
 
                       function noteBadgeStyle(ct?: string | null) {
                         if (ct === "Vacuna") return { background: "rgba(100,116,139,0.12)", color: "#64748b" };
@@ -2344,7 +2415,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                       const formKey = note.appointment_id || note.id;
 
                                       return (
-                                        <div key={note.id}>
+                                        <div key={note.id} id={note.appointment_id ? `vet-note-${note.appointment_id}` : undefined}>
                                           {/* Note card */}
                                           <div
                                             className="overflow-hidden rounded-xl border transition-all duration-200"
@@ -2615,7 +2686,7 @@ const lastValidAppointment = validAppointments[0] || null;
                                                 <div className="mt-4 flex justify-end gap-2">
                                                   <button
                                                     type="button"
-                                                    onClick={() => setEditingNoteId(null)}
+                                                    onClick={() => { setEditingNoteId(null); setNewNoteApptId(null); }}
                                                     className="inline-flex h-9 items-center justify-center rounded-xl border px-4 text-sm font-medium transition hover:bg-slate-100 dark:hover:bg-slate-700"
                                                     style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                                                   >
@@ -3657,7 +3728,7 @@ const lastValidAppointment = validAppointments[0] || null;
 
           </div>
 
-          <div className={`space-y-4 ${isVeterinaria || isClinica || isOdontologia ? "xl:col-span-2" : ""} ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
+          <div className={`min-w-0 space-y-4 ${isVeterinaria || isClinica || isOdontologia ? "xl:col-span-2" : ""} ${isVeterinaria && activeVetTab === "pets" ? "hidden" : ""}`}>
 
             {isVeterinaria && activeVetTab === "followups" ? (
               <Panel
