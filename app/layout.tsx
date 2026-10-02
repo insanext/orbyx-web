@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, DM_Sans, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 import BusyFeedback from "@/components/BusyFeedback";
+import FlowReturnRedirect from "@/components/FlowReturnRedirect";
 import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
 import WelcomeSplash, { PWA_BOOT_SCRIPT } from "@/components/pwa/WelcomeSplash";
 
@@ -59,6 +60,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmSerif.variable} antialiased`}
       >
         <BusyFeedback />
+        <FlowReturnRedirect />
         <WelcomeSplash />
         {children}
         <ServiceWorkerRegister />

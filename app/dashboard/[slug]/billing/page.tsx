@@ -4,6 +4,7 @@ import { CSSProperties, Suspense, useEffect, useMemo, useRef, useState } from "r
 import { apiFetch } from "@/lib/api";
 import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-confirm";
 import Link from "next/link";
+import { markFlowReturn, clearFlowReturn } from "@/lib/flow-return";
 import { useParams, useSearchParams } from "next/navigation";
 import { ChevronRight, CreditCard, Info, X } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
@@ -450,6 +451,10 @@ function BillingPageInner() {
   const params = useParams();
   const searchParams = useSearchParams();
   const cardStatusParam = searchParams.get("card_status");
+  // Volvió por el callback normal: ya no hace falta el redirect de rescate.
+  useEffect(() => {
+    if (cardStatusParam) clearFlowReturn();
+  }, [cardStatusParam]);
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string) ||
@@ -868,6 +873,7 @@ function BillingPageInner() {
         throw new Error(registerData?.error || "No se pudo iniciar el registro de tarjeta");
       }
 
+      markFlowReturn(`/dashboard/${slug}/billing?card_status=cancel`);
       window.location.href = registerData.url + "?token=" + registerData.token;
     } catch (error: unknown) {
       setSubscribeError(
@@ -1022,6 +1028,7 @@ function BillingPageInner() {
         throw new Error(data?.error || "No se pudo iniciar el cambio de tarjeta");
       }
 
+      markFlowReturn(`/dashboard/${slug}/billing?card_status=cancel`);
       window.location.href = data.url + "?token=" + data.token;
     } catch (error: unknown) {
       setCardActionError(
