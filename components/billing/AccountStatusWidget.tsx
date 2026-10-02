@@ -641,7 +641,12 @@ export function AccountStatusWidget({
   // al enviar). Sin saldo, quedan bloqueados como antes.
   const waTogglesLocked = isStarterInTrial && liveWaConfirmacion.total <= 0;
 
-  const urgent = status.blocked || status.trial_active || status.awaiting_payment;
+  // isStarterInTrial: un Starter con tarjeta inscrita ('trialing') sin cobro
+  // real tiene cupo 0 pero NO debe perder el panel -- tiene que seguir viendo
+  // los toggles (bloqueados, con candado), el contador y "Depósito previo".
+  // Sin esto caía en el return null de abajo y el widget entero desaparecía.
+  const urgent =
+    status.blocked || status.trial_active || status.awaiting_payment || isStarterInTrial;
   if (!urgent && status.wa_confirmacion.total <= 0) {
     // Nada relevante que mostrar (plan sin estos add-ons y sin trial/pago pendiente).
     return null;
