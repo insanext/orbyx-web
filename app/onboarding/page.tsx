@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { RegionCommuneSelect } from "../../components/dashboard/RegionCommuneSelect";
+import { isValidRegionCommune } from "../../lib/chile-regions";
 
 // ─── Shared design tokens (espeja signup) ────────────────────────────────────
 const CARD_STYLE: React.CSSProperties = {
@@ -241,6 +243,11 @@ function OnboardingInner() {
   // Step 1
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("medico");
+  // Dirección del negocio (calle + región + comuna). Queda guardada en
+  // `tenants` y la sucursal "Principal" la hereda (use_global_contact).
+  const [street, setStreet] = useState("");
+  const [region, setRegion] = useState("");
+  const [commune, setCommune] = useState("");
   // business_category que el tenant ya tenía ANTES de este onboarding —
   // "generic" es una categoría terminal válida (el usuario eligió
   // "Otro tipo de negocio" a propósito), no un placeholder — solo NULL
@@ -266,6 +273,9 @@ function OnboardingInner() {
 
         if (tenant.name) setBusinessName((prev) => prev || tenant.name);
         if (tenant.slug) setCurrentSlug((prev) => prev || tenant.slug);
+        if (tenant.address) setStreet((prev) => prev || tenant.address);
+        if (tenant.region) setRegion((prev) => prev || tenant.region);
+        if (tenant.commune) setCommune((prev) => prev || tenant.commune);
         setExistingCategoryOnMount(tenant.business_category || null);
       } catch {
         // Si falla, el formulario simplemente arranca en blanco como
@@ -337,6 +347,8 @@ function OnboardingInner() {
   // ── Step 1 submit ──────────────────────────────────────────────────────────
   async function handleStep1() {
     if (!businessName.trim()) { setError("Ingresa el nombre de tu negocio."); return; }
+    if (!street.trim()) { setError("Ingresa la dirección de tu negocio (calle y número)."); return; }
+    if (!isValidRegionCommune(region, commune)) { setError("Selecciona la región y la comuna de tu negocio."); return; }
 
     // Si este tenant ya había completado onboarding antes (tenía
     // cualquier categoría, incluido "generic" -- es una categoría
@@ -365,6 +377,9 @@ function OnboardingInner() {
         body: JSON.stringify({
           name: businessName.trim(),
           business_name: businessName.trim(),
+          address: street.trim(),
+          region,
+          commune,
           business_category: businessCategory,
           ...(businessSubtype ? { business_subtype: businessSubtype } : {}),
         }),
@@ -644,9 +659,33 @@ function OnboardingInner() {
                 ))}
               </select>
             </div>
+            <div>
+              <label style={LABEL_STYLE}>Dirección</label>
+              <input
+                style={INPUT_STYLE}
+                placeholder="Ej: Avenida Principal 123"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+              />
+            </div>
+            <RegionCommuneSelect
+              required
+              className="grid gap-[18px]"
+              region={region}
+              commune={commune}
+              onChange={(next) => { setRegion(next.region); setCommune(next.commune); }}
+              labelClassName=""
+              labelStyle={LABEL_STYLE}
+              selectClassName=""
+              selectStyle={{ ...INPUT_STYLE, appearance: "none" as any }}
+              optionStyle={{ background: "#1e293b" }}
+            />
             {error && <ErrorMsg text={error} />}
             <div style={{ marginTop: 4 }}>
-              <PrimaryBtn onClick={handleStep1} disabled={loading || !businessName.trim()}>
+              <PrimaryBtn
+                onClick={handleStep1}
+                disabled={loading || !businessName.trim() || !street.trim() || !isValidRegionCommune(region, commune)}
+              >
                 {loading ? "Guardando..." : "Siguiente →"}
               </PrimaryBtn>
             </div>

@@ -73,6 +73,7 @@ type BusinessResponse = {
     name: string;
     slug: string;
     address?: string | null;
+    full_address?: string | null;
     business_category?: string | null;
     deposit_required?: boolean;
   };
@@ -97,6 +98,9 @@ type BranchItem = {
   tenant_id?: string;
   name: string;
   address?: string | null;
+  // Calle + comuna + región con la herencia use_global_contact ya resuelta
+  // (la arma GET /branches).
+  full_address?: string | null;
   is_active?: boolean;
   use_global_hours?: boolean;
 };
@@ -510,7 +514,9 @@ const [slotMinutes, setSlotMinutes] = useState(30);
     // aplica: cada una puede tener una dirección real distinta, y usar la
     // del negocio ahí podría ser directamente incorrecta.
     const resolvedAddress =
-      branch?.address || (branches.length === 1 ? businessAddress : null);
+      branch?.full_address ||
+      branch?.address ||
+      (branches.length === 1 ? businessAddress : null);
     const locationClause = branch
       ? resolvedAddress
         ? ` en Sucursal ${branch.name}, dirección: ${resolvedAddress}`
@@ -3176,7 +3182,9 @@ setSlotMinutes(Number(businessData.slot_minutes || 30));
 setCalendarId(businessData.calendar_id || "");
 setTenantId(currentTenantId);
 setBusinessName(businessData.business.name || slug || "");
-setBusinessAddress(businessData.business.address || null);
+setBusinessAddress(
+  businessData.business.full_address || businessData.business.address || null
+);
 setBusinessCategory(
   String(businessData.business.business_category || "").trim().toLowerCase()
 );

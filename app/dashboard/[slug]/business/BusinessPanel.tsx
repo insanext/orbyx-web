@@ -9,6 +9,9 @@ import { Building2, HelpCircle, User, Phone, Mail, Share2, Link2, Calendar } fro
 import { Panel } from "../../../../components/dashboard/panel";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
+import { RegionCommuneSelect } from "../../../../components/dashboard/RegionCommuneSelect";
+import { isValidRegionCommune } from "../../../../lib/chile-regions";
+import { buildFullAddress } from "../../../../lib/address";
 
 // Debe coincidir con el límite de validateText("description", { maxLen: 1000 }) en server.js (PATCH /tenants/:id)
 const BUSINESS_DESCRIPTION_MAX_LENGTH = 1000;
@@ -36,6 +39,8 @@ type BusinessResponse = {
     slug: string;
     phone?: string | null;
     address?: string | null;
+    commune?: string | null;
+    region?: string | null;
     email?: string | null;
     whatsapp?: string | null;
     logo_url?: string | null;
@@ -560,6 +565,8 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     name: "",
     phone: "",
     address: "",
+    commune: "",
+    region: "",
     email: "",
     whatsapp: "",
     logo_url: "",
@@ -722,6 +729,8 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
           name: data.business.name || "",
           phone: data.business.phone || "",
           address: data.business.address || "",
+          commune: data.business.commune || "",
+          region: data.business.region || "",
           email: data.business.email || "",
           whatsapp: data.business.whatsapp || "",
           logo_url: data.business.logo_url || "",
@@ -1605,6 +1614,10 @@ async function saveSlotMinutes() {
         throw new Error("La dirección global del negocio es obligatoria.");
       }
 
+      if (!isValidRegionCommune(form.region, form.commune)) {
+        throw new Error("Selecciona la región y la comuna de tu negocio.");
+      }
+
       const tenantPayload = {
         ...form,
         logo_url: form.logo_url || "",
@@ -2192,7 +2205,7 @@ function updateHourByIndex(
             onChange={(e) =>
               setForm((prev) => ({ ...prev, address: e.target.value }))
             }
-            placeholder="Ej: Avenida Principal 123, Concepción"
+            placeholder="Ej: Avenida Principal 123"
             className={inputClass}
             style={{
               borderColor: "var(--border-color)",
@@ -2201,7 +2214,24 @@ function updateHourByIndex(
             }}
           />
           <div className="mt-3">
-            <MapPreview address={form.address} />
+            <RegionCommuneSelect
+              required
+              region={form.region}
+              commune={form.commune}
+              onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+              selectClassName={selectClass}
+              selectStyle={{
+                borderColor: "var(--border-color)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+              }}
+              labelStyle={{ color: "var(--text-main)" }}
+            />
+          </div>
+          <div className="mt-3">
+            <MapPreview
+              address={buildFullAddress(form.address, form.commune, form.region)}
+            />
           </div>
         </div>
 

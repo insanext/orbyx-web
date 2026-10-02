@@ -53,6 +53,11 @@ type BranchItem = {
   whatsapp?: string | null;
   email?: string | null;
   description?: string | null;
+  commune?: string | null;
+  region?: string | null;
+  // Calle + comuna + región ya resueltos por el backend (con la herencia
+  // use_global_contact aplicada). Es lo que se muestra y se geocodifica.
+  full_address?: string | null;
   map_url?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -98,6 +103,9 @@ type BusinessItem = {
   slug: string;
   description?: string | null;
   address?: string | null;
+  commune?: string | null;
+  region?: string | null;
+  full_address?: string | null;
   phone?: string | null;
   email?: string | null;
   whatsapp?: string | null;
@@ -1359,7 +1367,14 @@ const nextAvailableDays = useMemo(() => {
   const selectedBranch =
     branches.find((branch) => branch.id === selectedBranchId) || null;
 
-  const visibleAddress = selectedBranch?.address || business?.address || null;
+  // full_address ya trae "calle, comuna, región" con la herencia resuelta;
+  // el resto es solo respaldo para respuestas viejas sin ese campo.
+  const visibleAddress =
+    selectedBranch?.full_address ||
+    business?.full_address ||
+    selectedBranch?.address ||
+    business?.address ||
+    null;
   const visiblePhone = selectedBranch?.phone || business?.phone || null;
   const mapsEmbedUrl = buildMapsEmbedUrl(
     visibleAddress,
@@ -2176,7 +2191,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           date: formatFullDate(selectedSlot.slot_start),
           time: formatHour(selectedSlot.slot_start),
           branchName: selectedBranch?.name || undefined,
-          branchAddress: selectedBranch?.address || business?.address || undefined,
+          branchAddress: visibleAddress || undefined,
           staffName: selectedStaff?.name || undefined,
           customerEmail: customerData.email.trim(),
           customerPhone: toE164(phoneIso2, customerData.phone.trim()),

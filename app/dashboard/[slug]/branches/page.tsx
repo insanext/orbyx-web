@@ -13,6 +13,9 @@ import { usePermissions } from "../../../../lib/permissions-context";
 import { getPlanLabel, NEXT_PLAN_SUGGESTION, type PlanSlug } from "../../../../lib/plans";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { RegionCommuneSelect } from "../../../../components/dashboard/RegionCommuneSelect";
+import { isValidRegionCommune } from "../../../../lib/chile-regions";
+import { buildFullAddress } from "../../../../lib/address";
 
 type BusinessResponse = {
   business: {
@@ -20,6 +23,8 @@ type BusinessResponse = {
     name: string;
     slug: string;
     address?: string | null;
+    commune?: string | null;
+    region?: string | null;
     plan_slug?: string | null;
   };
 };
@@ -36,6 +41,8 @@ type BranchItem = {
   description?: string | null;
   city?: string | null;
   commune?: string | null;
+  region?: string | null;
+  full_address?: string | null;
   map_url?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -302,6 +309,8 @@ export default function BranchesPage() {
   const [tenantId, setTenantId] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [globalAddress, setGlobalAddress] = useState("");
+  const [globalCommune, setGlobalCommune] = useState("");
+  const [globalRegion, setGlobalRegion] = useState("");
   const [plan, setPlan] = useState<PlanSlug>("starter");
   // Límite real de sucursales (base del plan + add-on "sucursal" activo),
   // desde GET /billing/addons — mismo endpoint que ya usa AddonManager.tsx.
@@ -330,8 +339,8 @@ export default function BranchesPage() {
     whatsapp: "",
     email: "",
     description: "",
-    city: "",
     commune: "",
+    region: "",
     map_url: "",
     latitude: "",
     longitude: "",
@@ -360,12 +369,20 @@ export default function BranchesPage() {
   const [form, setForm] = useState({
     name: "",
     address: "",
+    commune: "",
+    region: "",
     phone: "",
     whatsapp: "",
     use_global_contact: true,
     use_global_hours: true,
   });
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Dirección completa (calle + comuna + región) que se geocodifica en el
+  // mapa de la sucursal en edición; con contacto global, la del negocio.
+  const editFormMapAddress = editForm.use_global_contact
+    ? buildFullAddress(globalAddress, globalCommune, globalRegion)
+    : buildFullAddress(editForm.address, editForm.commune, editForm.region);
 
   const branchStorageKey = useMemo(() => {
     return slug ? `orbyx_active_branch_${slug}` : "";
@@ -665,6 +682,8 @@ export default function BranchesPage() {
       setTenantId(currentTenantId);
       setBusinessName(businessData.business.name || slug);
       setGlobalAddress(businessData.business.address || "");
+      setGlobalCommune(businessData.business.commune || "");
+      setGlobalRegion(businessData.business.region || "");
       setPlan((businessData.business.plan_slug as PlanSlug) || "starter");
 
       await loadBranches(currentTenantId);
@@ -749,6 +768,15 @@ export default function BranchesPage() {
         throw new Error("Ya alcanzaste el límite de sucursales de tu plan");
       }
 
+      if (!form.use_global_contact) {
+        if (!form.address.trim()) {
+          throw new Error("Ingresa la dirección (calle y número) de la sucursal");
+        }
+        if (!isValidRegionCommune(form.region, form.commune)) {
+          throw new Error("Selecciona la región y la comuna de la sucursal");
+        }
+      }
+
       const response = await apiFetch(`${BACKEND_URL}/branches`, {
         method: "POST",
         headers: {
@@ -758,6 +786,8 @@ export default function BranchesPage() {
           tenant_id: tenantId,
           name: form.name.trim(),
           address: form.use_global_contact ? "" : form.address,
+          commune: form.use_global_contact ? "" : form.commune,
+          region: form.use_global_contact ? "" : form.region,
           phone: form.use_global_contact ? "" : form.phone,
           whatsapp: form.use_global_contact ? "" : form.whatsapp,
           use_global_contact: form.use_global_contact,
@@ -774,6 +804,8 @@ export default function BranchesPage() {
       setForm({
         name: "",
         address: "",
+        commune: "",
+        region: "",
         phone: "",
         whatsapp: "",
         use_global_contact: true,
@@ -802,8 +834,8 @@ export default function BranchesPage() {
       whatsapp: branch.whatsapp || "",
       email: branch.email || "",
       description: branch.description || "",
-      city: branch.city || "",
       commune: branch.commune || "",
+      region: branch.region || "",
       map_url: branch.map_url || "",
       latitude: branch.latitude === null || branch.latitude === undefined ? "" : String(branch.latitude),
       longitude: branch.longitude === null || branch.longitude === undefined ? "" : String(branch.longitude),
@@ -840,8 +872,8 @@ export default function BranchesPage() {
       whatsapp: "",
       email: "",
       description: "",
-      city: "",
       commune: "",
+      region: "",
       map_url: "",
       latitude: "",
       longitude: "",
@@ -872,6 +904,13 @@ export default function BranchesPage() {
         throw new Error("La dirección local es obligatoria cuando la sucursal usa contacto propio");
       }
 
+      if (
+        !editForm.use_global_contact &&
+        !isValidRegionCommune(editForm.region, editForm.commune)
+      ) {
+        throw new Error("Selecciona la región y la comuna de la sucursal");
+      }
+
       const response = await apiFetch(`${BACKEND_URL}/branches/${branchId}`, {
         method: "PATCH",
         headers: {
@@ -886,8 +925,8 @@ export default function BranchesPage() {
           whatsapp: editForm.use_global_contact ? "" : editForm.whatsapp,
           email: editForm.use_global_contact ? "" : editForm.email,
           description: editForm.description,
-          city: editForm.city,
-          commune: editForm.commune,
+          commune: editForm.use_global_contact ? "" : editForm.commune,
+          region: editForm.use_global_contact ? "" : editForm.region,
           map_url: "",
           latitude: "",
           longitude: "",
@@ -1193,6 +1232,16 @@ export default function BranchesPage() {
                   className="h-11 rounded-xl border px-3 text-sm outline-none disabled:opacity-60"
                   style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
                 />
+                <RegionCommuneSelect
+                  className="grid gap-3 sm:grid-cols-2 md:col-span-2"
+                  labelClassName="sr-only"
+                  region={form.use_global_contact ? globalRegion : form.region}
+                  commune={form.use_global_contact ? globalCommune : form.commune}
+                  onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+                  disabled={saving || loading || form.use_global_contact}
+                  selectClassName="h-11 w-full rounded-xl border px-3 text-sm outline-none disabled:opacity-60"
+                  selectStyle={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}
+                />
                 <input
                   type="text"
                   value={form.phone}
@@ -1382,9 +1431,10 @@ export default function BranchesPage() {
                         Dirección
                       </p>
                       <p className="text-sm leading-6" style={{ color: "var(--text-main)" }}>
-                        {branch.use_global_contact !== false
-                          ? globalAddress || "Contacto global"
-                          : branch.address || "Sin dirección"}
+                        {branch.full_address ||
+                          (branch.use_global_contact !== false
+                            ? globalAddress || "Contacto global"
+                            : branch.address || "Sin dirección")}
                       </p>
                     </div>
 
@@ -1486,24 +1536,28 @@ export default function BranchesPage() {
                                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Dirección</label>
                                 <input id="branch-edit-address" type="text" value={editForm.use_global_contact ? globalAddress : editForm.address} disabled={editForm.use_global_contact} required={!editForm.use_global_contact} onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))} placeholder={editForm.use_global_contact ? "Usando dirección global del negocio" : "Dirección local de la sucursal"} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-40" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                               </div>
-                              <div>
-                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Comuna</label>
-                                <input type="text" value={editForm.commune} onChange={(e) => setEditForm((prev) => ({ ...prev, commune: e.target.value }))} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
-                              </div>
-                              <div>
-                                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>Ciudad</label>
-                                <input type="text" value={editForm.city} onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))} className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
-                              </div>
+                              <RegionCommuneSelect
+                                required={!editForm.use_global_contact}
+                                className="space-y-3"
+                                region={editForm.use_global_contact ? globalRegion : editForm.region}
+                                commune={editForm.use_global_contact ? globalCommune : editForm.commune}
+                                onChange={(next) => setEditForm((prev) => ({ ...prev, ...next }))}
+                                disabled={editForm.use_global_contact}
+                                labelClassName="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]"
+                                labelStyle={{ color: "var(--text-muted)" }}
+                                selectClassName="h-10 w-full rounded-xl border px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-40"
+                                selectStyle={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}
+                              />
                               <div>
                                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>URL del mapa</label>
                                 <input type="text" value={editForm.map_url} onChange={(e) => setEditForm((prev) => ({ ...prev, map_url: e.target.value }))} placeholder="https://maps.google.com/..." className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                               </div>
                             </div>
                             <div className="overflow-hidden rounded-xl border" style={{ borderColor: "var(--border-color)", minHeight: 240 }}>
-                              {(editForm.use_global_contact ? globalAddress : editForm.address).trim() ? (
+                              {editFormMapAddress ? (
                                 <iframe
                                   title="Mapa de la sucursal"
-                                  src={`https://maps.google.com/maps?q=${encodeURIComponent((editForm.use_global_contact ? globalAddress : editForm.address).trim())}&output=embed`}
+                                  src={`https://maps.google.com/maps?q=${encodeURIComponent(editFormMapAddress)}&output=embed`}
                                   className="h-full w-full"
                                   style={{ minHeight: 240, border: 0 }}
                                   loading="lazy"
