@@ -402,16 +402,18 @@ function OnboardingInner() {
     setDayBlocks((prev) => ({ ...prev, [i]: next }));
   }
   function handleToggleCustomize(on: boolean) {
-    if (on) {
-      // Cada día activo parte con lo que ya estaba configurado en común.
-      setDayBlocks((prev) => {
-        const seeded = { ...prev };
-        activeDays.forEach((d) => {
-          if (!seeded[d]) seeded[d] = blocks.map((b) => ({ ...b }));
-        });
-        return seeded;
-      });
-    }
+    // Siempre se re-siembra desde el horario común ACTUAL (el que se ve en
+    // pantalla), nunca desde lo que quedó de una activación anterior: antes
+    // se conservaba lo sembrado la primera vez y, si el usuario activaba,
+    // desactivaba, cambiaba el horario común y volvía a activar, cada día
+    // partía con el horario viejo. Al apagar el modo se descartan.
+    setDayBlocks(
+      on
+        ? Object.fromEntries(
+            activeDays.map((d) => [d, blocks.map((b) => ({ ...b }))])
+          )
+        : {}
+    );
     setCustomizeByDay(on);
     setOpenDay(null);
   }
