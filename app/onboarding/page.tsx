@@ -310,6 +310,10 @@ function OnboardingInner() {
 
   // Step 1
   const [businessName, setBusinessName] = useState("");
+  // Negocio nacido de un pago: el nombre ya se definió en /checkout-premium
+  // (y de ahí salió su URL pública), así que aquí se muestra bloqueado. En el
+  // flujo gratis el nombre arranca siendo el correo y sigue editable.
+  const [nameLockedFromCheckout, setNameLockedFromCheckout] = useState(false);
   const [category, setCategory] = useState("medico");
   // Dirección del negocio (calle + región + comuna). Queda guardada en
   // `tenants` y la sucursal "Principal" la hereda (use_global_contact).
@@ -351,6 +355,7 @@ function OnboardingInner() {
         if (!tenant || cancelled) return;
 
         if (tenant.name) setBusinessName((prev) => prev || tenant.name);
+        if (tenant.name_from_checkout && tenant.name) setNameLockedFromCheckout(true);
         if (tenant.slug) setCurrentSlug((prev) => prev || tenant.slug);
         if (tenant.address) setStreet((prev) => prev || tenant.address);
         if (tenant.region) setRegion((prev) => prev || tenant.region);
@@ -767,12 +772,18 @@ function OnboardingInner() {
             <div>
               <label style={LABEL_STYLE}>Nombre del negocio</label>
               <input
-                style={INPUT_STYLE}
                 placeholder="Ej: Clínica Veterinaria San Juan"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleStep1()}
+                disabled={nameLockedFromCheckout}
+                style={nameLockedFromCheckout ? { ...INPUT_STYLE, opacity: 0.6, cursor: "not-allowed" } : INPUT_STYLE}
               />
+              {nameLockedFromCheckout && (
+                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 12 }}>
+                  Nombre configurado durante el pago. Puedes cambiarlo después desde Mi Negocio.
+                </p>
+              )}
             </div>
             <div>
               <label style={LABEL_STYLE}>Categoría</label>
