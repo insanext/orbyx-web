@@ -6,6 +6,23 @@ import { apiFetch } from "@/lib/api";
 import { BACKEND_URL } from "@/lib/backend-url";
 import { RegionCommuneSelect } from "../../components/dashboard/RegionCommuneSelect";
 import { isValidRegionCommune } from "../../lib/chile-regions";
+import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
+import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
+
+// Teléfono fijo chileno = 9 dígitos con código de área (ej. 41 2xxxxxx), no
+// solo móviles (9xxxxxxxx) como exige WhatsApp. El teléfono del negocio
+// acepta ambos; el WhatsApp solo móvil.
+function isValidBusinessPhone(nationalNumber: string) {
+  return nationalNumber.replace(/\D/g, "").length === 9;
+}
+
+// "+56912345678" (como se guarda) → "912345678" para el campo. Valores
+// viejos escritos a mano ("+56 9 1234 5678") también sirven; cualquier
+// otro formato (otro país, texto raro) se deja vacío para que lo reingresen.
+function nationalFromStoredChilePhone(value?: string | null) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length === 11 && digits.startsWith("56") ? digits.slice(2) : "";
+}
 
 // ─── Shared design tokens (espeja signup) ────────────────────────────────────
 const CARD_STYLE: React.CSSProperties = {
@@ -248,6 +265,17 @@ function OnboardingInner() {
   const [street, setStreet] = useState("");
   const [region, setRegion] = useState("");
   const [commune, setCommune] = useState("");
+  // WhatsApp y teléfono del negocio (tenants.whatsapp / tenants.phone, dos
+  // columnas distintas). "Mismo que WhatsApp" copia el número y bloquea el
+  // campo; el aviso "Falta el teléfono de tu negocio" del dashboard mira
+  // tenants.phone, por eso ambos se piden acá.
+  const [waNumber, setWaNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneSameAsWa, setPhoneSameAsWa] = useState(true);
+  const effectivePhoneNumber = phoneSameAsWa ? waNumber : phoneNumber;
+  const contactValid =
+    isValidPhoneForCountry("CL", waNumber) &&
+    (phoneSameAsWa ? true : isValidBusinessPhone(phoneNumber));
   // business_category que el tenant ya tenía ANTES de este onboarding —
   // "generic" es una categoría terminal válida (el usuario eligió
   // "Otro tipo de negocio" a propósito), no un placeholder — solo NULL
@@ -276,6 +304,13 @@ function OnboardingInner() {
         if (tenant.address) setStreet((prev) => prev || tenant.address);
         if (tenant.region) setRegion((prev) => prev || tenant.region);
         if (tenant.commune) setCommune((prev) => prev || tenant.commune);
+        const existingWa = nationalFromStoredChilePhone(tenant.whatsapp);
+        const existingPhone = nationalFromStoredChilePhone(tenant.phone);
+        if (existingWa) setWaNumber((prev) => prev || existingWa);
+        if (existingPhone) {
+          setPhoneNumber((prev) => prev || existingPhone);
+          setPhoneSameAsWa(existingPhone === existingWa);
+        }
         setExistingCategoryOnMount(tenant.business_category || null);
       } catch {
         // Si falla, el formulario simplemente arranca en blanco como
@@ -349,6 +384,8 @@ function OnboardingInner() {
     if (!businessName.trim()) { setError("Ingresa el nombre de tu negocio."); return; }
     if (!street.trim()) { setError("Ingresa la dirección de tu negocio (calle y número)."); return; }
     if (!isValidRegionCommune(region, commune)) { setError("Selecciona la región y la comuna de tu negocio."); return; }
+    if (!isValidPhoneForCountry("CL", waNumber)) { setError("Ingresa un WhatsApp válido (celular chileno de 9 dígitos, empieza con 9)."); return; }
+    if (!phoneSameAsWa && !isValidBusinessPhone(phoneNumber)) { setError("Ingresa un teléfono válido de 9 dígitos."); return; }
 
     // Si este tenant ya había completado onboarding antes (tenía
     // cualquier categoría, incluido "generic" -- es una categoría
@@ -380,6 +417,8 @@ function OnboardingInner() {
           address: street.trim(),
           region,
           commune,
+          whatsapp: toE164("CL", waNumber),
+          phone: toE164("CL", effectivePhoneNumber),
           business_category: businessCategory,
           ...(businessSubtype ? { business_subtype: businessSubtype } : {}),
         }),
@@ -680,11 +719,50 @@ function OnboardingInner() {
               selectStyle={{ ...INPUT_STYLE, appearance: "none" as any }}
               optionStyle={{ background: "#1e293b" }}
             />
+            <div>
+              <label style={LABEL_STYLE}>WhatsApp del negocio</label>
+              <PhoneCountryInput
+                iso2="CL"
+                onIso2Change={() => {}}
+                allowedCountries={["CL"]}
+                value={waNumber}
+                onChange={setWaNumber}
+                disabled={loading}
+                required
+              />
+            </div>
+            <div>
+              <label style={LABEL_STYLE}>Teléfono del negocio</label>
+              <PhoneCountryInput
+                iso2="CL"
+                onIso2Change={() => {}}
+                allowedCountries={["CL"]}
+                value={effectivePhoneNumber}
+                onChange={setPhoneNumber}
+                disabled={loading || phoneSameAsWa}
+                required
+              />
+              <label
+                style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, color: "#94a3b8", fontSize: 13, cursor: "pointer" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={phoneSameAsWa}
+                  onChange={(e) => {
+                    // Al soltar "Mismo que WhatsApp" el campo parte con el
+                    // número que ya estaba copiado, listo para editar.
+                    if (!e.target.checked && !phoneNumber) setPhoneNumber(waNumber);
+                    setPhoneSameAsWa(e.target.checked);
+                  }}
+                />
+                Mismo que WhatsApp
+              </label>
+            </div>
             {error && <ErrorMsg text={error} />}
             <div style={{ marginTop: 4 }}>
               <PrimaryBtn
                 onClick={handleStep1}
-                disabled={loading || !businessName.trim() || !street.trim() || !isValidRegionCommune(region, commune)}
+                disabled={loading || !businessName.trim() || !street.trim() || !isValidRegionCommune(region, commune) || !contactValid}
               >
                 {loading ? "Guardando..." : "Siguiente →"}
               </PrimaryBtn>
