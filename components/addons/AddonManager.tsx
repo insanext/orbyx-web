@@ -346,13 +346,12 @@ export function AddonManager({
   // obligan a renovar esa misma cantidad para siempre.
   const [renewalConsentQty, setRenewalConsentQty] = useState(1);
 
-  // Los add-ons de Orbyx son intencionalmente solo de cobro mensual
-  // recurrente vía Flow (decisión de producto cerrada) -- no existe un pago
-  // único real, así que toda compra/aumento de cantidad deja el add-on en
-  // renewal_mode "automatico" de inmediato (ver purchaseAutoPayEligible +
-  // handleConfirmAddonCharge), sin pedirle al tenant un opt-in aparte. El
-  // texto de consentimiento sigue mostrándose igual en el modal (ver más
-  // abajo), ahora informativo en vez de un checkbox.
+  // Compra con tarjeta: los add-ons de capacidad (profesional, sucursal,
+  // cupos grupales) siempre quedan en renewal_mode "automatico" tras el
+  // cobro (ver purchaseAutoPayEligible + handleConfirmAddonCharge, texto de
+  // consentimiento informativo en el modal). Los packs de mensajes/emails
+  // dejan elegir entre pago único y renovación automática (ver purchaseMode
+  // más abajo). Sin tarjeta, la compra va por el pago único de Flow (buyModal).
 
   // Checkbox inline "dejar en cobro automático por saldo bajo" por línea,
   // dentro del modal de compra — se resetea cada vez que se abre el modal
@@ -363,6 +362,21 @@ export function AddonManager({
   const [purchaseLowBalanceOptIn, setPurchaseLowBalanceOptIn] = useState<
     Partial<Record<ExtraKey, boolean>>
   >({});
+
+  // Modo de pago elegido por línea en el modal de compra con tarjeta. Solo
+  // los packs de mensajes/emails (WhatsApp confirmación+recordatorio, emails
+  // de campaña, WhatsApp campañas) dejan elegir: "unico" cobra una vez, suma
+  // el pack al saldo y NO activa renovación (queda en renewal_mode "manual");
+  // "automatico" es lo de siempre (cobro cada ~30 días). Los add-ons de
+  // capacidad (profesional, sucursal, cupos grupales) no tienen selector:
+  // siempre renovación automática. La recarga por saldo bajo es un opt-in
+  // aparte e independiente de esta elección.
+  const [purchaseMode, setPurchaseMode] = useState<
+    Partial<Record<ExtraKey, "unico" | "automatico">>
+  >({});
+  function purchaseModeFor(key: ExtraKey): "unico" | "automatico" {
+    return isMessagePack(key) ? purchaseMode[key] ?? "automatico" : "automatico";
+  }
 
   // Cada refreshAddons() toma un ticket incremental al iniciar. Si al
   // terminar el ticket capturado ya no es el ultimo (se disparo un
@@ -1146,7 +1160,7 @@ export function AddonManager({
         // justo después de la compra. Un fallo acá NO revierte ni oculta que
         // la compra sí se hizo — solo se reporta aparte, y el tenant puede
         // activar el toggle a mano si esto falla.
-        if (purchaseAutoPayEligible(change)) {
+        if (purchaseAutoPayEligible(change) && purchaseModeFor(change.key) === "automatico") {
           try {
             const config = extraConfig[change.key];
             const projectedUnitPrice = addonUnitTierPrice(config, change.newQty - 1);
@@ -1652,6 +1666,7 @@ export function AddonManager({
                 onClick={() => {
                   setAddonChangeResults([]);
                   setPurchaseLowBalanceOptIn({});
+                  setPurchaseMode({});
                   setOneTimeError("");
                   setAddonConfirmModalOpen(true);
                 }}
@@ -1809,7 +1824,52 @@ export function AddonManager({
                         </span>
                       </div>
 
-                      {purchaseAutoPayEligible(change) ? (
+                      {purchaseAutoPayEligible(change) && isMessagePack(change.key) ? (
+                        <div
+                          className="mt-2 space-y-2 border-t pt-2 text-xs leading-5"
+                          style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                        >
+                          <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                              type="radio"
+                              name={`purchase-mode-${change.key}`}
+                              checked={purchaseModeFor(change.key) === "unico"}
+                              onChange={() => setPurchaseMode((prev) => ({ ...prev, [change.key]: "unico" }))}
+                              disabled={addonSubmitting}
+                              className="mt-0.5 h-4 w-4 shrink-0"
+                            />
+                            <span>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                                Pago único:
+                              </span>{" "}
+                              {formatCLP(applyIva(change.chargeAmount))} (IVA incl.) una sola vez. Se suma a tu saldo
+                              y no se renueva.
+                            </span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-2">
+                            <input
+                              type="radio"
+                              name={`purchase-mode-${change.key}`}
+                              checked={purchaseModeFor(change.key) === "automatico"}
+                              onChange={() => setPurchaseMode((prev) => ({ ...prev, [change.key]: "automatico" }))}
+                              disabled={addonSubmitting}
+                              className="mt-0.5 h-4 w-4 shrink-0"
+                            />
+                            <span>
+                              <span className="font-semibold" style={{ color: "var(--text-main)" }}>
+                                Renovación automática:
+                              </span>{" "}
+                              {formatCLP(projectedUnitPrice * change.newQty)} + IVA cada ~30 días · cancelable cuando
+                              quieras
+                            </span>
+                          </label>
+                          {purchaseModeFor(change.key) === "automatico"
+                            ? detailsBox(
+                                buildRenewalConsentTextForPurchase(change.key, change.newQty, projectedUnitPrice)
+                              )
+                            : null}
+                        </div>
+                      ) : purchaseAutoPayEligible(change) ? (
                         <div
                           className="mt-2 border-t pt-2 text-xs leading-5"
                           style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
@@ -1871,7 +1931,9 @@ export function AddonManager({
                 <p className="mt-3 text-xs leading-5" style={{ color: "rgb(245 158 11)" }}>
                   Se cobrará {formatCLP(addonChargeTotalWithIva)} ahora mismo a tu tarjeta registrada.
                 </p>
-                {addonPendingChanges.some((change) => purchaseAutoPayEligible(change)) ? (
+                {addonPendingChanges.some(
+                  (change) => purchaseAutoPayEligible(change) && purchaseModeFor(change.key) === "automatico"
+                ) ? (
                   <p className="mt-1 text-xs leading-5" style={{ color: "var(--text-muted)" }}>
                     Al confirmar autorizas el cobro de hoy y las renovaciones descritas arriba.
                   </p>
