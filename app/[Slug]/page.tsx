@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams, usePathname } from "next/navigation";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -643,7 +644,9 @@ function BusinessDescription({ text }: { text: string }) {
 }
 
 // Selector de sucursal: mismo patrón visual que el selector de sucursal del
-// dashboard (punto de estado + nombre + dirección), en versión clara.
+// dashboard (punto de estado + nombre + dirección), en versión clara y
+// compacta. La lista se pinta en un portal con posición fija para que no la
+// recorte el overflow-hidden de la tarjeta ni quede bajo otras tarjetas.
 function BranchPicker({
   branches,
   selectedBranchId,
@@ -654,40 +657,58 @@ function BranchPicker({
   onBranchChange: (branchId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const selected = branches.find((b) => b.id === selectedBranchId) || branches[0];
+
+  function toggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setPos({ left: rect.left, top: rect.bottom + 4, width: Math.max(rect.width, 220) });
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
     function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function close() {
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
   }, [open]);
 
   return (
-    <div ref={ref} className="relative mt-4 w-full max-w-xs text-left">
-      <label className="mb-1.5 block text-xs font-semibold text-slate-500">Sucursal</label>
+    <div className="mt-3 w-full max-w-[220px] text-left">
+      <label className="mb-1 block text-[11px] font-semibold text-slate-500">Sucursal</label>
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex min-h-[48px] w-full items-center gap-3 rounded-none border bg-white px-3 py-2 text-left transition ${
-          open ? "border-indigo-400 shadow-sm" : "border-slate-300 hover:border-indigo-300"
+        onClick={toggle}
+        className={`flex h-9 w-full items-center gap-2 rounded-none border bg-white px-2.5 text-left transition ${
+          open ? "border-indigo-400" : "border-slate-300 hover:border-indigo-300"
         }`}
       >
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-slate-900">
-            {selected?.name}
-          </span>
-          {selected?.full_address ? (
-            <span className="block truncate text-[11px] text-slate-500">
-              {selected.full_address}
-            </span>
-          ) : null}
+        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+          {selected?.name}
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -701,47 +722,52 @@ function BranchPicker({
         </svg>
       </button>
 
-      {open ? (
-        <div
-          role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-30 max-h-72 overflow-y-auto border border-slate-200 bg-white py-1 shadow-[0_20px_40px_-20px_rgba(15,23,42,0.35)]"
-        >
-          {branches.map((branch) => {
-            const isSelected = branch.id === selected?.id;
-            return (
-              <button
-                key={branch.id}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  onBranchChange(branch.id);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition ${
-                  isSelected ? "bg-indigo-50" : "hover:bg-slate-50"
-                }`}
-              >
-                <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${
-                    isSelected ? "bg-emerald-400" : "border border-slate-300"
-                  }`}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-slate-900">
-                    {branch.name}
-                  </span>
-                  {branch.full_address ? (
-                    <span className="block truncate text-[11px] text-slate-500">
-                      {branch.full_address}
+      {open && pos
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="listbox"
+              style={{ position: "fixed", left: pos.left, top: pos.top, width: pos.width, zIndex: 1000 }}
+              className="max-h-72 overflow-y-auto border border-slate-200 bg-white py-1 shadow-[0_20px_40px_-20px_rgba(15,23,42,0.35)]"
+            >
+              {branches.map((branch) => {
+                const isSelected = branch.id === selected?.id;
+                return (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => {
+                      onBranchChange(branch.id);
+                      setOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition ${
+                      isSelected ? "bg-indigo-50" : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${
+                        isSelected ? "bg-emerald-400" : "border border-slate-300"
+                      }`}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-slate-900">
+                        {branch.name}
+                      </span>
+                      {branch.full_address ? (
+                        <span className="block truncate text-[11px] text-slate-500">
+                          {branch.full_address}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+                  </button>
+                );
+              })}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
@@ -1364,6 +1390,41 @@ function ProfessionalsPanel({
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+function PublicPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#FBFAFF] to-[#F1EFFC]" aria-busy="true">
+      <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
+        <div className="grid animate-pulse gap-4 lg:grid-cols-[1fr_290px] lg:items-start lg:gap-6 xl:grid-cols-[1fr_300px]">
+          <div className="min-w-0 space-y-4 md:space-y-6">
+            <div className="overflow-hidden border border-slate-200 bg-white">
+              <div className="aspect-[3/1] w-full bg-slate-200" />
+              <div className="flex flex-col items-center px-4 pb-6 md:px-7">
+                <div className="-mt-10 h-20 w-20 rounded-2xl border-4 border-white bg-slate-300 md:-mt-14 md:h-28 md:w-28" />
+                <div className="mt-4 h-6 w-48 rounded bg-slate-200" />
+                <div className="mt-3 h-4 w-64 max-w-full rounded bg-slate-100" />
+              </div>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[230px_1fr] lg:gap-5">
+              <div className="hidden space-y-3 lg:block">
+                <div className="h-10 bg-slate-200" />
+                <div className="h-8 bg-slate-100" />
+                <div className="h-8 bg-slate-100" />
+              </div>
+              <div className="space-y-3">
+                <div className="h-12 bg-slate-200" />
+                <div className="h-20 border border-slate-200 bg-white" />
+                <div className="h-20 border border-slate-200 bg-white" />
+                <div className="h-20 border border-slate-200 bg-white" />
+              </div>
+            </div>
+          </div>
+          <div className="hidden h-64 border border-slate-200 bg-white lg:block" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -2909,6 +2970,10 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         </div>
       </div>
     );
+  }
+
+  if (loadingPage) {
+    return <PublicPageSkeleton />;
   }
 
   return (
