@@ -270,7 +270,6 @@ export const plans: Plan[] = [
     subtitle: "Máxima capacidad y campañas WhatsApp incluidas",
     benefit:
       "Para negocios que quieren escalar sin límites visuales y llegar a más clientes por WhatsApp.",
-    badge: "Máxima capacidad",
     includedBranches: 3,
     includedStaff: 10,
     includedServices: 999999,
