@@ -30,6 +30,10 @@ export type AccountStatus = {
   blocked: boolean;
   blocked_reason: "trial_expired" | "payment_overdue" | "paused" | null;
   wa_confirmacion: UsageCounter;
+  // Starter sin cobro real todavía (incluye tarjeta inscrita con la
+  // suscripción en 'trialing'): el cupo de WhatsApp sigue bloqueado. Lo
+  // calcula el backend con el mismo criterio del envío real.
+  wa_trial_locked?: boolean;
   wa_confirmation_enabled: boolean;
   wa_reminder_enabled: boolean;
   wa_reminder_hours_before: number;
@@ -172,8 +176,8 @@ function MiniToggle({
       type="button"
       role="switch"
       aria-checked={checked}
-      aria-label={locked ? `${label} — se activa cuando empiezas a pagar o compras el add-on` : label}
-      title={locked ? "Se activa cuando empiezas a pagar o compras el add-on ahora" : undefined}
+      aria-label={locked ? `${label} — se activará cuando comience tu cobro automático o compres el add-on` : label}
+      title={locked ? "Se activará cuando comience tu cobro automático o compres el add-on ahora" : undefined}
       onClick={onChange}
       disabled={disabled || locked}
       className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed"
@@ -625,8 +629,11 @@ export function AccountStatusWidget({
   // a pagar (ver checkMonthlyUsage/isStarterTenantInTrial en server.js) --
   // este aviso explica por qué, con salida directa a pagar o comprar
   // saldo ahora (Parte D.2/F.3, auditoría 2026-09-20).
+  // wa_trial_locked (backend) también cubre 'trialing': tarjeta inscrita
+  // pero sin cobro real todavía. El fallback es solo para un backend viejo.
   const isStarterInTrial =
-    status.plan_slug === "starter" && (status.trial_active || status.awaiting_payment);
+    status.plan_slug === "starter" &&
+    (status.wa_trial_locked ?? (status.trial_active || status.awaiting_payment));
   // Los toggles de WhatsApp se desbloquean con la sola condición de tener
   // saldo del add-on de WhatsApp, sea de cobro automático o de pago único:
   // durante el trial el cupo del plan es 0, así que total = saldo del
@@ -807,7 +814,9 @@ export function AccountStatusWidget({
                     <span className="font-semibold" style={{ color: "rgb(37,99,235)" }}>
                       Aún no activo.
                     </span>{" "}
-                    Los 100 mensajes de WhatsApp incluidos en tu plan Starter empiezan a correr desde el mes en que comienzas a pagar la suscripción. Mientras estás en la prueba gratuita, puedes comprar el add-on de WhatsApp para usarlo de inmediato, sin esperar.
+                    {status.subscription_status === "trialing"
+                      ? "Se activará cuando comience tu cobro automático. Los 100 mensajes de WhatsApp incluidos en tu plan Starter empiezan a correr desde ese cobro (o antes, si usas «Pagar ahora» en Facturación). Mientras tanto, puedes comprar el add-on de WhatsApp para usarlo de inmediato."
+                      : "Los 100 mensajes de WhatsApp incluidos en tu plan Starter empiezan a correr desde el mes en que comienzas a pagar la suscripción. Mientras estás en la prueba gratuita, puedes comprar el add-on de WhatsApp para usarlo de inmediato, sin esperar."}
                   </span>
                 </Link>
               ) : null}
