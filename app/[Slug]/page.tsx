@@ -580,6 +580,172 @@ function DetailRow({
   );
 }
 
+function InstagramBrandIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <defs>
+        <linearGradient id="orbyx-ig-gradient" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="30%" stopColor="#FA7E1E" />
+          <stop offset="55%" stopColor="#D62976" />
+          <stop offset="80%" stopColor="#962FBF" />
+          <stop offset="100%" stopColor="#4F5BD5" />
+        </linearGradient>
+      </defs>
+      <g fill="none" stroke="url(#orbyx-ig-gradient)" strokeWidth="1.9">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+      </g>
+      <circle cx="17.2" cy="6.8" r="1.15" fill="url(#orbyx-ig-gradient)" />
+    </svg>
+  );
+}
+
+function FacebookBrandIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="#1877F2" />
+      <path
+        fill="#fff"
+        d="M13.5 21v-7.5h2.5l.5-3h-3V8.5c0-.9.3-1.5 1.6-1.5H16.5V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.3H8v3h2.3V21h3.2z"
+      />
+    </svg>
+  );
+}
+
+const DESCRIPTION_MAX_CHARS = 200;
+
+function BusinessDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > DESCRIPTION_MAX_CHARS;
+  const shown =
+    isLong && !expanded
+      ? `${text.slice(0, DESCRIPTION_MAX_CHARS).replace(/\s+\S*$/, "")}…`
+      : text;
+
+  return (
+    <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+      {shown}
+      {isLong ? (
+        <>
+          {" "}
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="font-semibold text-indigo-600 hover:underline"
+          >
+            {expanded ? "Leer menos" : "Leer más"}
+          </button>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+// Selector de sucursal: mismo patrón visual que el selector de sucursal del
+// dashboard (punto de estado + nombre + dirección), en versión clara.
+function BranchPicker({
+  branches,
+  selectedBranchId,
+  onBranchChange,
+}: {
+  branches: BranchItem[];
+  selectedBranchId: string;
+  onBranchChange: (branchId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = branches.find((b) => b.id === selectedBranchId) || branches[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative mt-4 w-full max-w-xs text-left">
+      <label className="mb-1.5 block text-xs font-semibold text-slate-500">Sucursal</label>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex min-h-[48px] w-full items-center gap-3 rounded-none border bg-white px-3 py-2 text-left transition ${
+          open ? "border-indigo-400 shadow-sm" : "border-slate-300 hover:border-indigo-300"
+        }`}
+      >
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-slate-900">
+            {selected?.name}
+          </span>
+          {selected?.full_address ? (
+            <span className="block truncate text-[11px] text-slate-500">
+              {selected.full_address}
+            </span>
+          ) : null}
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-30 max-h-72 overflow-y-auto border border-slate-200 bg-white py-1 shadow-[0_20px_40px_-20px_rgba(15,23,42,0.35)]"
+        >
+          {branches.map((branch) => {
+            const isSelected = branch.id === selected?.id;
+            return (
+              <button
+                key={branch.id}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => {
+                  onBranchChange(branch.id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition ${
+                  isSelected ? "bg-indigo-50" : "hover:bg-slate-50"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full ${
+                    isSelected ? "bg-emerald-400" : "border border-slate-300"
+                  }`}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-slate-900">
+                    {branch.name}
+                  </span>
+                  {branch.full_address ? (
+                    <span className="block truncate text-[11px] text-slate-500">
+                      {branch.full_address}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BusinessBannerCard({
   business,
   slug,
@@ -635,9 +801,7 @@ function BusinessBannerCard({
           </h1>
 
           {business?.description?.trim() ? (
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
-              {business.description.trim()}
-            </p>
+            <BusinessDescription text={business.description.trim()} />
           ) : null}
 
           {reviewSummary && reviewSummary.count > 0 ? (
@@ -667,20 +831,11 @@ function BusinessBannerCard({
 
           {showBranchSelector ? (
             <div className="mt-4 w-full max-w-xs text-left">
-              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                Sucursal
-              </label>
-              <select
-                value={selectedBranchId}
-                onChange={(e) => onBranchChange(e.target.value)}
-                className="h-11 w-full rounded-none border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
-              >
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
+              <BranchPicker
+                branches={branches}
+                selectedBranchId={selectedBranchId}
+                onBranchChange={onBranchChange}
+              />
             </div>
           ) : null}
         </div>
@@ -709,9 +864,7 @@ function BusinessBannerCard({
           </h1>
 
           {business?.description?.trim() ? (
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
-              {business.description.trim()}
-            </p>
+            <BusinessDescription text={business.description.trim()} />
           ) : null}
 
           {reviewSummary && reviewSummary.count > 0 ? (
@@ -741,20 +894,11 @@ function BusinessBannerCard({
 
           {showBranchSelector ? (
             <div className="mt-4 max-w-xs">
-              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                Sucursal
-              </label>
-              <select
-                value={selectedBranchId}
-                onChange={(e) => onBranchChange(e.target.value)}
-                className="h-11 w-full rounded-none border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
-              >
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
+              <BranchPicker
+                branches={branches}
+                selectedBranchId={selectedBranchId}
+                onBranchChange={onBranchChange}
+              />
             </div>
           ) : null}
         </div>
@@ -1004,18 +1148,7 @@ function BusinessLocationPanel({
               aria-label="Instagram"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
-              </svg>
+              <InstagramBrandIcon />
             </a>
           ) : null}
 
@@ -1027,14 +1160,7 @@ function BusinessLocationPanel({
               aria-label="Facebook"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-3.5 w-3.5"
-              >
-                <path d="M13.5 21v-7.5h2.5l.5-3h-3V8.5c0-.9.3-1.5 1.6-1.5H16.5V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.3H8v3h2.3V21h3.2z" />
-              </svg>
+              <FacebookBrandIcon />
             </a>
           ) : null}
         </div>
@@ -1247,14 +1373,14 @@ function OrbyxPromoFooter() {
     <div className="mt-6 flex flex-col items-center gap-2.5 rounded-none bg-[#F0EEFC] px-5 py-4 text-center shadow-sm sm:flex-row sm:justify-center sm:text-left md:mt-10">
       <img src="/orbyx-mark.png" alt="Orbyx" className="h-6 w-6 shrink-0" />
       <p className="text-xs text-slate-600 sm:text-sm">
-        Gestiona tu negocio y reservas de forma fácil y profesional con Orbyx.{" "}
+        Gestiona tu negocio y reservas con{" "}
         <a
           href="https://orbyx.cl"
           target="_blank"
           rel="noreferrer"
           className="font-semibold text-indigo-600 hover:underline"
         >
-          Conoce más en orbyx.cl →
+          Orbyx.cl →
         </a>
       </p>
     </div>
@@ -1505,7 +1631,7 @@ const nextAvailableDays = useMemo(() => {
     if (ungroupedServices.length > 0) {
       categories.push({
         key: UNGROUPED_CATEGORY_KEY,
-        name: "Sin categoría",
+        name: "Servicios generales",
         totalCount: ungroupedServices.length,
         services: ungroupedServices.filter(matchesSearch),
       });
