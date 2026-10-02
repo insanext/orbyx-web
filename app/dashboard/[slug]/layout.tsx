@@ -2355,6 +2355,34 @@ export default function DashboardLayout({
                   }}
                 >
                   <AccountStatusProvider value={accountStatus}>
+                    {isOwnerOrAdmin && accountStatus?.missing_card_warning && !accountStatus.blocked ? (
+                      <div className="mb-4">
+                        <Link
+                          href={`/dashboard/${slug}/billing`}
+                          className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition hover:brightness-110"
+                          style={{
+                            borderColor: "rgba(245,158,11,0.5)",
+                            background: "rgba(245,158,11,0.10)",
+                            color: "#d97706",
+                          }}
+                        >
+                          <span className="relative flex h-2.5 w-2.5 shrink-0">
+                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
+                          </span>
+                          <span className="min-w-0">
+                            Te falta una tarjeta: tu renovación es{" "}
+                            {accountStatus.missing_card_warning.days_until_renewal <= 0
+                              ? "hoy"
+                              : accountStatus.missing_card_warning.days_until_renewal === 1
+                              ? "mañana"
+                              : `en ${accountStatus.missing_card_warning.days_until_renewal} días`}
+                            <span className="block text-xs font-medium opacity-80">
+                              Toca para inscribirla y no perder el acceso a tu negocio.
+                            </span>
+                          </span>
+                        </Link>
+                      </div>
+                    ) : null}
                     {isOwnerOrAdmin && contactNotices.length > 0 ? (
                       <div className="mb-4 space-y-2">
                         {contactNotices.map((notice) => (

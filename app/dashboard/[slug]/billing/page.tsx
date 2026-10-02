@@ -1530,6 +1530,13 @@ function BillingPageInner() {
         ) : cardStatusParam === "ok" ? (
           <Notice tone="success" title="Tarjeta actualizada correctamente." />
         ) : null}
+        {cardStatusParam === "cancel" ? (
+          <Notice
+            tone="warning"
+            title="No se modificó tu tarjeta."
+            description="Cancelaste el proceso en Flow. Puedes intentarlo de nuevo cuando quieras."
+          />
+        ) : null}
         {cardStatusParam === "error" ? (
           <Notice
             tone="danger"
@@ -1669,25 +1676,48 @@ function BillingPageInner() {
               >
                 {changingCard ? "Redirigiendo..." : "Cambiar tarjeta"}
               </button>
-              {!["active", "trialing", "card_registered"].includes(subscriptionStatus.status) ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDeleteCardError("");
-                    setDeleteCardModalOpen(true);
-                  }}
-                  className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition"
-                  style={{
-                    borderColor: "rgba(244,63,94,0.4)",
-                    background: "var(--bg-card)",
-                    color: "rgb(244 63 94)",
-                  }}
-                >
-                  Eliminar tarjeta
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteCardError("");
+                  setDeleteCardModalOpen(true);
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium transition"
+                style={{
+                  borderColor: "rgba(244,63,94,0.4)",
+                  background: "var(--bg-card)",
+                  color: "rgb(244 63 94)",
+                }}
+              >
+                Eliminar tarjeta
+              </button>
             </div>
           </div>
+          {cardActionError ? (
+            <p className="mt-2 text-xs" style={{ color: "rgb(248 113 113)" }}>
+              {cardActionError}
+            </p>
+          ) : null}
+        </Panel>
+      ) : null}
+
+      {subscriptionStatus?.has_subscription &&
+      !subscriptionStatus.card &&
+      (subscriptionStatus.status === "active" || subscriptionStatus.status === "trialing") ? (
+        <Panel
+          className="!rounded"
+          title="Mi tarjeta"
+          description="No tienes una tarjeta inscrita. Tu acceso sigue activo, pero necesitamos una tarjeta para cobrar la próxima renovación."
+        >
+          <button
+            type="button"
+            onClick={handleChangeCard}
+            disabled={changingCard}
+            className="inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+          >
+            {changingCard ? "Redirigiendo..." : "Inscribir tarjeta"}
+          </button>
           {cardActionError ? (
             <p className="mt-2 text-xs" style={{ color: "rgb(248 113 113)" }}>
               {cardActionError}
@@ -2124,8 +2154,9 @@ function BillingPageInner() {
               className="mt-2 text-center text-sm leading-6"
               style={{ color: "var(--text-muted)" }}
             >
-              Se eliminará el registro de tu tarjeta en Flow. Podrás registrar una nueva
-              más adelante si vuelves a suscribirte.
+              {["active", "trialing"].includes((subscriptionStatus?.has_subscription ? subscriptionStatus.status : ""))
+                ? "Se eliminará el registro de tu tarjeta en Flow. Tu suscripción y tu acceso siguen activos hasta el fin del período ya pagado, pero sin tarjeta no podremos cobrar la próxima renovación. Inscribe una nueva antes de esa fecha para no perder el acceso."
+                : "Se eliminará el registro de tu tarjeta en Flow. Podrás registrar una nueva más adelante si vuelves a suscribirte."}
             </p>
 
             {deleteCardError ? (

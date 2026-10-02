@@ -25,6 +25,8 @@ export type AccountStatus = {
   dias_restantes_pago: number | null;
   // Último cobro rechazado; en gracia de 3 días mientras !blocked.
   payment_failed?: boolean;
+  // Aviso preventivo: suscripción viva, sin tarjeta y renovación en <= 3 días.
+  missing_card_warning?: { days_until_renewal: number; renewal_at: string } | null;
   blocked: boolean;
   blocked_reason: "trial_expired" | "payment_overdue" | "paused" | null;
   wa_confirmacion: UsageCounter;
