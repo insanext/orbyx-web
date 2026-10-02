@@ -101,7 +101,7 @@ async function resolveTenantDestination({
   const destination =
     redirectTo && redirectTo.startsWith("/dashboard")
       ? redirectTo
-      : `/dashboard/${tenantRow.slug}`;
+      : `/dashboard/${tenantRow.slug}/agenda`;
 
   return { destination, replace: true };
 }

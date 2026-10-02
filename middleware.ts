@@ -283,7 +283,7 @@ export async function middleware(request: NextRequest) {
         }
 
         const dashboardUrl = request.nextUrl.clone();
-        dashboardUrl.pathname = `/dashboard/${tenant.slug}`;
+        dashboardUrl.pathname = `/dashboard/${tenant.slug}/agenda`;
         dashboardUrl.search = "";
         return NextResponse.redirect(dashboardUrl);
       }

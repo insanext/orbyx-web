@@ -287,7 +287,7 @@ function WelcomeInner() {
 
   function finish() {
     try { localStorage.setItem(`orbyx_welcome_seen_${slug}`, "1"); } catch {}
-    router.push(`/dashboard/${slug}`);
+    router.push(`/dashboard/${slug}/agenda`);
   }
 
   // Deja que WelcomeModal termine su fade-out/scale-down (ver su duración de

@@ -79,7 +79,7 @@ export default function InvitePage() {
 
       setStep("success");
       setTimeout(() => {
-        router.push(data.tenant_slug ? `/dashboard/${data.tenant_slug}` : "/");
+        router.push(data.tenant_slug ? `/dashboard/${data.tenant_slug}/agenda` : "/");
       }, 2000);
     } catch (e: any) {
       setSubmitMsg(e.message);
