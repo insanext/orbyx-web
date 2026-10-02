@@ -806,10 +806,18 @@ function BillingPageInner() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || "No se pudo activar la suscripción");
+        // Cobro rechazado (402) o ya en proceso (409): se muestra el mensaje
+        // del servidor y se relee el estado (queda "Reintentar").
+        setSubscribeError(data?.error || "No se pudo activar la suscripción");
+        await loadSubscriptionStatus(tenantId);
+        return;
       }
 
-      await loadSubscriptionStatus(tenantId);
+      // Recarga completa: el encabezado del panel ("Vencido"), el banner y el
+      // middleware calculan el acceso al cargar; sin esto seguían mostrando el
+      // estado anterior aunque la suscripción ya estuviera pagada.
+      window.location.replace(`/dashboard/${slug}/billing?payment=ok`);
+      return;
     } catch (error: unknown) {
       setSubscribeError(
         error instanceof Error ? error.message : "No se pudo activar la suscripción"
@@ -912,6 +920,12 @@ function BillingPageInner() {
       const data = await res.json();
 
       if (res.ok) {
+        window.location.replace(`/dashboard/${slug}/billing?payment=ok`);
+        return;
+      }
+
+      if (res.status === 402 || res.status === 409) {
+        setSubscribeError(data?.error || "No se pudo reactivar la suscripción");
         await loadSubscriptionStatus(tenantId);
         setSubscribing(false);
         return;
@@ -1507,7 +1521,13 @@ function BillingPageInner() {
           </h2>
         </div>
 
-        {cardStatusParam === "ok" ? (
+        {searchParams.get("payment") === "ok" ? (
+          <Notice
+            tone="success"
+            title="¡Pago aprobado! Tu suscripción está activa."
+            description="Tu negocio ya quedó reactivado."
+          />
+        ) : cardStatusParam === "ok" ? (
           <Notice tone="success" title="Tarjeta actualizada correctamente." />
         ) : null}
         {cardStatusParam === "error" ? (
