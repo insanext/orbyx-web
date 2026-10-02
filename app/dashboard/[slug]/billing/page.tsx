@@ -729,6 +729,18 @@ function BillingPageInner() {
 
   const [subscribing, setSubscribing] = useState(false);
   const [subscribeError, setSubscribeError] = useState("");
+
+  // "Pagar ahora y activar de inmediato" (solo durante el trial, con tarjeta
+  // inscrita). `payNowPreview` viene del backend (monto con IVA y fechas
+  // exactas) y solo existe si el negocio es elegible.
+  const [payNowPreview, setPayNowPreview] = useState<{
+    total_amount: number;
+    trial_ends_at: string;
+    new_renewal_date: string;
+  } | null>(null);
+  const [payNowModalOpen, setPayNowModalOpen] = useState(false);
+  const [payNowing, setPayNowing] = useState(false);
+  const [payNowError, setPayNowError] = useState("");
   const autoActivateTriedRef = useRef(false);
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -793,6 +805,19 @@ function BillingPageInner() {
   // (subscriptions.status === 'card_registered'). La usa tanto el botón
   // "Activar suscripción" (por si el auto-disparo de abajo no llegó a
   // correr) como el efecto que dispara esto solo al volver de Flow.
+  // Tras POST /billing/flow/subscribe. Con trial vigente NO hay cobro (Flow
+  // solo guarda el medio de pago y programa el primer cobro): el mensaje
+  // "Pago aprobado" solo corresponde cuando sí hubo un cobro real.
+  function redirectAfterSubscribe(data: { first_charge_at?: string | null }) {
+    if (data?.first_charge_at) {
+      window.location.replace(
+        `/dashboard/${slug}/billing?card_saved=1&first_charge=${encodeURIComponent(data.first_charge_at)}`
+      );
+      return;
+    }
+    window.location.replace(`/dashboard/${slug}/billing?payment=ok`);
+  }
+
   async function activateSubscription() {
     try {
       setSubscribing(true);
@@ -821,7 +846,7 @@ function BillingPageInner() {
       // Recarga completa: el encabezado del panel ("Vencido"), el banner y el
       // middleware calculan el acceso al cargar; sin esto seguían mostrando el
       // estado anterior aunque la suscripción ya estuviera pagada.
-      window.location.replace(`/dashboard/${slug}/billing?payment=ok`);
+      redirectAfterSubscribe(data);
       return;
     } catch (error: unknown) {
       setSubscribeError(
@@ -926,7 +951,7 @@ function BillingPageInner() {
       const data = await res.json();
 
       if (res.ok) {
-        window.location.replace(`/dashboard/${slug}/billing?payment=ok`);
+        redirectAfterSubscribe(data);
         return;
       }
 
@@ -940,6 +965,60 @@ function BillingPageInner() {
       await handleSubscribe();
     } catch {
       await handleSubscribe();
+    }
+  }
+
+  // Elegibilidad y montos exactos de "Pagar ahora" (el backend decide).
+  useEffect(() => {
+    const st = subscriptionStatus?.has_subscription ? subscriptionStatus.status : "";
+    if (!tenantId || (st !== "trialing" && st !== "card_registered")) {
+      setPayNowPreview(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch(
+          `${BACKEND_URL}/billing/flow/pay-now-preview?tenant_id=${tenantId}`
+        );
+        const data = await res.json();
+        if (cancelled) return;
+        setPayNowPreview(res.ok && data?.eligible ? data : null);
+      } catch {
+        if (!cancelled) setPayNowPreview(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId, subscriptionStatus]);
+
+  async function handlePayNow() {
+    if (payNowing) return;
+    try {
+      setPayNowing(true);
+      setPayNowError("");
+      const res = await apiFetch(`${BACKEND_URL}/billing/flow/pay-now`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        // Cobro rechazado u otro error: no cambió nada (el trial sigue igual).
+        setPayNowError(data?.error || "No se pudo procesar el pago");
+        await loadSubscriptionStatus(tenantId);
+        return;
+      }
+      // Recarga completa para que encabezado, banners y middleware tomen el
+      // estado nuevo (ya sin trial).
+      window.location.replace(
+        `/dashboard/${slug}/billing?payment=now${data?.renewal_pending ? "&renewal_pending=1" : ""}`
+      );
+    } catch (error: unknown) {
+      setPayNowError(error instanceof Error ? error.message : "No se pudo procesar el pago");
+    } finally {
+      setPayNowing(false);
     }
   }
 
@@ -1534,6 +1613,26 @@ function BillingPageInner() {
             title="¡Pago aprobado! Tu suscripción está activa."
             description="Tu negocio ya quedó reactivado."
           />
+        ) : searchParams.get("payment") === "now" ? (
+          <Notice
+            tone="success"
+            title="¡Pago aprobado! Tu plan ya está activo, sin esperar el fin de tu prueba."
+            description={
+              searchParams.get("renewal_pending") === "1"
+                ? "Estamos terminando de programar tu próxima renovación. Si no la ves reflejada pronto, escríbenos a soporte@orbyx.cl."
+                : undefined
+            }
+          />
+        ) : searchParams.get("card_saved") === "1" ? (
+          <Notice
+            tone="success"
+            title="Tarjeta registrada correctamente."
+            description={
+              searchParams.get("first_charge")
+                ? `Se realizará el primer cobro automático el ${formatDate(searchParams.get("first_charge"))}.`
+                : undefined
+            }
+          />
         ) : cardStatusParam === "ok" ? (
           <Notice tone="success" title="Tarjeta actualizada correctamente." />
         ) : null}
@@ -1655,6 +1754,22 @@ function BillingPageInner() {
                 </div>
               );
             })()}
+
+            {payNowPreview ? (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayNowError("");
+                    setPayNowModalOpen(true);
+                  }}
+                  className="text-xs underline underline-offset-2 transition hover:opacity-80"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Pagar ahora y activar de inmediato
+                </button>
+              </div>
+            ) : null}
           </>
         )}
       </Panel>
@@ -2069,6 +2184,82 @@ function BillingPageInner() {
         </Panel>
       </section>
       </section>
+      ) : null}
+
+      {payNowModalOpen && payNowPreview ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.6)" }}
+            onClick={() => (payNowing ? null : setPayNowModalOpen(false))}
+          />
+          <div
+            className="relative z-10 mx-4 w-full max-w-sm rounded-md border p-6 shadow-2xl"
+            style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+          >
+            <h3
+              className="text-center text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Pagar ahora y activar de inmediato
+            </h3>
+            <div className="mt-3 space-y-2 text-center text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+              <p>
+                Se cobrará hoy{" "}
+                <strong style={{ color: "var(--text-main)" }}>
+                  {formatCLP(payNowPreview.total_amount)}
+                </strong>{" "}
+                (IVA incluido)
+                {subscriptionStatus?.has_subscription && subscriptionStatus.card
+                  ? ` a tu tarjeta ${subscriptionStatus.card.brand} •••• ${subscriptionStatus.card.last4}`
+                  : ""}
+                .
+              </p>
+              <p>
+                Tu próxima renovación será el{" "}
+                <strong style={{ color: "var(--text-main)" }}>
+                  {formatDate(payNowPreview.new_renewal_date)}
+                </strong>
+                .
+              </p>
+              <p style={{ color: "rgb(245 158 11)" }}>
+                Esto termina tu período de prueba antes de tiempo (te quedaban hasta el{" "}
+                {formatDate(payNowPreview.trial_ends_at)}). No cambia tu plan.
+              </p>
+            </div>
+
+            {payNowError ? (
+              <p className="mt-3 text-center text-xs" style={{ color: "rgb(248 113 113)" }}>
+                {payNowError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPayNowModalOpen(false)}
+                disabled={payNowing}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-md border text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handlePayNow}
+                disabled={payNowing}
+                className="flex-1 inline-flex h-10 items-center justify-center rounded-md text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg, rgb(37,99,235), rgb(14,165,233))" }}
+              >
+                {payNowing ? "Procesando..." : `Pagar ${formatCLP(payNowPreview.total_amount)}`}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {cancelModalOpen ? (
