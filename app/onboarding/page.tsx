@@ -245,6 +245,57 @@ function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClic
   );
 }
 
+// ─── Bloques horarios (Inicio–Cierre, máx. 2 por día) ─────────────────────────
+// Mismo formato que usa el dashboard y PUT /business-hours: un día con 2
+// bloques son 2 filas con el mismo day_of_week. Lo usan el horario común y,
+// con "Personalizar por día", cada día por separado.
+type TimeBlock = { start: string; end: string };
+
+function BlockRows({
+  blocks,
+  onChange,
+}: {
+  blocks: TimeBlock[];
+  onChange: (next: TimeBlock[]) => void;
+}) {
+  function update(idx: number, field: "start" | "end", value: string) {
+    onChange(blocks.map((b, i) => (i === idx ? { ...b, [field]: value } : b)));
+  }
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      {blocks.map((b, bi) => (
+        <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Inicio</label>
+            <input type="text" value={b.start} placeholder="HH:MM" maxLength={5}
+              onChange={(e) => update(bi, "start", e.target.value)}
+              style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
+          </div>
+          <span style={{ color: "#475569", fontSize: 12, paddingBottom: 10 }}>–</span>
+          <div style={{ flex: 1 }}>
+            <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Cierre</label>
+            <input type="text" value={b.end} placeholder="HH:MM" maxLength={5}
+              onChange={(e) => update(bi, "end", e.target.value)}
+              style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
+          </div>
+          {bi > 0 && (
+            <button type="button" onClick={() => onChange(blocks.filter((_, i) => i !== bi))}
+              style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 18, paddingBottom: 8 }}>
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      {blocks.length < 2 && (
+        <button type="button" onClick={() => onChange([...blocks, { start: "15:00", end: "19:00" }])}
+          style={{ alignSelf: "flex-start", background: "none", border: `1px solid ${NEON}66`, color: NEON, borderRadius: 8, padding: "5px 14px", fontSize: 12, cursor: "pointer" }}>
+          ＋ Agregar bloque
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 function OnboardingInner() {
   const router = useRouter();
@@ -335,15 +386,49 @@ function OnboardingInner() {
       prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i]
     );
   }
-  function updateBlock(idx: number, field: "start" | "end", value: string) {
-    setBlocks((prev) => prev.map((b, i) => i === idx ? { ...b, [field]: value } : b));
+
+  // "Personalizar por día" (apagado por defecto): cada día activo pasa a tener
+  // sus propios bloques, indexados igual que `activeDays` (0 = Lunes). Con
+  // el modo apagado todos los días activos comparten `blocks`.
+  const [customizeByDay, setCustomizeByDay] = useState(false);
+  const [dayBlocks, setDayBlocks] = useState<Record<number, DayBlock[]>>({});
+  const [openDay, setOpenDay] = useState<number | null>(null);
+  const [copiedFromDay, setCopiedFromDay] = useState<number | null>(null);
+
+  function blocksForDay(i: number): DayBlock[] {
+    return customizeByDay ? dayBlocks[i] ?? blocks : blocks;
   }
-  function addBlock() {
-    if (blocks.length >= 2) return;
-    setBlocks((prev) => [...prev, { start: "15:00", end: "19:00" }]);
+  function setBlocksForDay(i: number, next: DayBlock[]) {
+    setDayBlocks((prev) => ({ ...prev, [i]: next }));
   }
-  function removeBlock(idx: number) {
-    setBlocks((prev) => prev.filter((_, i) => i !== idx));
+  function handleToggleCustomize(on: boolean) {
+    if (on) {
+      // Cada día activo parte con lo que ya estaba configurado en común.
+      setDayBlocks((prev) => {
+        const seeded = { ...prev };
+        activeDays.forEach((d) => {
+          if (!seeded[d]) seeded[d] = blocks.map((b) => ({ ...b }));
+        });
+        return seeded;
+      });
+    }
+    setCustomizeByDay(on);
+    setOpenDay(null);
+  }
+  function copyDayToOthers(i: number) {
+    const source = blocksForDay(i);
+    setDayBlocks((prev) => {
+      const next = { ...prev };
+      activeDays.forEach((d) => {
+        if (d !== i) next[d] = source.map((b) => ({ ...b }));
+      });
+      return next;
+    });
+    setCopiedFromDay(i);
+    setTimeout(() => setCopiedFromDay((cur) => (cur === i ? null : cur)), 1800);
+  }
+  function daySummary(i: number) {
+    return blocksForDay(i).map((b) => `${b.start}–${b.end}`).join(" · ");
   }
 
   // Step 3 — staff
@@ -450,10 +535,17 @@ function OnboardingInner() {
   // ── Step 2 submit ──────────────────────────────────────────────────────────
   async function handleStep2() {
     if (activeDays.length === 0) { setError("Selecciona al menos un día."); return; }
-    for (const b of blocks) {
-      if (b.start >= b.end) {
-        setError("Hay un bloque donde la apertura es igual o posterior al cierre.");
-        return;
+    for (let i = 0; i < DAYS.length; i++) {
+      if (!activeDays.includes(i)) continue;
+      for (const b of blocksForDay(i)) {
+        if (b.start >= b.end) {
+          setError(
+            customizeByDay
+              ? `${DAYS[i]}: la apertura es igual o posterior al cierre.`
+              : "Hay un bloque donde la apertura es igual o posterior al cierre."
+          );
+          return;
+        }
       }
     }
     setError(null);
@@ -465,7 +557,7 @@ function OnboardingInner() {
         if (!activeDays.includes(i)) {
           payload.push({ day_of_week: dayOfWeek, enabled: false, start_time: "09:00", end_time: "18:00" });
         } else {
-          blocks.forEach((b) => {
+          blocksForDay(i).forEach((b) => {
             payload.push({ day_of_week: dayOfWeek, enabled: true, start_time: b.start, end_time: b.end });
           });
         }
@@ -797,42 +889,44 @@ function OnboardingInner() {
               </div>
             </div>
 
-            {/* Bloques globales */}
-            <div style={{ display: "grid", gap: 10 }}>
-              {blocks.map((b, bi) => (
-                <div key={bi} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Inicio</label>
-                    <input type="text" value={b.start} placeholder="HH:MM" maxLength={5}
-                      onChange={(e) => updateBlock(bi, "start", e.target.value)}
-                      style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
-                  </div>
-                  <span style={{ color: "#475569", fontSize: 12, paddingBottom: 10 }}>–</span>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ ...LABEL_STYLE, marginBottom: 4 }}>Cierre</label>
-                    <input type="text" value={b.end} placeholder="HH:MM" maxLength={5}
-                      onChange={(e) => updateBlock(bi, "end", e.target.value)}
-                      style={{ ...INPUT_STYLE, padding: "8px 10px" }} />
-                  </div>
-                  {bi > 0 && (
-                    <button type="button" onClick={() => removeBlock(bi)}
-                      style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 18, paddingBottom: 8 }}>
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              {blocks.length < 2 && (
-                <button type="button" onClick={addBlock}
-                  style={{ alignSelf: "flex-start", background: "none", border: `1px solid ${NEON}66`, color: NEON, borderRadius: 8, padding: "5px 14px", fontSize: 12, cursor: "pointer" }}>
-                  ＋ Agregar bloque
-                </button>
-              )}
-            </div>
+            {/* Horario común (default) o, con "Personalizar por día", un acordeón */}
+            {!customizeByDay ? (
+              <BlockRows blocks={blocks} onChange={setBlocks} />
+            ) : (
+              <div style={{ display: "grid", gap: 6 }}>
+                {DAYS.map((day, i) => {
+                  if (!activeDays.includes(i)) return null;
+                  const open = openDay === i;
+                  return (
+                    <div key={i} style={{ border: `1px solid ${open ? NEON + "55" : "rgba(255,255,255,0.1)"}`, borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+                      <button type="button" onClick={() => setOpenDay(open ? null : i)}
+                        aria-expanded={open}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: "none", border: "none", cursor: "pointer", textAlign: "left" as any }}>
+                        <span style={{ color: open ? NEON : "#e2e8f0", fontSize: 13, fontWeight: 700, minWidth: 32 }}>{day.slice(0, 3)}</span>
+                        <span style={{ flex: 1, color: "#94a3b8", fontSize: 13 }}>{daySummary(i)}</span>
+                        <span style={{ color: "#64748b", fontSize: 12 }}>{open ? "▴" : "▾"}</span>
+                      </button>
+                      {open && (
+                        <div style={{ padding: "4px 12px 12px", display: "grid", gap: 10 }}>
+                          <BlockRows blocks={blocksForDay(i)} onChange={(next) => setBlocksForDay(i, next)} />
+                          {activeDays.length > 1 && (
+                            <button type="button" onClick={() => copyDayToOthers(i)}
+                              style={{ alignSelf: "flex-start", background: "none", border: "1px solid rgba(255,255,255,0.18)", color: copiedFromDay === i ? "#34d399" : "#cbd5e1", borderRadius: 8, padding: "5px 14px", fontSize: 12, cursor: "pointer" }}>
+                              {copiedFromDay === i ? "Copiado ✓" : "Copiar a los demás días"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-            <p style={{ margin: 0, color: "#475569", fontSize: 12 }}>
-              ¿Necesitas horarios distintos por día? Configúralo después desde el panel.
-            </p>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", fontSize: 13, cursor: "pointer" }}>
+              <input type="checkbox" checked={customizeByDay} onChange={(e) => handleToggleCustomize(e.target.checked)} />
+              Personalizar por día
+            </label>
 
             {error && <ErrorMsg text={error} />}
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
