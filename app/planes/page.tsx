@@ -109,7 +109,7 @@ const extraConfig: Record<ExtraKey, ExtraConfig> = {
     price_pack3: 5942,
     unitLabel: "pack",
     usageLabel: "50 msgs campaña marketing / mes",
-    availableFrom: "Premium",
+    availableFrom: "Business y Premium",
     tooltip: "Envía mensajes masivos de marketing a tus clientes por WhatsApp. Ideal para promociones, fidelización y recuperación de clientes inactivos. 50 mensajes por pack.",
     icon: <Megaphone className="h-5 w-5" />,
     glow: "from-amber-500/20 to-amber-500/5",

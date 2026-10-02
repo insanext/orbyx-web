@@ -24,9 +24,9 @@ type ComparisonRow = {
 // campañas email, WhatsApp, capacidad grupal) se arman abajo desde
 // `plans` (lib/plans.ts) para no volver a duplicarlos.
 const SUPPORT_LABEL: Record<PlanKey, string> = {
-  starter: "Email",
-  business: "Email + chat",
-  premium: "Prioritario",
+  starter: "Tickets",
+  business: "Tickets",
+  premium: "Soporte prioritario",
 };
 
 function planCard(key: PlanKey) {
