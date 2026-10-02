@@ -61,6 +61,9 @@ type BranchItem = {
   map_url?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  // Banner de portada ya resuelto por el backend (propio de la sucursal si
+  // use_global_banner es false, si no el del negocio).
+  effective_banner_url?: string | null;
   is_active?: boolean;
 };
 
@@ -118,6 +121,7 @@ type BusinessItem = {
   business_subtype?: string | null;
   business_subtype_config?: Record<string, unknown> | null;
   logo_url?: string | null;
+  banner_url?: string | null;
   deposit_required?: boolean;
   deposit_bank_name?: string | null;
   deposit_account_type?: string | null;
@@ -594,6 +598,95 @@ function BusinessBannerCard({
   onOpenReviews: () => void;
 }) {
   const showBranchSelector = branches.length > 1;
+  const selectedBranch = branches.find((b) => b.id === selectedBranchId);
+  const bannerUrl =
+    (selectedBranch?.effective_banner_url || business?.banner_url || "").trim();
+
+  // Con banner de portada: foto ancha arriba, logo centrado flotando sobre
+  // su borde inferior, y nombre/rating/sucursal centrados debajo.
+  if (bannerUrl) {
+    return (
+      <div className="min-w-0 overflow-hidden rounded-none border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)]">
+        <div className="aspect-[3/1] w-full overflow-hidden bg-slate-200">
+          <img
+            src={bannerUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-col items-center px-4 pb-5 text-center md:px-7 md:pb-7">
+          <div className="-mt-10 rounded-2xl bg-white p-1.5 shadow-[0_16px_32px_-20px_rgba(15,23,42,0.55)] md:-mt-14">
+            {business?.logo_url ? (
+              <img
+                src={business.logo_url}
+                alt={business?.name || slug || "Logo"}
+                className="h-20 w-20 rounded-xl object-cover md:h-28 md:w-28"
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-slate-950 text-2xl font-bold text-white md:h-28 md:w-28 md:text-3xl">
+                {getBusinessInitials(business?.name || slug)}
+              </div>
+            )}
+          </div>
+
+          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-950 md:text-[28px]">
+            {business?.name || slug || "Reserva"}
+          </h1>
+
+          {business?.description?.trim() ? (
+            <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 line-clamp-3">
+              {business.description.trim()}
+            </p>
+          ) : null}
+
+          {reviewSummary && reviewSummary.count > 0 ? (
+            <button
+              type="button"
+              onClick={onOpenReviews}
+              className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-sm"
+            >
+              <span className="flex items-center gap-0.5 text-amber-400">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <StarIcon
+                    key={star}
+                    filled={star <= Math.round(reviewSummary.average)}
+                    className="h-4 w-4"
+                  />
+                ))}
+              </span>
+              <span className="font-semibold text-slate-800">
+                {reviewSummary.average.toFixed(1)}
+              </span>
+              <span className="text-slate-500 underline decoration-slate-300 underline-offset-2">
+                (Ver {reviewSummary.count}{" "}
+                {reviewSummary.count === 1 ? "reseña" : "reseñas"})
+              </span>
+            </button>
+          ) : null}
+
+          {showBranchSelector ? (
+            <div className="mt-4 w-full max-w-xs text-left">
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                Sucursal
+              </label>
+              <select
+                value={selectedBranchId}
+                onChange={(e) => onBranchChange(e.target.value)}
+                className="h-11 w-full rounded-none border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400"
+              >
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 overflow-hidden rounded-none border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-none md:p-7">

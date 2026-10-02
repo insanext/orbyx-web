@@ -3,6 +3,7 @@ import { BACKEND_URL } from "@/lib/backend-url";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import BannerUploadField from "@/components/BannerUploadField";
 import { useParams, useSearchParams } from "next/navigation";
 import { focusMissingFields } from "@/lib/focus-missing-fields";
 import { Building2, HelpCircle, User, Phone, Mail, Share2, Link2, Calendar } from "lucide-react";
@@ -44,6 +45,7 @@ type BusinessResponse = {
     email?: string | null;
     whatsapp?: string | null;
     logo_url?: string | null;
+    banner_url?: string | null;
     instagram_url?: string | null;
     facebook_url?: string | null;
     description?: string | null;
@@ -570,6 +572,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     email: "",
     whatsapp: "",
     logo_url: "",
+    banner_url: "",
     instagram_url: "",
     facebook_url: "",
     description: "",
@@ -734,6 +737,7 @@ setCustomSlotMinutes(Number(data.slot_minutes || 30));
           email: data.business.email || "",
           whatsapp: data.business.whatsapp || "",
           logo_url: data.business.logo_url || "",
+          banner_url: data.business.banner_url || "",
           instagram_url: data.business.instagram_url || "",
           facebook_url: data.business.facebook_url || "",
           description: data.business.description || "",
@@ -2116,6 +2120,22 @@ function updateHourByIndex(
               )}
             </div>
           </div>
+        </div>
+
+        <div
+          className="rounded border p-5"
+          style={{
+            borderColor: "var(--border-color)",
+            background: "var(--bg-soft)",
+          }}
+        >
+          <BannerUploadField
+            value={form.banner_url}
+            tenantId={tenantId}
+            disabled={!canEditNegocio}
+            hint="Foto panorámica de tu local o negocio que se muestra arriba en tu página de reservas, con tu logo encima. Cada sucursal puede usar este banner o uno propio."
+            onChange={(url) => setForm((prev) => ({ ...prev, banner_url: url }))}
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">

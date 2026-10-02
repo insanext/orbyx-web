@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import BannerUploadField from "@/components/BannerUploadField";
 import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-confirm";
 import { useParams, useSearchParams } from "next/navigation";
 import { focusMissingFields } from "@/lib/focus-missing-fields";
@@ -54,6 +55,8 @@ type BranchItem = {
   use_global_contact?: boolean;
   use_global_hours?: boolean;
   use_global_special_dates?: boolean;
+  use_global_banner?: boolean;
+  banner_url?: string | null;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -352,6 +355,8 @@ export default function BranchesPage() {
     use_global_socials: true,
     use_global_hours: true,
     use_global_special_dates: true,
+    use_global_banner: true,
+    banner_url: "",
   });
   const [globalHours, setGlobalHours] = useState<BusinessHour[]>([]);
   const [branchHours, setBranchHours] = useState<BusinessHour[]>(getDefaultHours());
@@ -847,6 +852,8 @@ export default function BranchesPage() {
       use_global_socials: branch.use_global_socials !== false,
       use_global_hours: branch.use_global_hours !== false,
       use_global_special_dates: branch.use_global_special_dates !== false,
+      use_global_banner: branch.use_global_banner !== false,
+      banner_url: branch.banner_url || "",
     });
     setBranchHours(getDefaultHours());
     setBranchSpecialDates([]);
@@ -885,6 +892,8 @@ export default function BranchesPage() {
       use_global_socials: true,
       use_global_hours: true,
       use_global_special_dates: true,
+      use_global_banner: true,
+      banner_url: "",
     });
     setBranchHours(getDefaultHours());
     setBranchSpecialDates([]);
@@ -938,6 +947,8 @@ export default function BranchesPage() {
           use_global_socials: editForm.use_global_socials,
           use_global_hours: editForm.use_global_hours,
           use_global_special_dates: editForm.use_global_special_dates,
+          use_global_banner: editForm.use_global_banner,
+          banner_url: editForm.use_global_banner ? "" : editForm.banner_url,
         }),
       });
 
@@ -1609,6 +1620,40 @@ export default function BranchesPage() {
                                 <input type="email" value={editForm.email} onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="Correo local" className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                               </div>
                             </div>
+                          )}
+                        </div>
+
+                        {/* ── Banner de portada ── */}
+                        <div className="rounded-2xl border p-4" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
+                          <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Banner de portada</p>
+                              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Usar el banner del negocio</p>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editForm.use_global_banner}
+                              onClick={() => setEditForm((prev) => ({ ...prev, use_global_banner: !prev.use_global_banner }))}
+                              className="inline-flex h-7 w-12 shrink-0 items-center rounded-full border p-0.5 transition-colors duration-200"
+                              style={{ background: editForm.use_global_banner ? "rgb(37 99 235)" : "rgba(100,116,139,0.35)", borderColor: editForm.use_global_banner ? "rgba(37,99,235,0.5)" : "var(--border-color)" }}
+                            >
+                              <span className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: editForm.use_global_banner ? "translateX(20px)" : "translateX(0)" }} />
+                            </button>
+                          </div>
+                          {editForm.use_global_banner ? (
+                            <div className="rounded-xl border px-3 py-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}>
+                              Usando el banner del negocio (se configura en Mi Negocio). Desactiva para subir uno propio de esta sucursal.
+                            </div>
+                          ) : (
+                            <BannerUploadField
+                              value={editForm.banner_url}
+                              tenantId={tenantId}
+                              branchId={editingBranchId}
+                              title="Banner de esta sucursal"
+                              hint="Si no subes uno, se usará el banner del negocio."
+                              onChange={(url) => setEditForm((prev) => ({ ...prev, banner_url: url }))}
+                            />
                           )}
                         </div>
 
