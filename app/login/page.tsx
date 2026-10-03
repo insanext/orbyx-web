@@ -113,7 +113,13 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get("reason") === "timeout"
+      ? "No pudimos verificar tu sesión porque el servicio está lento. Intenta de nuevo en unos segundos."
+      : searchParams.get("error") === "no_access"
+        ? "No tienes acceso a ese negocio."
+        : null
+  );
   const [captchaToken, setCaptchaToken] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);

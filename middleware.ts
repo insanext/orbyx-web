@@ -1,20 +1,50 @@
 import { createServerClient } from "@supabase/ssr";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+// Red de seguridad: ninguna llamada del middleware (refresh de token,
+// descarga de JWKS) puede esperar más que esto. Vercel corta el middleware
+// con 504 MIDDLEWARE_INVOCATION_TIMEOUT si Supabase se degrada.
+const AUTH_TIMEOUT_MS = 3000;
+
+/** Header interno con el pathname (mismo valor que lib/dashboard-access.ts) para que el template server-side sepa en qué ruta está. */
+const PATHNAME_HEADER = "x-orbyx-pathname";
+
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
+  const timeout = AbortSignal.timeout(AUTH_TIMEOUT_MS);
+  const signal =
+    init?.signal && typeof AbortSignal.any === "function"
+      ? AbortSignal.any([init.signal, timeout])
+      : timeout;
+  // Nada de auth debe quedar en la Data Cache de Next.js.
+  return fetch(input, { ...init, signal, cache: "no-store" });
+}
+
 /**
  * Middleware de autenticación Orbyx.
  *
- * Protege /dashboard/** — redirige a /login si no hay sesión activa.
- * No toca rutas públicas: /[slug], /cancel, /api/**, /onboarding, /planes, /checkout.
+ * Solo responde "¿hay sesión válida?" con auth.getClaims(), que verifica la
+ * firma del JWT localmente (JWKS cacheado, JWT Signing Keys asimétricas) sin
+ * pegarle a Supabase en cada request. NO hace queries a tablas: la validación
+ * de tenant, pertenencia y billing vive en app/dashboard/[slug]/template.tsx
+ * (lib/dashboard-access.ts).
  *
- * El middleware también refresca el token de sesión automáticamente
- * cuando está próximo a expirar, propagando las cookies actualizadas.
+ * También refresca el token de sesión cuando está por expirar, propagando las
+ * cookies actualizadas.
  */
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+
+  function nextResponse() {
+    const headers = new Headers(request.headers);
+    headers.set(PATHNAME_HEADER, pathname);
+    return NextResponse.next({ request: { headers } });
+  }
+
+  let supabaseResponse = nextResponse();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -25,295 +55,61 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value)
         );
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = nextResponse();
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, options)
         );
       },
     },
-    // Ningun dato de auth/facturacion que pase por este middleware debe
-    // quedar en la Data Cache de Next.js: getUser(), el lookup de tenant,
-    // tenant_users y subscriptions deciden si se bloquea el dashboard. Un
-    // fetch cacheado acá puede seguir sirviendo "blocked" (o "no blocked")
-    // viejo aunque la fila en la base ya haya cambiado.
-    global: {
-      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
-    },
+    global: { fetch: fetchWithTimeout },
   });
 
-  // Verifica sesión activa.
-  // IMPORTANTE: no usar getSession() aquí porque puede estar desactualizada.
-  // getUser() verifica contra Supabase cada vez.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // IMPORTANTE: getClaims() y no getSession() (no valida la firma).
+  let hasSession = false;
+  let timedOut = false;
+  try {
+    const result = await Promise.race([
+      supabase.auth.getClaims(),
+      new Promise<"timeout">((resolve) =>
+        setTimeout(() => resolve("timeout"), AUTH_TIMEOUT_MS + 500)
+      ),
+    ]);
+    if (result === "timeout") {
+      timedOut = true;
+    } else if (result.error && isAuthRetryableFetchError(result.error)) {
+      timedOut = true;
+    } else {
+      hasSession = Boolean(result.data?.claims?.sub);
+    }
+  } catch {
+    timedOut = true;
+  }
 
-  const { pathname } = request.nextUrl;
+  const isAdminLogin = pathname === "/admin/login";
+  const isAdminArea = pathname.startsWith("/admin") && !isAdminLogin;
+  const isDashboard = pathname.startsWith("/dashboard");
 
-  // Si accede a /dashboard/** sin sesión → redirect a /login
-  if (!user && pathname.startsWith("/dashboard")) {
+  if (!hasSession && (isDashboard || isAdminArea)) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Con sesión activa, /dashboard/{slug}/** requiere además que el slug de
-  // la URL sea un tenant real Y que el usuario tenga una fila activa en
-  // tenant_users para ESE tenant. Sin esto, cualquier usuario logueado
-  // (dueño de otro negocio, o de ninguno) podía visitar
-  // /dashboard/{cualquier-slug} y ver el shell completo del panel sin
-  // tener acceso real a ese negocio.
-  if (user && pathname.startsWith("/dashboard/")) {
-    const dashboardSlug = pathname.match(/^\/dashboard\/([^/]+)/)?.[1];
-
-    if (dashboardSlug) {
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("id, is_trial, trial_ends_at, billing_cycle_end, paused_at")
-        .eq("slug", dashboardSlug)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      let hasAccess = false;
-
-      if (tenant?.id) {
-        const { data: tenantUser } = await supabase
-          .from("tenant_users")
-          .select("tenant_id, user_id, role, is_active")
-          .eq("tenant_id", tenant.id)
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .maybeSingle();
-
-        hasAccess = Boolean(tenantUser);
-      }
-
-      // Mismo mensaje genérico exista o no el tenant, para no revelar cuál
-      // de los dos casos es (evita confirmar/negar la existencia de un
-      // slug ajeno). Sin redirectTo: si el usuario sigue logueado, /login
-      // ya lo re-redirige solo a SU propio dashboard (resolveTenantDestination
-      // en app/login/page.tsx) — no tiene sentido devolverlo al slug que
-      // se le acaba de negar.
-      if (!hasAccess) {
-        const deniedUrl = request.nextUrl.clone();
-        deniedUrl.pathname = "/login";
-        deniedUrl.search = "";
-        deniedUrl.searchParams.set("error", "no_access");
-        return NextResponse.redirect(deniedUrl);
-      }
-
-      // Modo limitado: mismo cálculo que GET /billing/account-status en
-      // server.js — no confiar en tenants.is_trial. Se bloquea toda la
-      // sección /dashboard/{slug}/** EXCEPTO /billing, para que el
-      // dueño pueda pagar o inscribir tarjeta. El layout del dashboard
-      // hace el mismo chequeo del lado del cliente (con contadores de
-      // uso incluidos); esto es la capa de defensa en el servidor para
-      // que entrar directo por URL a otra sección no la esquive.
-      const isBillingPath =
-        pathname === `/dashboard/${dashboardSlug}/billing` ||
-        pathname.startsWith(`/dashboard/${dashboardSlug}/billing/`);
-
-      if (tenant?.id && !isBillingPath) {
-        const { data: latestSub, error: latestSubErr } = await supabase
-          .from("subscriptions")
-          .select("status")
-          .eq("tenant_id", tenant.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const hasActiveSubscription = latestSub?.status === "active";
-        // 'trialing': tarjeta registrada mid-trial, primer cobro real ya
-        // programado en Flow para cuando termine el trial (ver
-        // POST /billing/flow/subscribe) — no debe tratarse como pago
-        // pendiente ni bloquear nada mientras el trial siga vigente.
-        const isTrialingInFlow = latestSub?.status === "trialing";
-        const now = new Date();
-        const trialEndsAt = tenant.trial_ends_at ? new Date(tenant.trial_ends_at) : null;
-        const billingCycleEnd = tenant.billing_cycle_end ? new Date(tenant.billing_cycle_end) : null;
-
-        const isPaused = Boolean(tenant.paused_at);
-        // Misma fórmula que computeBillingAccessState en server.js
-        // (auditoría 2026-09-30, sesión 3) — mantener ambas iguales:
-        //   - 'trialing' no cuenta como trial activo (ya inscribió tarjeta).
-        //   - El fin de trial solo bloquea a quien nunca pagó
-        //     (is_trial !== false); quien ya pagó y cancela conserva acceso
-        //     hasta billing_cycle_end.
-        //   - Cobro rechazado ('error'): 3 días de gracia sobre el corte.
-        const PAYMENT_FAILED_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
-        const paymentFailed = latestSub?.status === "error";
-        const hasPaidBefore = tenant.is_trial === false;
-        const trialActive = Boolean(
-          !isPaused && trialEndsAt && now < trialEndsAt && !hasActiveSubscription && !isTrialingInFlow
-        );
-        const awaitingPayment = !hasActiveSubscription && !trialActive && !isTrialingInFlow;
-        const graceMs = paymentFailed ? PAYMENT_FAILED_GRACE_MS : 0;
-        // trial_ends_at y billing_cycle_end son columnas independientes
-        // (trial_ends_at se puede ajustar a mano desde el panel admin sin
-        // tocar billing_cycle_end) -- sin este chequeo explícito, un trial
-        // recién vencido podía seguir con acceso completo al dashboard
-        // hasta que billing_cycle_end también pasara, inconsistente con el
-        // resto de los avisos de vencimiento (banner/email/directorio
-        // admin), que ya usan trial_ends_at directamente.
-        const trialExpired = Boolean(
-          !isPaused &&
-            awaitingPayment &&
-            !hasPaidBefore &&
-            trialEndsAt &&
-            now.getTime() >= trialEndsAt.getTime() + graceMs
-        );
-        // Pausado por Super Admin bloquea igual que vencido, independiente
-        // del ciclo de facturación — mismo criterio que
-        // GET /billing/account-status en server.js.
-        // Quien nunca pagó y tiene trial se rige solo por el fin del trial
-        // (su billing_cycle_end es el del alta y puede quedar antes si el
-        // admin extendió el trial).
-        const governedByTrial = Boolean(trialEndsAt && !hasPaidBefore);
-        const blocked =
-          isPaused ||
-          trialExpired ||
-          Boolean(
-            awaitingPayment &&
-              !governedByTrial &&
-              billingCycleEnd &&
-              now.getTime() >= billingCycleEnd.getTime() + graceMs
-          );
-
-        // DIAGNOSTICO TEMPORAL — sacar despues de confirmar la causa del
-        // bloqueo indebido en tenants con suscripcion activa (ver sesion
-        // 2026-08-23). Loguea contra que proyecto de Supabase esta
-        // consultando este middleware realmente (por si el env var de
-        // Vercel apunta a otro proyecto que el que se revisa a mano por
-        // SQL) y los valores reales de cada variable de la formula.
-        console.log("[gating-debug]", {
-          supabaseUrlHost: (() => {
-            try {
-              return new URL(supabaseUrl).host;
-            } catch {
-              return supabaseUrl;
-            }
-          })(),
-          dashboardSlug,
-          tenantId: tenant.id,
-          latestSubStatus: latestSub?.status ?? null,
-          latestSubQueryError: latestSubErr?.message ?? null,
-          hasActiveSubscription,
-          isTrialingInFlow,
-          trialEndsAt: tenant.trial_ends_at,
-          billingCycleEndRaw: tenant.billing_cycle_end,
-          nowIso: now.toISOString(),
-          trialActive,
-          awaitingPayment,
-          trialExpired,
-          blocked,
-        });
-
-        if (blocked) {
-          const blockedUrl = request.nextUrl.clone();
-          blockedUrl.pathname = `/dashboard/${dashboardSlug}/billing`;
-          blockedUrl.search = "";
-          const blockedResponse = NextResponse.redirect(blockedUrl);
-          // No cachear esta respuesta en ningun nivel: el estado "blocked"
-          // se recalcula en cada request a partir de datos de facturacion
-          // que cambian (pago confirmado, renovacion) y no debe quedar
-          // pegado un 307 viejo despues de que el tenant deja de estar
-          // bloqueado.
-          blockedResponse.headers.set("Cache-Control", "no-store");
-          return blockedResponse;
-        }
-      }
+    loginUrl.search = "";
+    if (isAdminArea) {
+      loginUrl.pathname = "/admin/login";
+    } else {
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("redirectTo", pathname);
     }
-  }
-
-  // Si accede a /admin/** (excepto /admin/login) sin sesión → redirect a /admin/login
-  if (!user && pathname.startsWith("/admin") && pathname !== "/admin/login") {
-    const adminLoginUrl = request.nextUrl.clone();
-    adminLoginUrl.pathname = "/admin/login";
-    return NextResponse.redirect(adminLoginUrl);
-  }
-
-  // Si ya tiene sesión y accede a /login → redirect al dashboard del tenant
-  if (user && pathname === "/login") {
-    const { data: tenantUser } = await supabase
-      .from("tenant_users")
-      .select("tenant_id")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .limit(1)
-      .single();
-
-    if (tenantUser) {
-      // Mismo criterio que el chequeo de ownership de /dashboard/{slug}/**
-      // más abajo (is_active=true en tenants) — antes este bloque no lo
-      // filtraba, así que un tenant_users activo apuntando a un tenant
-      // inactivo se resolvía igual acá y el otro chequeo lo rechazaba,
-      // generando un loop de redirección entre /login y /dashboard/{slug}.
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("slug, business_category")
-        .eq("id", tenantUser.tenant_id)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (!tenant) {
-        // tenant_users activo sin un tenant activo correspondiente: dato
-        // inconsistente (membresía huérfana), mismo patrón visto con
-        // barberiaprueba. No se resuelve acá — cae al fallback de abajo
-        // y se muestra el login normal — pero se deja registrado para
-        // poder encontrar estas membresías huérfanas más adelante.
-        console.warn(
-          `middleware /login: tenant_users activo (user_id=${user.id}) apunta a tenants.id=${tenantUser.tenant_id} inexistente o inactivo`
-        );
-      }
-
-      if (tenant?.slug) {
-        // "generic" es una categoría terminal válida (el usuario eligió
-        // "Otro tipo de negocio" a propósito en el wizard) -- no un
-        // placeholder de "todavía no completó onboarding". Solo NULL
-        // significa que el tenant nunca pasó por el wizard.
-        const isPending = !tenant.business_category;
-
-        if (isPending) {
-          const onboardingUrl = request.nextUrl.clone();
-          onboardingUrl.pathname = "/onboarding";
-          onboardingUrl.search = "";
-          onboardingUrl.searchParams.set("tenant_id", tenantUser.tenant_id);
-          return NextResponse.redirect(onboardingUrl);
-        }
-
-        const dashboardUrl = request.nextUrl.clone();
-        dashboardUrl.pathname = `/dashboard/${tenant.slug}/agenda`;
-        dashboardUrl.search = "";
-        return NextResponse.redirect(dashboardUrl);
-      }
-    }
-
-    // Si no se pudo resolver el tenant, dejar que el login se muestre normalmente
+    if (timedOut && isDashboard) loginUrl.searchParams.set("reason", "timeout");
+    const response = NextResponse.redirect(loginUrl);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Solo aplica el middleware a:
-     * - /login
-     * - /dashboard y cualquier subruta
-     *
-     * Excluye explícitamente:
-     * - Archivos estáticos (_next/static, _next/image, favicon, etc.)
-     * - /api/** (no bloqueamos API routes de Next.js)
-     * - / (raíz)
-     * - /[slug] (booking público)
-     * - /cancel/**
-     * - /onboarding
-     * - /planes/**
-     * - /checkout
-     */
-    "/login",
-    "/dashboard/:path*",
-    "/admin/:path*",
-  ],
+  // /login queda fuera a propósito: el formulario ya resuelve solo la sesión
+  // activa (resolveTenantDestination en app/login/page.tsx) y no debe poder
+  // caerse por el middleware.
+  matcher: ["/dashboard/:path*", "/admin/:path*"],
 };
