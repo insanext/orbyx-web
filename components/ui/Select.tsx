@@ -22,6 +22,14 @@ import { Check, ChevronDown } from "lucide-react";
 // <option>/<optgroup> como hijos) y `onChange` recibe un evento con
 // `e.target.value`, así que los formularios existentes no cambian.
 //
+// AUTOCONTENIDO (importante): todo lo que hace que este componente se vea bien
+// viaja con su propio JS — estilos en línea para el menú y las opciones, y un
+// <style> propio (SELECT_CSS) para lo que necesita CSS (display del botón,
+// hover/foco, colores de tema). NO depende de globals.css ni de que Tailwind
+// haya generado ciertas clases. Motivo: el 2026-10-13 producción sirvió un
+// bundle de CSS viejo (sin los cambios de globals.css de ese commit) con el JS
+// nuevo, y el menú salió sin fondo, con letra grande y sin layout.
+//
 // - El menú es propio (no el desplegable nativo del navegador): usa las
 //   variables del tema (clasico/nocturno) y se ve bien en claro y oscuro:
 //   fondo, opción con el mouse encima, opción seleccionada (con check) y
@@ -141,6 +149,60 @@ function themeTone(): "light" | "dark" {
 
 const MENU_GAP = 6;
 const EDGE = 8;
+
+// Paleta del menú. Normal: variables del tema (<html data-theme>). Forzada:
+// cuando el control está sobre un fondo de otro tono que el tema (admin oscuro,
+// página pública oscura...).
+type Palette = { bg: string; border: string; text: string; muted: string; hover: string; accent: string };
+const THEME_PALETTE: Palette = {
+  bg: "var(--bg-card, #ffffff)",
+  border: "var(--border-color, #e2e8f0)",
+  text: "var(--text-main, #0f172a)",
+  muted: "var(--text-muted, #64748b)",
+  hover: "var(--bg-soft, #f1f5f9)",
+  accent: "var(--accent-solid, #2563eb)",
+};
+const FORCED_PALETTE: Record<"light" | "dark", Palette> = {
+  light: { bg: "#ffffff", border: "#cbd5e1", text: "#0f172a", muted: "#64748b", hover: "#f1f5f9", accent: "#2563eb" },
+  dark: { bg: "#0f172a", border: "#334155", text: "#f1f5f9", muted: "#94a3b8", hover: "#1e293b", accent: "#60a5fa" },
+};
+
+// CSS que no se puede expresar en línea (display con baja especificidad para
+// que las clases del lugar de uso ganen, :hover/:focus y reglas por tema).
+// Los colores del botón replican los de los <select> del tema que ya existían
+// en globals.css, para que se vea igual que antes.
+const SELECT_CSS = `
+:where(.orbyx-select-trigger){display:inline-flex;align-items:center;justify-content:space-between;gap:.5rem;box-sizing:border-box;text-align:left;cursor:pointer;font:inherit}
+.orbyx-select-trigger:disabled{cursor:not-allowed}
+.orbyx-select-trigger:focus-visible{outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent-solid,#2563eb) 55%,transparent)}
+:root[data-theme="clasico"] .orbyx-select-trigger{background-color:#f1f5f9!important;border-color:#cbd5e1!important;color:#0f172a!important;transition:border-color .15s,background-color .15s}
+:root[data-theme="clasico"] .orbyx-select-trigger:hover:not(:disabled){border-color:#94a3b8!important}
+:root[data-theme="clasico"] .orbyx-select-trigger:focus{border-color:#3b82f6!important}
+:root[data-theme="nocturno"] .orbyx-select-trigger{background-color:#1e2d4a!important;border-color:rgba(59,130,246,.35)!important;color:#f1f5f9!important;transition:border-color .15s,background-color .15s}
+:root[data-theme="nocturno"] .orbyx-select-trigger:hover:not(:disabled){border-color:rgba(59,130,246,.55)!important}
+:root[data-theme="nocturno"] .orbyx-select-trigger:focus{border-color:rgba(59,130,246,.75)!important;background-color:#223252!important}
+`;
+
+const VALUE_STYLE: CSSProperties = {
+  flex: "1 1 auto",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  textAlign: "left",
+};
+
+const VISUALLY_HIDDEN: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0,0,0,0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
 
 export default function Select({
   value,
@@ -384,8 +446,21 @@ export default function Select({
   // Índice de cada opción (sin grupos) para ids, teclado y resaltado.
   const optionIndexByKey = new Map(options.map((o, i) => [o.key, i] as const));
 
+  const palette: Palette = placement
+    ? placement.force
+      ? FORCED_PALETTE[placement.tone]
+      : THEME_PALETTE
+    : THEME_PALETTE;
+  const isSheet = Boolean(placement?.sheet);
+
   return (
     <>
+      {/* Estilos propios del componente: React los coloca una sola vez en
+          <head> (dedupe por href) y viajan en el JS, no en el bundle de CSS. */}
+      <style href="orbyx-select-styles" precedence="medium">
+        {SELECT_CSS}
+      </style>
+
       <button
         {...rest}
         ref={triggerRef}
@@ -409,13 +484,21 @@ export default function Select({
         }}
         onKeyDown={handleKeyDown}
       >
-        <span className="orbyx-select-value min-w-0 flex-1 truncate text-left">
-          {selected ? selected.label : " "}
+        <span className="orbyx-select-value" style={VALUE_STYLE}>
+          {selected ? selected.label : "\u00A0"}
         </span>
         {noChevron ? null : (
           <ChevronDown
             aria-hidden="true"
-            className={`orbyx-select-chevron h-4 w-4 shrink-0 opacity-70 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+            className="orbyx-select-chevron"
+            style={{
+              width: 16,
+              height: 16,
+              flex: "none",
+              opacity: 0.7,
+              transition: "transform 150ms ease",
+              transform: open ? "rotate(180deg)" : undefined,
+            }}
           />
         )}
       </button>
@@ -426,7 +509,7 @@ export default function Select({
         <select
           tabIndex={-1}
           aria-hidden="true"
-          className="sr-only"
+          style={VISUALLY_HIDDEN}
           name={name}
           required={required}
           disabled={disabled}
@@ -445,10 +528,10 @@ export default function Select({
       {open && placement && typeof document !== "undefined"
         ? createPortal(
             <>
-              {placement.sheet ? (
+              {isSheet ? (
                 <div
-                  className="fixed inset-0 z-[10000] bg-slate-950/50"
                   data-orbyx-select-menu="true"
+                  style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(2,6,23,0.5)" }}
                   onClick={(e) => {
                     e.stopPropagation();
                     closeMenu(false);
@@ -463,12 +546,31 @@ export default function Select({
                 data-orbyx-select-menu="true"
                 data-tone={placement.tone}
                 data-force={placement.force ? "true" : "false"}
-                data-sheet={placement.sheet ? "true" : "false"}
-                className={`orbyx-select-menu z-[10001] overflow-y-auto ${menuClassName}`}
+                data-sheet={isSheet ? "true" : "false"}
+                className={menuClassName || undefined}
                 style={{
                   position: "fixed",
+                  zIndex: 10001,
+                  boxSizing: "border-box",
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  padding: isSheet ? "8px 8px calc(8px + env(safe-area-inset-bottom))" : 4,
+                  background: palette.bg,
+                  color: palette.text,
+                  border: `1px solid ${palette.border}`,
+                  borderBottomWidth: isSheet ? 0 : 1,
+                  borderRadius: isSheet ? "16px 16px 0 0" : 10,
+                  boxShadow: "0 18px 40px -16px rgba(15,23,42,0.45), 0 2px 6px rgba(15,23,42,0.12)",
+                  fontFamily: "inherit",
+                  fontSize: isSheet ? 16 : 14,
+                  fontWeight: 400,
+                  lineHeight: 1.35,
+                  textAlign: "left",
+                  textTransform: "none",
+                  letterSpacing: "normal",
+                  transition: "none",
                   colorScheme: placement.tone,
-                  ...(placement.sheet
+                  ...(isSheet
                     ? { left: 0, right: 0, bottom: 0, maxHeight: "60vh" }
                     : {
                         left: placement.left,
@@ -484,13 +586,25 @@ export default function Select({
                 {items.map((item) => {
                   if (item.kind === "group") {
                     return (
-                      <div key={item.key} className="orbyx-select-group" role="presentation">
+                      <div
+                        key={item.key}
+                        role="presentation"
+                        style={{
+                          padding: "8px 10px 4px",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: palette.muted,
+                        }}
+                      >
                         {item.label}
                       </div>
                     );
                   }
                   const idx = optionIndexByKey.get(item.key) ?? -1;
                   const isSelected = item.value === selected?.value;
+                  const isActive = idx === activeIndex;
                   return (
                     <div
                       key={item.key}
@@ -499,14 +613,41 @@ export default function Select({
                       aria-selected={isSelected}
                       aria-disabled={item.disabled || undefined}
                       data-option-index={idx}
-                      data-active={idx === activeIndex ? "true" : "false"}
+                      data-active={isActive ? "true" : "false"}
                       data-selected={isSelected ? "true" : "false"}
-                      className="orbyx-select-option"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        boxSizing: "border-box",
+                        minHeight: isSheet ? 48 : 36,
+                        padding: "8px 10px",
+                        borderRadius: 7,
+                        cursor: item.disabled ? "not-allowed" : "pointer",
+                        userSelect: "none",
+                        WebkitTapHighlightColor: "transparent",
+                        fontSize: isSheet ? 16 : 14,
+                        fontWeight: isSelected ? 600 : 400,
+                        lineHeight: 1.35,
+                        textAlign: "left",
+                        opacity: item.disabled ? 0.45 : 1,
+                        color: isSelected ? palette.accent : palette.text,
+                        background: isSelected
+                          ? isActive
+                            ? `color-mix(in srgb, ${palette.accent} 22%, ${palette.hover})`
+                            : `color-mix(in srgb, ${palette.accent} 14%, transparent)`
+                          : isActive && !item.disabled
+                          ? palette.hover
+                          : "transparent",
+                        transition: "background-color 80ms ease, color 80ms ease",
+                      }}
                       onMouseEnter={() => !item.disabled && setActiveIndex(idx)}
                       onClick={() => chooseOption(item)}
                     >
-                      <span className="min-w-0 flex-1 break-words">{item.label}</span>
-                      {isSelected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0" /> : null}
+                      <span style={{ flex: "1 1 auto", minWidth: 0, overflowWrap: "anywhere" }}>{item.label}</span>
+                      {isSelected ? (
+                        <Check aria-hidden="true" style={{ width: 16, height: 16, flex: "none" }} />
+                      ) : null}
                     </div>
                   );
                 })}

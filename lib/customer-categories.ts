@@ -75,10 +75,6 @@ export function describeCustomerCategory(
   }
 }
 
-// Ayuda del selector "Días sin venir".
-export const DAYS_WITHOUT_VISIT_HELP =
-  "Días desde la última vez que el cliente asistió. Las citas canceladas o inasistencias no cuentan.";
-
 // Opciones del filtro "días sin venir" (mínimo de días desde la última visita
 // asistida). "" = sin filtro. Los prospectos nunca calzan con este filtro.
 export const DAYS_WITHOUT_VISIT_OPTIONS: Array<{ value: string; label: string }> = [

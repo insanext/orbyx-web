@@ -65,6 +65,7 @@ export function PublicThemeProvider({ children }: { children: ReactNode }) {
         id="orbyx-public-theme-root"
         className="orbyx-public"
         data-public-theme={theme}
+        style={{ colorScheme: theme }}
         suppressHydrationWarning
       >
         {children}

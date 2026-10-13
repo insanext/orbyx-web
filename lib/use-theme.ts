@@ -21,6 +21,7 @@ export function useTheme() {
 
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
+    document.documentElement.style.colorScheme = nextTheme === "nocturno" ? "dark" : "light";
     setMounted(true);
   }, []);
 
@@ -32,6 +33,7 @@ export function useTheme() {
     }
 
     document.documentElement.setAttribute("data-theme", nextTheme);
+    document.documentElement.style.colorScheme = nextTheme === "nocturno" ? "dark" : "light";
   }
 
   function toggleTheme() {

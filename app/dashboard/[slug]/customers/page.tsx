@@ -10,10 +10,8 @@ import { isPlanAtLeast } from "@/lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
 import ImportCustomersModal from "@/components/customers/ImportCustomersModal";
 import CategoryFilterButtons from "@/components/customers/CategoryFilterButtons";
-import InfoTooltip from "@/components/ui/InfoTooltip";
 import {
   CUSTOMER_CATEGORY_OPTIONS,
-  DAYS_WITHOUT_VISIT_HELP,
   DAYS_WITHOUT_VISIT_OPTIONS,
   describeCustomerCategory,
   getCustomerCategorySingular,
@@ -502,21 +500,19 @@ export default function CustomersPage() {
               includeAll
             />
 
-            <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="mb-3 flex w-full items-center gap-2">
-              <Select
-                value={daysWithoutVisit}
-                onChange={(e) => setDaysWithoutVisit(e.target.value)}
-                aria-label="Días sin venir"
-                className="min-w-0 flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-sm outline-none transition"
-                style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
-              >
-                {DAYS_WITHOUT_VISIT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
-                  </option>
-                ))}
-              </Select>
-            </InfoTooltip>
+            <Select
+              value={daysWithoutVisit}
+              onChange={(e) => setDaysWithoutVisit(e.target.value)}
+              aria-label="Días sin venir"
+              className="mb-3 w-full cursor-pointer rounded border px-2.5 py-1.5 text-xs font-medium outline-none"
+              style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
+            >
+              {DAYS_WITHOUT_VISIT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
+                </option>
+              ))}
+            </Select>
 
             <p className="mb-4 text-xs" style={{ color: "var(--cust-muted)" }}>
               Viendo: <b style={{ color: "var(--cust-ink)" }}>{activeSegmentLabel}</b>
@@ -595,21 +591,19 @@ export default function CustomersPage() {
 
           <CategoryFilterButtons value={segment} onChange={setSegment} thresholds={thresholds} includeAll />
 
-          <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="shrink-0">
-            <Select
-              value={daysWithoutVisit}
-              onChange={(e) => setDaysWithoutVisit(e.target.value)}
-              aria-label="Días sin venir"
-              className="shrink-0 cursor-pointer rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
-              style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
-            >
-              {DAYS_WITHOUT_VISIT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
-                </option>
-              ))}
-            </Select>
-          </InfoTooltip>
+          <Select
+            value={daysWithoutVisit}
+            onChange={(e) => setDaysWithoutVisit(e.target.value)}
+            aria-label="Días sin venir"
+            className="shrink-0 cursor-pointer rounded border px-2.5 py-1 text-xs font-medium outline-none"
+            style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
+          >
+            {DAYS_WITHOUT_VISIT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
+              </option>
+            ))}
+          </Select>
         </div>
 
         {segment !== "all" && CUSTOMER_CATEGORY_OPTIONS.some((o) => o.key === segment) ? (

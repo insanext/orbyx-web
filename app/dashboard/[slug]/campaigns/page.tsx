@@ -21,10 +21,8 @@ import { usePermissions } from "../../../../lib/permissions-context";
 import { PLAN_LABELS, isKnownPlanSlug, isPlanAtLeast, type PlanSlug } from "../../../../lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
 import CategoryFilterButtons from "@/components/customers/CategoryFilterButtons";
-import InfoTooltip from "@/components/ui/InfoTooltip";
 import {
   CUSTOMER_CATEGORY_OPTIONS,
-  DAYS_WITHOUT_VISIT_HELP,
   DAYS_WITHOUT_VISIT_OPTIONS,
   describeCustomerCategory,
   getCustomerCategorySingular,
@@ -3441,26 +3439,24 @@ export default function CampaignsPage() {
                   Días sin venir (opcional)
                 </label>
 
-                <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="flex w-full items-center gap-2">
-                  <Select
-                    value={daysWithoutVisit}
-                    onChange={(e) => setDaysWithoutVisit(e.target.value)}
-                    disabled={segment === "prospect"}
-                    className={`${selectClass} min-w-0 flex-1`}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                      opacity: segment === "prospect" ? 0.6 : 1,
-                    }}
-                  >
-                    {DAYS_WITHOUT_VISIT_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Select>
-                </InfoTooltip>
+                <Select
+                  value={daysWithoutVisit}
+                  onChange={(e) => setDaysWithoutVisit(e.target.value)}
+                  disabled={segment === "prospect"}
+                  className={selectClass}
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                    opacity: segment === "prospect" ? 0.6 : 1,
+                  }}
+                >
+                  {DAYS_WITHOUT_VISIT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
 
                 <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
                   {segment === "prospect"
