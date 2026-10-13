@@ -492,7 +492,7 @@ export default function ImportCustomersModal({
           {step === "upload" ? (
             <>
               <p className="text-sm" style={{ color: "var(--cust-muted)" }}>
-                Sube la lista de clientes que tienes en otro sistema (por ejemplo AgendaPro). Aceptamos archivos de Excel
+                Sube la lista de clientes que tienes en otro sistema de agendamiento. Aceptamos archivos de Excel
                 (.xlsx) o CSV, de hasta 5 MB y 5.000 filas. Si tu archivo es .xls o .xlsm, ábrelo y guárdalo como .xlsx.
               </p>
 

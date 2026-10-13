@@ -20,8 +20,11 @@ import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { PLAN_LABELS, isKnownPlanSlug, isPlanAtLeast, type PlanSlug } from "../../../../lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
+import CategoryFilterButtons from "@/components/customers/CategoryFilterButtons";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 import {
   CUSTOMER_CATEGORY_OPTIONS,
+  DAYS_WITHOUT_VISIT_HELP,
   DAYS_WITHOUT_VISIT_OPTIONS,
   describeCustomerCategory,
   getCustomerCategorySingular,
@@ -3410,30 +3413,19 @@ export default function CampaignsPage() {
               </p>
 
               <div>
-                <select
+                <CategoryFilterButtons
                   value={segment}
-                  onChange={(e) => {
-                    const next = e.target.value as CustomerSegment;
+                  onChange={(key) => {
+                    const next = key as CustomerSegment;
                     setSegment(next);
                     // Los prospectos no tienen visitas: el filtro por días
                     // no aplica.
                     if (next === "prospect") setDaysWithoutVisit("");
                   }}
-                  className={selectClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  {SEGMENT_OPTIONS.map((item) => (
-                    <option key={item.key} value={item.key}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
+                  thresholds={thresholds}
+                />
 
-                <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
                   {describeCustomerCategory(segment, thresholds)}
                 </p>
               </div>
@@ -3448,24 +3440,26 @@ export default function CampaignsPage() {
                   Días sin venir (opcional)
                 </label>
 
-                <select
-                  value={daysWithoutVisit}
-                  onChange={(e) => setDaysWithoutVisit(e.target.value)}
-                  disabled={segment === "prospect"}
-                  className={selectClass}
-                  style={{
-                    borderColor: "var(--border-color)",
-                    background: "var(--bg-card)",
-                    color: "var(--text-main)",
-                    opacity: segment === "prospect" ? 0.6 : 1,
-                  }}
-                >
-                  {DAYS_WITHOUT_VISIT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="flex w-full items-center gap-2">
+                  <select
+                    value={daysWithoutVisit}
+                    onChange={(e) => setDaysWithoutVisit(e.target.value)}
+                    disabled={segment === "prospect"}
+                    className={`${selectClass} min-w-0 flex-1`}
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                      opacity: segment === "prospect" ? 0.6 : 1,
+                    }}
+                  >
+                    {DAYS_WITHOUT_VISIT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </InfoTooltip>
 
                 <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
                   {segment === "prospect"

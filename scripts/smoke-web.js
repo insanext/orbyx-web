@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- script de Node (CommonJS), no es código de la app */
 // Humo del frontend: `next start` sobre el build actual + rutas representativas
 // + lib/imageCompression.ts (sharp) con un JPG y un PNG.
 // Requiere un build previo (con NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY

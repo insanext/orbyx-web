@@ -37,38 +37,47 @@ export function getCustomerCategorySingular(category?: string | null): string {
   return CUSTOMER_CATEGORY_OPTIONS.find((o) => o.key === category)?.singular || "Sin categoría";
 }
 
-// Texto corto que explica la categoría. Los números salen de los umbrales que
-// informa el backend; si todavía no llegaron, se usa una frase sin números.
+// Texto corto que explica la categoría (tooltips de los botones de filtro y
+// ayuda bajo el filtro). Los números salen SIEMPRE de los umbrales que informa
+// el backend (`thresholds` en GET /customers/:slug): si cambian a futuro, el
+// texto se actualiza solo. Mientras no lleguen, se usa una frase sin números.
+// "all" = el botón "Todos" del listado.
 export function describeCustomerCategory(
-  category: CustomerCategory,
+  category: CustomerCategory | "all",
   thresholds?: CustomerCategoryThresholds | null
 ): string {
   const recent = thresholds?.recent_days;
   const atRisk = thresholds?.at_risk_days;
 
   switch (category) {
+    case "all":
+      return "Todos tus clientes.";
     case "prospect":
-      return "Todavía no ha asistido a ninguna cita: la canceló, no llegó o la tiene pendiente.";
+      return "Nunca han asistido. Cancelaron, faltaron o su primera cita aún no llega.";
     case "new":
       return recent
-        ? `Vino 1 vez y fue hace ${recent} días o menos.`
-        : "Vino 1 vez, hace poco.";
+        ? `Vinieron 1 vez, en los últimos ${recent} días.`
+        : "Vinieron 1 vez, hace poco.";
     case "active":
       return recent
-        ? `Vino 2 veces o más y la última fue hace ${recent} días o menos.`
-        : "Vino 2 veces o más y volvió hace poco.";
+        ? `Vinieron 2 o más veces y la última fue hace ${recent} días o menos.`
+        : "Vinieron 2 o más veces y la última fue hace poco.";
     case "at_risk":
       return recent && atRisk
         ? `Su última visita fue hace entre ${recent + 1} y ${atRisk} días.`
-        : "Hace un tiempo que no viene.";
+        : "Hace un tiempo que no vienen.";
     case "inactive":
       return atRisk
-        ? `Su última visita fue hace más de ${atRisk} días.`
-        : "Hace mucho que no viene.";
+        ? `No vienen hace más de ${atRisk} días.`
+        : "Hace mucho que no vienen.";
     default:
       return "";
   }
 }
+
+// Ayuda del selector "Días sin venir".
+export const DAYS_WITHOUT_VISIT_HELP =
+  "Días desde la última vez que el cliente asistió. Las citas canceladas o inasistencias no cuentan.";
 
 // Opciones del filtro "días sin venir" (mínimo de días desde la última visita
 // asistida). "" = sin filtro. Los prospectos nunca calzan con este filtro.
