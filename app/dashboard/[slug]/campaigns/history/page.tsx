@@ -14,6 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type CampaignChannel = "email" | "whatsapp";
 // Categorías actuales + las antiguas que siguen apareciendo en campañas ya enviadas.
@@ -338,7 +339,7 @@ export default function CampaignHistoryPage() {
             />
           </div>
 
-          <select
+          <Select
             value={channel}
             onChange={(e) => setChannel(e.target.value as "all" | CampaignChannel)}
             className="h-12 w-full rounded-2xl border px-4 text-sm outline-none"
@@ -351,7 +352,7 @@ export default function CampaignHistoryPage() {
             <option value="all">Todos los canales</option>
             <option value="email">Email</option>
             <option value="whatsapp">WhatsApp</option>
-          </select>
+          </Select>
         </div>
 
         {error ? (

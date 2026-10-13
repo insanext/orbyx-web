@@ -20,6 +20,23 @@
   --accent-solid: #2563eb;
 }
 
+/* Los controles nativos que quedan (selector de fecha, scrollbars, checkboxes,
+   autocompletar) se adaptan al tema activo. El tema del dashboard vive en
+   <html data-theme>; las páginas públicas usan .orbyx-public[data-public-theme]
+   y el panel admin se declara oscuro en su layout. */
+:root {
+  color-scheme: light;
+}
+:root[data-theme="nocturno"] {
+  color-scheme: dark;
+}
+.orbyx-public[data-public-theme="light"] {
+  color-scheme: light;
+}
+.orbyx-public[data-public-theme="dark"] {
+  color-scheme: dark;
+}
+
 :root[data-theme="clasico"] {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -121,7 +138,8 @@ body {
 /* Dashboard inputs — distinción visual en ambos temas */
 :root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 :root[data-theme="clasico"] textarea,
-:root[data-theme="clasico"] select {
+:root[data-theme="clasico"] select,
+:root[data-theme="clasico"] .orbyx-select-trigger {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
@@ -129,12 +147,14 @@ body {
 }
 :root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
 :root[data-theme="clasico"] textarea:hover,
-:root[data-theme="clasico"] select:hover {
+:root[data-theme="clasico"] select:hover,
+:root[data-theme="clasico"] .orbyx-select-trigger:hover {
   border-color: #94a3b8;
 }
 :root[data-theme="clasico"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
 :root[data-theme="clasico"] textarea:focus,
-:root[data-theme="clasico"] select:focus {
+:root[data-theme="clasico"] select:focus,
+:root[data-theme="clasico"] .orbyx-select-trigger:focus {
   border-color: #3b82f6;
   background-color: #ffffff;
   outline: none;
@@ -142,7 +162,8 @@ body {
 
 :root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 :root[data-theme="nocturno"] textarea,
-:root[data-theme="nocturno"] select {
+:root[data-theme="nocturno"] select,
+:root[data-theme="nocturno"] .orbyx-select-trigger {
   background-color: #1e2d4a !important;
   border-color: rgba(59, 130, 246, 0.35) !important;
   color: #f1f5f9 !important;
@@ -150,12 +171,14 @@ body {
 }
 :root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
 :root[data-theme="nocturno"] textarea:hover,
-:root[data-theme="nocturno"] select:hover {
+:root[data-theme="nocturno"] select:hover,
+:root[data-theme="nocturno"] .orbyx-select-trigger:hover {
   border-color: rgba(59, 130, 246, 0.55);
 }
 :root[data-theme="nocturno"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
 :root[data-theme="nocturno"] textarea:focus,
-:root[data-theme="nocturno"] select:focus {
+:root[data-theme="nocturno"] select:focus,
+:root[data-theme="nocturno"] .orbyx-select-trigger:focus {
   border-color: rgba(59, 130, 246, 0.75);
   background-color: #223252;
   outline: none;
@@ -313,4 +336,116 @@ button[data-busy="true"]:not([data-busy-icon])::after,
   border-right-color: transparent;
   border-radius: 9999px;
   animation: spin 0.7s linear infinite;
+}
+
+/* ======================================================
+   Select propio de Orbyx (components/ui/Select.tsx)
+   El menú se dibuja en un portal bajo <body>, por eso usa las variables de
+   <html data-theme>. Si el control está sobre un fondo de otro tono (panel
+   admin oscuro con tema claro, o al revés) el componente marca el menú con
+   data-force="true" y se usa la paleta fija de ese tono.
+====================================================== */
+:where(.orbyx-select-trigger) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+.orbyx-select-trigger:disabled {
+  cursor: not-allowed;
+}
+.orbyx-select-trigger:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-solid, #2563eb) 55%, transparent);
+}
+
+.orbyx-select-menu {
+  --sm-bg: var(--bg-card, #ffffff);
+  --sm-border: var(--border-color, #e2e8f0);
+  --sm-text: var(--text-main, #0f172a);
+  --sm-muted: var(--text-muted, #64748b);
+  --sm-hover: var(--bg-soft, #f1f5f9);
+  --sm-accent: var(--accent-solid, #2563eb);
+
+  box-sizing: border-box;
+  padding: 4px;
+  background: var(--sm-bg);
+  color: var(--sm-text);
+  border: 1px solid var(--sm-border);
+  border-radius: 10px;
+  box-shadow: 0 18px 40px -16px rgba(15, 23, 42, 0.45), 0 2px 6px rgba(15, 23, 42, 0.12);
+  font-size: 14px;
+  line-height: 1.35;
+  overscroll-behavior: contain;
+}
+.orbyx-select-menu[data-force="true"][data-tone="light"] {
+  --sm-bg: #ffffff;
+  --sm-border: #cbd5e1;
+  --sm-text: #0f172a;
+  --sm-muted: #64748b;
+  --sm-hover: #f1f5f9;
+  --sm-accent: #2563eb;
+}
+.orbyx-select-menu[data-force="true"][data-tone="dark"] {
+  --sm-bg: #0f172a;
+  --sm-border: #334155;
+  --sm-text: #f1f5f9;
+  --sm-muted: #94a3b8;
+  --sm-hover: #1e293b;
+  --sm-accent: #60a5fa;
+}
+/* El * { transition } global haría lento el resaltado: acá es inmediato, y el
+   menú en sí no anima (aparece ya con los colores correctos). */
+.orbyx-select-menu {
+  transition: none;
+}
+.orbyx-select-menu * {
+  transition: background-color 80ms ease, color 80ms ease;
+}
+
+.orbyx-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.orbyx-select-option[data-active="true"] {
+  background: var(--sm-hover);
+}
+.orbyx-select-option[data-selected="true"] {
+  background: color-mix(in srgb, var(--sm-accent) 14%, transparent);
+  color: var(--sm-accent);
+  font-weight: 600;
+}
+.orbyx-select-option[data-selected="true"][data-active="true"] {
+  background: color-mix(in srgb, var(--sm-accent) 22%, var(--sm-hover));
+}
+.orbyx-select-option[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.orbyx-select-group {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+/* Celular: hoja inferior con opciones grandes. */
+.orbyx-select-menu[data-sheet="true"] {
+  border-radius: 16px 16px 0 0;
+  border-bottom-width: 0;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+}
+.orbyx-select-menu[data-sheet="true"] .orbyx-select-option {
+  min-height: 48px;
+  font-size: 16px;
 }

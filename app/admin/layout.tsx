@@ -139,14 +139,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!checked) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#060a14' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#060a14', colorScheme: 'dark' }}>
         <p className="text-sm text-blue-300/50">Verificando acceso...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#060a14' }}>
+    <div className="min-h-screen flex" style={{ background: '#060a14', colorScheme: 'dark' }}>
       <aside className="w-56 shrink-0 border-r border-blue-900/30 p-4 flex flex-col">
         <h2 className="text-sm font-semibold text-white mb-6 px-2">Orbyx Admin</h2>
         <nav className="space-y-1 flex-1">

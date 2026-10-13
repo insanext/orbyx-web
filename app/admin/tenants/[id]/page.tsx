@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
 import { DateInputDMY } from '@/components/ui/date-input-dmy'
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type TenantDetail = {
   ok: boolean
@@ -806,7 +807,7 @@ export default function AdminTenantDetailPage() {
         <div className="flex flex-wrap items-end gap-2">
           <div>
             <p className="text-xs text-blue-300/50 mb-1">Recurso</p>
-            <select
+            <Select
               value={creditAddonKey}
               onChange={(e) => setCreditAddonKey(e.target.value)}
               className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
@@ -814,7 +815,7 @@ export default function AdminTenantDetailPage() {
               {CREDITABLE_ADDONS.map((a) => (
                 <option key={a.key} value={a.key}>{a.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <p className="text-xs text-blue-300/50 mb-1">Cantidad</p>

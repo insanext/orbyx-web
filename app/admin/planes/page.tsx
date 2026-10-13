@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DateInputDMY } from '@/components/ui/date-input-dmy'
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type PlanConfig = {
   plan_slug: string
@@ -332,7 +333,7 @@ export default function AdminPlanesPage() {
 
               <label className="flex flex-col gap-1 mb-3">
                 <span className="text-xs text-blue-300/50">Plan mínimo requerido</span>
-                <select
+                <Select
                   value={addon.min_plan}
                   onChange={(e) => updateAddonField(addon.addon_key, 'min_plan', e.target.value)}
                   className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
@@ -340,7 +341,7 @@ export default function AdminPlanesPage() {
                   {ADDON_PLAN_OPTIONS.map((p) => (
                     <option key={p} value={p}>{PLAN_LABEL[p]}</option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               <div className="mb-3">

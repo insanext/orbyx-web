@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getPlanLabel } from '@/lib/plans'
 import { buildWhatsAppLink } from '@/lib/reviewRequest'
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type TenantRow = {
   id: string
@@ -213,23 +214,23 @@ export default function AdminTenantsPage() {
           placeholder="Buscar por nombre o slug..."
           className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50 min-w-[220px]"
         />
-        <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className={selectClass}>
+        <Select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className={selectClass}>
           <option value="all">Todos los planes</option>
           {planOptions.map((p) => <option key={p} value={p}>{getPlanLabel(p)}</option>)}
-        </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectClass}>
+        </Select>
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectClass}>
           <option value="all">Todos los estados</option>
           <option value="active">Activo</option>
           <option value="trial">En prueba</option>
           <option value="expired_or_canceled">Vencido/cancelado</option>
-        </select>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={selectClass}>
+        </Select>
+        <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={selectClass}>
           <option value="all">Todos los tipos de negocio</option>
           {categoryOptions.map((c) => {
             const t = tenants.find((t) => t.business_category === c)
             return <option key={c} value={c}>{t?.business_category_label || c}</option>
           })}
-        </select>
+        </Select>
       </div>
 
       {!loading && (

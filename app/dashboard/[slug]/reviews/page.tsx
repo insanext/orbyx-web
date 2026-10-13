@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { Star, EyeOff, Eye, MessageCircle, Trash2, ChevronDown } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 // Mismo set fijo que ALLOWED_REVIEW_REACTIONS en server.js.
 const REACTIONS = ["👍", "❤️", "🙏", "😊"];
@@ -366,7 +367,7 @@ export default function ReviewsPage() {
           </div>
 
           <div className="relative ml-auto">
-            <select
+            <Select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as SortOrder)}
               className="h-10 appearance-none rounded border py-2 pl-3 pr-8 text-sm font-medium outline-none"
@@ -379,7 +380,7 @@ export default function ReviewsPage() {
               <option value="recent">Más recientes</option>
               <option value="rating_desc">Mejor calificación primero</option>
               <option value="rating_asc">Peor calificación primero</option>
-            </select>
+            </Select>
             <ChevronDown
               className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2"
               style={{ color: "var(--text-muted)" }}

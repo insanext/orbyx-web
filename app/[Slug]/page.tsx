@@ -8,6 +8,7 @@ import "react-calendar/dist/Calendar.css";
 import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type StaffItem = {
   id: string;
@@ -3813,7 +3814,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                               selectOptions.length > 0
                             ) {
                               return (
-                                <select
+                                <Select
                                   key={field.key}
                                   value={customerData[field.key] || ""}
                                   required={field.required}
@@ -3832,7 +3833,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                                       {option}
                                     </option>
                                   ))}
-                                </select>
+                                </Select>
                               );
                             }
 

@@ -8,6 +8,7 @@ import { RegionCommuneSelect } from "../../components/dashboard/RegionCommuneSel
 import { isValidRegionCommune } from "../../lib/chile-regions";
 import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
+import Select from "@/components/ui/Select";
 
 // Teléfono fijo chileno = 9 dígitos con código de área (ej. 41 2xxxxxx), no
 // solo móviles (9xxxxxxxx) como exige WhatsApp. El teléfono del negocio
@@ -787,7 +788,7 @@ function OnboardingInner() {
             </div>
             <div>
               <label style={LABEL_STYLE}>Categoría</label>
-              <select
+              <Select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 style={{ ...INPUT_STYLE, appearance: "none" as any }}
@@ -801,7 +802,7 @@ function OnboardingInner() {
                     ))}
                   </optgroup>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <label style={LABEL_STYLE}>Dirección</label>

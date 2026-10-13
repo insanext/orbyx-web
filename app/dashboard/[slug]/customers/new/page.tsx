@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 function Field({
   label,
@@ -375,7 +376,7 @@ export default function NewCustomerPage() {
             </Field>
 
             <Field label="Sexo">
-              <select
+              <Select
                 className={INPUT_CLASS}
                 style={inputStyle()}
                 value={sex}
@@ -385,7 +386,7 @@ export default function NewCustomerPage() {
                 <option value="masculino">Masculino</option>
                 <option value="femenino">Femenino</option>
                 <option value="otro">Otro</option>
-              </select>
+              </Select>
             </Field>
 
             <Field label="Ocupación">
@@ -399,7 +400,7 @@ export default function NewCustomerPage() {
             </Field>
 
             <Field label="Previsión de salud">
-              <select
+              <Select
                 className={INPUT_CLASS}
                 style={inputStyle()}
                 value={healthInsurance}
@@ -411,7 +412,7 @@ export default function NewCustomerPage() {
                 <option value="Capredena">Capredena</option>
                 <option value="Dipreca">Dipreca</option>
                 <option value="Particular / Ninguna">Particular / Ninguna</option>
-              </select>
+              </Select>
             </Field>
 
             {/* Contacto de emergencia — misma fila */}
@@ -641,7 +642,7 @@ export default function NewCustomerPage() {
               </Field>
 
               <Field label="Especie">
-                <select
+                <Select
                   className={INPUT_CLASS}
                   style={inputStyle()}
                   value={petSpeciesBase}
@@ -650,7 +651,7 @@ export default function NewCustomerPage() {
                   <option value="perro">Perro</option>
                   <option value="gato">Gato</option>
                   <option value="otro">Otro</option>
-                </select>
+                </Select>
               </Field>
 
               {petSpeciesBase === "otro" ? (
@@ -676,7 +677,7 @@ export default function NewCustomerPage() {
               </Field>
 
               <Field label="Sexo de la mascota">
-                <select
+                <Select
                   className={INPUT_CLASS}
                   style={inputStyle()}
                   value={petSex}
@@ -685,7 +686,7 @@ export default function NewCustomerPage() {
                   <option value="">Sin especificar</option>
                   <option value="macho">Macho</option>
                   <option value="hembra">Hembra</option>
-                </select>
+                </Select>
               </Field>
 
               <Field label="Peso (kg)">

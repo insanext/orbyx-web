@@ -10,6 +10,7 @@ import { PageHeader } from "../../../../components/dashboard/page-header";
 import { HorariosAyudaModal } from "../../../../components/ui/horarios-ayuda-modal";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type BusinessResponse = {
   business: {
@@ -2862,7 +2863,7 @@ function validateStaffHours() {
                             >
                               Tipo de fecha
                             </label>
-                            <select
+                            <Select
                               value={specialRangeForm.enabled ? "range" : "single"}
                               onChange={(e) =>
                                 setSpecialRangeForm((prev) => ({
@@ -2879,7 +2880,7 @@ function validateStaffHours() {
                             >
                               <option value="single">Un día</option>
                               <option value="range">Rango de fechas</option>
-                            </select>
+                            </Select>
                           </div>
                         ) : null}
 
@@ -2890,7 +2891,7 @@ function validateStaffHours() {
                           >
                             Motivo
                           </label>
-                          <select
+                          <Select
                             value={specialRangeForm.type}
                             onChange={(e) =>
                               setSpecialRangeForm((prev) => ({
@@ -2915,7 +2916,7 @@ function validateStaffHours() {
                             <option value="Día libre">Día libre</option>
                             <option value="Feriado">Feriado</option>
                             <option value="Otro">Otro</option>
-                          </select>
+                          </Select>
                         </div>
 
                         {specialRangeForm.enabled && !editingSpecialDateId ? (
@@ -3154,7 +3155,7 @@ function validateStaffHours() {
                           >
                             Tipo de cobertura
                           </label>
-                          <select
+                          <Select
                             value={specialDateMode}
                             onChange={(e) => {
                               const mode = e.target.value as
@@ -3177,7 +3178,7 @@ function validateStaffHours() {
                             <option value="all_day_closed">Todo el día cerrado</option>
                             <option value="block_time">Bloquear horario específico</option>
                             <option value="special_open">Apertura especial</option>
-                          </select>
+                          </Select>
                         </div>
 
                         {specialDateMode !== "all_day_closed" ? (

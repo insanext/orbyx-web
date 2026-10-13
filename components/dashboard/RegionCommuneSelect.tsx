@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { CHILE_REGION_NAMES, getCommunesForRegion } from "../../lib/chile-regions";
+import Select from "@/components/ui/Select";
 
 // Selectores en cascada Región → Comuna (lista oficial de Chile, ver
 // lib/chile-regions.ts). Elegir otra región vacía la comuna. Un valor
@@ -29,7 +30,7 @@ export function RegionCommuneSelect({
   selectClassName: string;
   selectStyle?: React.CSSProperties;
   // Para fondos oscuros (onboarding): el desplegable nativo no hereda el
-  // fondo del <select>, hay que pintarlo en cada <option>.
+  // fondo del select, hay que pintarlo en cada <option>.
   optionStyle?: React.CSSProperties;
   labelClassName?: string;
   labelStyle?: React.CSSProperties;
@@ -46,7 +47,7 @@ export function RegionCommuneSelect({
         <label htmlFor={`${uid}-region`} className={labelClassName} style={labelStyle}>
           Región{required ? " *" : ""}
         </label>
-        <select
+        <Select
           id={`${uid}-region`}
           value={regionValue}
           disabled={disabled}
@@ -63,14 +64,14 @@ export function RegionCommuneSelect({
               {name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
         <label htmlFor={`${uid}-commune`} className={labelClassName} style={labelStyle}>
           Comuna{required ? " *" : ""}
         </label>
-        <select
+        <Select
           id={`${uid}-commune`}
           value={communeValue}
           disabled={disabled || !regionValue}
@@ -87,7 +88,7 @@ export function RegionCommuneSelect({
               {name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </div>
   );

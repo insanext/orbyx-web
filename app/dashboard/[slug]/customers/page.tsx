@@ -20,6 +20,7 @@ import {
   type CustomerCategory,
   type CustomerCategoryThresholds,
 } from "@/lib/customer-categories";
+import Select from "@/components/ui/Select";
 
 type Pet = {
   id: string;
@@ -502,7 +503,7 @@ export default function CustomersPage() {
             />
 
             <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="mb-3 flex w-full items-center gap-2">
-              <select
+              <Select
                 value={daysWithoutVisit}
                 onChange={(e) => setDaysWithoutVisit(e.target.value)}
                 aria-label="Días sin venir"
@@ -514,7 +515,7 @@ export default function CustomersPage() {
                     {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
                   </option>
                 ))}
-              </select>
+              </Select>
             </InfoTooltip>
 
             <p className="mb-4 text-xs" style={{ color: "var(--cust-muted)" }}>
@@ -595,7 +596,7 @@ export default function CustomersPage() {
           <CategoryFilterButtons value={segment} onChange={setSegment} thresholds={thresholds} includeAll />
 
           <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="shrink-0">
-            <select
+            <Select
               value={daysWithoutVisit}
               onChange={(e) => setDaysWithoutVisit(e.target.value)}
               aria-label="Días sin venir"
@@ -607,7 +608,7 @@ export default function CustomersPage() {
                   {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
                 </option>
               ))}
-            </select>
+            </Select>
           </InfoTooltip>
         </div>
 

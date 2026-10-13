@@ -36,6 +36,7 @@ import { isPlanAtLeast } from "@/lib/plans";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { BACKEND_URL } from "@/lib/backend-url";
 import { CUSTOMER_CATEGORY_OPTIONS, type CustomerCategoryThresholds } from "@/lib/customer-categories";
+import Select from "@/components/ui/Select";
 
 // ---- Tipos — deben calzar con la respuesta de GET /stats/:slug (server.js) ----
 type ByStatus = { booked: number; completed: number; canceled: number; no_show: number; rescheduled: number };
@@ -1248,7 +1249,7 @@ export default function DashboardHomePage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {multiBranch ? (
-              <select
+              <Select
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
                 className="h-9 border px-2.5 text-xs outline-none"
@@ -1260,7 +1261,7 @@ export default function DashboardHomePage() {
                     {b.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             ) : null}
 
             <div className="flex items-center border" style={{ borderColor: "var(--border-color)", borderRadius: RADIUS_SM, overflow: "hidden" }}>

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 // Importador de clientes (Excel / CSV). Toda la lectura, validación y
 // detección de duplicados la hace el backend (customerImport.js): acá solo se
@@ -632,7 +633,7 @@ export default function ImportCustomersModal({
                           </span>
                         ) : null}
                       </label>
-                      <select
+                      <Select
                         id={`map-${key}`}
                         value={current === null ? "" : String(current)}
                         onChange={(e) =>
@@ -650,7 +651,7 @@ export default function ImportCustomersModal({
                             {c.sample.length > 0 ? ` (ej: ${c.sample[0]})` : ""}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                   );
                 })}

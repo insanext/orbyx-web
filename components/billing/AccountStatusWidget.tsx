@@ -6,6 +6,7 @@ import { AlertTriangle, Clock, Landmark, Lock, MessageCircle, X, Zap } from "luc
 import { apiFetch } from "@/lib/api";
 import { createClient } from "../../lib/supabase/client";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type UsageCounter = {
   used: number;
@@ -994,7 +995,7 @@ export function AccountStatusWidget({
                           className="h-8 w-full rounded-lg border px-2.5 text-xs outline-none disabled:opacity-60"
                           style={{ borderColor, background: dropdownBg, color: textMain }}
                         />
-                        <select
+                        <Select
                           value={depositAccountType}
                           disabled={savingDepositField === "bank_fields"}
                           onChange={(e) => setDepositAccountType(e.target.value)}
@@ -1007,7 +1008,7 @@ export function AccountStatusWidget({
                               {t}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                         <input
                           type="text"
                           placeholder="Número de cuenta"

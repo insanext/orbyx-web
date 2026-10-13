@@ -13,6 +13,7 @@ import { usePermissions } from "../../../../lib/permissions-context";
 import { RegionCommuneSelect } from "../../../../components/dashboard/RegionCommuneSelect";
 import { isValidRegionCommune } from "../../../../lib/chile-regions";
 import { buildFullAddress } from "../../../../lib/address";
+import Select from "@/components/ui/Select";
 
 // Debe coincidir con el límite de validateText("description", { maxLen: 1000 }) en server.js (PATCH /tenants/:id)
 const BUSINESS_DESCRIPTION_MAX_LENGTH = 1000;
@@ -2354,7 +2355,7 @@ function updateHourByIndex(
                 >
                   Tipo de negocio
                 </label>
-                <select
+                <Select
                   value={form.business_subtype}
                   onChange={(e) => {
                     const nextSubtype = e.target.value;
@@ -2388,7 +2389,7 @@ function updateHourByIndex(
                       {item.label}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <p
                   className="mt-2 text-xs leading-5"
                   style={{ color: "var(--text-muted)" }}
@@ -2446,7 +2447,7 @@ function updateHourByIndex(
                           }}
                         />
 
-                        <select
+                        <Select
                           value={field.type}
                           onChange={(e) =>
                             updateSubtypeBookingField(
@@ -2465,7 +2466,7 @@ function updateHourByIndex(
                           <option value="text">Texto</option>
                           <option value="select">Select</option>
                           <option value="textarea">Texto largo</option>
-                        </select>
+                        </Select>
 
                         <label
                           className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
@@ -2664,7 +2665,7 @@ function updateHourByIndex(
                                     {label}
                                     {field.required ? " · Obligatorio" : ""}
                                   </label>
-                                  <select
+                                  <Select
                                     disabled
                                     className="h-10 w-full rounded-xl border px-3 text-sm"
                                     style={{
@@ -2677,7 +2678,7 @@ function updateHourByIndex(
                                     {(field.options || []).map((option) => (
                                       <option key={option}>{option}</option>
                                     ))}
-                                  </select>
+                                  </Select>
                                 </div>
                               );
                             }
@@ -2781,7 +2782,7 @@ function updateHourByIndex(
           >
             Tipo de negocio
           </label>
-          <select
+          <Select
             value={form.business_subtype}
             onChange={(e) => {
               const nextSubtype = e.target.value;
@@ -2815,7 +2816,7 @@ function updateHourByIndex(
                   {item.label}
                 </option>
               ))}
-          </select>
+          </Select>
           <p
             className="mt-2 text-xs leading-5"
             style={{ color: "var(--text-muted)" }}
@@ -2843,7 +2844,7 @@ function updateHourByIndex(
           >
             Especialidad clínica
           </label>
-          <select
+          <Select
             value={form.business_subtype}
             onChange={(e) => {
               const nextSubtype = e.target.value;
@@ -2865,7 +2866,7 @@ function updateHourByIndex(
                 {item.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </Panel>
     ) : null}
@@ -3015,7 +3016,7 @@ function updateHourByIndex(
                   }}
                 />
 
-                <select
+                <Select
                   value={field.type}
                   onChange={(e) =>
                     updateSubtypeBookingField(index, "type", e.target.value)
@@ -3030,7 +3031,7 @@ function updateHourByIndex(
                   <option value="text">Texto</option>
                   <option value="select">Select</option>
                   <option value="textarea">Texto largo</option>
-                </select>
+                </Select>
 
                 <label
                   className={`orbyx-business-energy flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${
@@ -3210,7 +3211,7 @@ function updateHourByIndex(
                 if (field.type === "select" && (field.options || []).length > 0) {
                   return (
                     <div key={field.key}>
-                      <select
+                      <Select
                         disabled
                         defaultValue=""
                         className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-500"
@@ -3219,7 +3220,7 @@ function updateHourByIndex(
                         {(field.options || []).map((option) => (
                           <option key={option} value={option}>{option}</option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                   );
                 }
@@ -3424,7 +3425,7 @@ function updateHourByIndex(
           <label className="mb-2 block text-sm font-medium" style={{ color: "var(--text-main)" }}>
             Tiempo mínimo antes de reservar
           </label>
-          <select
+          <Select
             value={minNoticeMode === "custom" ? "custom" : form.min_booking_notice_minutes}
             onChange={(e) => {
               const val = e.target.value;
@@ -3448,7 +3449,7 @@ function updateHourByIndex(
             <option value={60}>1 hora</option>
             <option value={120}>2 horas</option>
             <option value="custom">Personalizado</option>
-          </select>
+          </Select>
           {minNoticeMode === "custom" ? (
             <div className="mt-3 flex items-center gap-2">
               <input
@@ -3473,7 +3474,7 @@ function updateHourByIndex(
           <label className="mb-2 block text-sm font-medium" style={{ color: "var(--text-main)" }}>
             Máximo días hacia adelante
           </label>
-          <select
+          <Select
             value={maxDaysMode === "custom" ? "custom" : form.max_booking_days_ahead}
             onChange={(e) => {
               const val = e.target.value;
@@ -3497,7 +3498,7 @@ function updateHourByIndex(
             <option value={60}>60 días</option>
             <option value={90}>90 días</option>
             <option value="custom">Personalizado</option>
-          </select>
+          </Select>
           {maxDaysMode === "custom" ? (
             <div className="mt-3 flex items-center gap-2">
               <input
@@ -3953,7 +3954,7 @@ onClick={() => {
             >
               Tipo de fecha
             </label>
-            <select
+            <Select
               value={specialDateRangeForm.enabled ? "range" : "single"}
               onChange={(e) =>
                 updateSpecialDateRange("enabled", e.target.value === "range")
@@ -3967,7 +3968,7 @@ onClick={() => {
             >
               <option value="single">Un día</option>
               <option value="range">Rango de fechas</option>
-            </select>
+            </Select>
           </div>
 
           <div className="space-y-1">
@@ -3977,7 +3978,7 @@ onClick={() => {
             >
               Motivo
             </label>
-            <select
+            <Select
               value={specialDateRangeForm.type}
               onChange={(e) =>
                 updateSpecialDateRange(
@@ -4002,7 +4003,7 @@ onClick={() => {
               <option value="Emergencia operacional">Emergencia operacional</option>
               <option value="Día libre">Día libre</option>
               <option value="Otro">Otro</option>
-            </select>
+            </Select>
           </div>
 
           {specialDateRangeForm.enabled ? (
@@ -4198,7 +4199,7 @@ onClick={() => {
             >
               Tipo de cobertura
             </label>
-            <select
+            <Select
               value={specialDateRangeForm.is_closed ? "all_day" : "time_range"}
               onChange={(e) =>
                 updateSpecialDateRange("is_closed", e.target.value === "all_day")
@@ -4212,7 +4213,7 @@ onClick={() => {
             >
               <option value="all_day">Todo el día</option>
               <option value="time_range">Rango de horario</option>
-            </select>
+            </Select>
           </div>
 
           {!specialDateRangeForm.is_closed ? (

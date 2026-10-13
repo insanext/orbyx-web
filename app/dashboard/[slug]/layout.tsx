@@ -48,6 +48,7 @@ import { AccountStatusWidget, useAccountStatus } from "../../../components/billi
 import { WelcomeModal } from "../../../components/dashboard/WelcomeModal";
 import { getPlanLabel } from "../../../lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 // Paleta del badge de plan del header (efecto "reluciente" ya existe vía
 // .orbyx-plan-badge::after / @keyframes orbyxPlanShine, no se toca acá).
@@ -1059,9 +1060,10 @@ export default function DashboardLayout({
           <Store size={14} className="shrink-0" style={{ color: textMuted }} />
           {showBranchSelector ? (
             <>
-              <select
+              <Select
                 value={selectedBranchId}
                 onChange={(e) => persistSelectedBranch(e.target.value)}
+                hideChevron
                 className="max-w-[140px] truncate bg-transparent text-sm font-semibold outline-none"
                 style={{ color: textMain }}
               >
@@ -1070,7 +1072,7 @@ export default function DashboardLayout({
                     {branch.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               <ChevronDown size={13} className="shrink-0" style={{ color: textMuted }} />
             </>
           ) : (
@@ -1139,7 +1141,7 @@ export default function DashboardLayout({
         </div>
 
         {showBranchSelector ? (
-          <select
+          <Select
             value={selectedBranchId}
             onChange={(e) => persistSelectedBranch(e.target.value)}
             className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
@@ -1154,7 +1156,7 @@ export default function DashboardLayout({
                 {branch.name}
               </option>
             ))}
-          </select>
+          </Select>
         ) : hasSingleBranch ? (
           <div
             className="flex h-11 items-center rounded-2xl border px-4 text-sm font-medium"
@@ -1709,7 +1711,7 @@ export default function DashboardLayout({
                   </div>
 
                   {showBranchSelector ? (
-                    <select
+                    <Select
                       value={selectedBranchId}
                       onChange={(e) => persistSelectedBranch(e.target.value)}
                       className="h-11 w-full rounded-2xl border px-4 text-sm outline-none transition"
@@ -1724,7 +1726,7 @@ export default function DashboardLayout({
                           {branch.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   ) : hasSingleBranch ? (
                     <div
                       className="flex h-11 items-center rounded-2xl border px-4 text-sm font-medium"

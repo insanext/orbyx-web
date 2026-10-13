@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { apiFetch } from '@/lib/api'
 import FaqAccordion from './FaqAccordion'
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 const CATEGORIES = [
   { value: 'agenda_reservas', label: 'Agenda y reservas' },
@@ -387,13 +388,13 @@ export default function SoportePage() {
 
             <div>
               <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>Categoría</label>
-              <select
+              <Select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
                 className={inp}
               >
                 {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
+              </Select>
             </div>
 
             <div>

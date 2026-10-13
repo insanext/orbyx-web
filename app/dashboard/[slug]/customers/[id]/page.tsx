@@ -25,6 +25,7 @@ import { Panel } from "../../../../../components/dashboard/panel";
 import { apiFetch } from "@/lib/api";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 /* ================= TYPES ================= */
 
@@ -1823,7 +1824,7 @@ const cancelledAppointments = useMemo(() => {
                           >
                             Tipo
                           </label>
-                          <select
+                          <Select
                             value={petForm.species_base}
                             onChange={(e) =>
                               setPetForm((prev) => ({
@@ -1841,7 +1842,7 @@ const cancelledAppointments = useMemo(() => {
                             <option value="perro">Perro</option>
                             <option value="gato">Gato</option>
                             <option value="otro">Otro</option>
-                          </select>
+                          </Select>
                         </div>
 
                         {petForm.species_base === "otro" ? (
@@ -1900,7 +1901,7 @@ const cancelledAppointments = useMemo(() => {
                           >
                             Sexo
                           </label>
-                          <select
+                          <Select
                             value={petForm.sex}
                             onChange={(e) =>
                               setPetForm((prev) => ({ ...prev, sex: e.target.value }))
@@ -1915,7 +1916,7 @@ const cancelledAppointments = useMemo(() => {
                             <option value="">Seleccionar</option>
                             <option value="macho">Macho</option>
                             <option value="hembra">Hembra</option>
-                          </select>
+                          </Select>
                         </div>
 
                         <div>
@@ -2300,7 +2301,7 @@ const cancelledAppointments = useMemo(() => {
                                         <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
                                           Tipo
                                         </label>
-                                        <select
+                                        <Select
                                           value={editPetForm.species_base}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, species_base: e.target.value as "perro" | "gato" | "otro" }))}
                                           className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
@@ -2309,7 +2310,7 @@ const cancelledAppointments = useMemo(() => {
                                           <option value="perro">Perro</option>
                                           <option value="gato">Gato</option>
                                           <option value="otro">Otro</option>
-                                        </select>
+                                        </Select>
                                       </div>
                                       {editPetForm.species_base === "otro" ? (
                                         <div>
@@ -2341,7 +2342,7 @@ const cancelledAppointments = useMemo(() => {
                                         <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
                                           Sexo
                                         </label>
-                                        <select
+                                        <Select
                                           value={editPetForm.sex}
                                           onChange={(e) => setEditPetForm((prev) => ({ ...prev, sex: e.target.value }))}
                                           className="w-full rounded-md border px-3 py-2 text-sm outline-none transition"
@@ -2350,7 +2351,7 @@ const cancelledAppointments = useMemo(() => {
                                           <option value="">Seleccionar</option>
                                           <option value="macho">Macho</option>
                                           <option value="hembra">Hembra</option>
-                                        </select>
+                                        </Select>
                                       </div>
                                       <div>
                                         <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
@@ -2907,13 +2908,13 @@ const cancelledAppointments = useMemo(() => {
                       </div>
                       <div>
                         <FieldLabel>Sexo</FieldLabel>
-                        <select value={editPatientForm.sex} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                        <Select value={editPatientForm.sex} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, sex: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                           <option value="">Sin especificar</option>
                           <option value="masculino">Masculino</option>
                           <option value="femenino">Femenino</option>
                           <option value="otro">Otro</option>
                           <option value="prefiero no decir">Prefiero no decir</option>
-                        </select>
+                        </Select>
                       </div>
                       <div>
                         <FieldLabel>Ocupación</FieldLabel>
@@ -2921,14 +2922,14 @@ const cancelledAppointments = useMemo(() => {
                       </div>
                       <div>
                         <FieldLabel>Previsión de salud</FieldLabel>
-                        <select value={editPatientForm.health_insurance} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                        <Select value={editPatientForm.health_insurance} onChange={(e) => setEditPatientForm((prev) => ({ ...prev, health_insurance: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                           <option value="">Sin especificar</option>
                           <option value="Fonasa">Fonasa</option>
                           <option value="Isapre">Isapre</option>
                           <option value="Capredena">Capredena</option>
                           <option value="Dipreca">Dipreca</option>
                           <option value="Particular / Ninguna">Particular / Ninguna</option>
-                        </select>
+                        </Select>
                       </div>
                     </div>
                   </SectionCard>
@@ -2967,10 +2968,10 @@ const cancelledAppointments = useMemo(() => {
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
                             <FieldLabel>Grupo sanguíneo</FieldLabel>
-                            <select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
+                            <Select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={(editPatientForm as any).extra_fields?.grupo_sanguineo ?? ""} onChange={(e) => setEditPatientForm((prev: any) => ({ ...prev, extra_fields: { ...prev.extra_fields, grupo_sanguineo: e.target.value } }))}>
                               <option value="">Seleccionar...</option>
                               {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => <option key={g}>{g}</option>)}
-                            </select>
+                            </Select>
                           </div>
                           <div>
                             <FieldLabel>Alergias a anestesia</FieldLabel>
@@ -3128,11 +3129,11 @@ const cancelledAppointments = useMemo(() => {
                               </div>
                               <div>
                                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>Tipo de control</label>
-                                <select value={newNoteForm.control_type} onChange={(e) => setNewNoteForm((p) => ({ ...p, control_type: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
+                                <Select value={newNoteForm.control_type} onChange={(e) => setNewNoteForm((p) => ({ ...p, control_type: e.target.value }))} className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }}>
                                   {CONTROL_TYPES.map((opt) => (
                                     <option key={opt} value={opt}>{opt}</option>
                                   ))}
-                                </select>
+                                </Select>
                               </div>
                             </div>
 
@@ -3484,10 +3485,10 @@ const cancelledAppointments = useMemo(() => {
                                                 </div>
                                                 <div>
                                                   <FieldLabel>Tipo de tratamiento</FieldLabel>
-                                                  <select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
+                                                  <Select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
                                                     {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
-                                                  </select>
+                                                  </Select>
                                                 </div>
                                               </div>
                                               <div>
@@ -3645,10 +3646,10 @@ const cancelledAppointments = useMemo(() => {
                                                 </div>
                                                 <div>
                                                   <FieldLabel>Tipo de tratamiento</FieldLabel>
-                                                  <select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
+                                                  <Select className="w-full rounded-md border px-3 py-2 text-sm outline-none transition" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }} value={clinicalFormState[formKey]?.extra_fields?.tipo_tratamiento ?? ""} onChange={(e) => setClinicalFormState((prev: any) => ({ ...prev, [formKey]: { ...prev[formKey], extra_fields: { ...prev[formKey]?.extra_fields, tipo_tratamiento: e.target.value } } }))}>
                                                     <option value="">Seleccionar...</option>
                                                     {["Extracción","Endodoncia","Obturación","Limpieza","Ortodoncia","Blanqueamiento","Implante","Corona","Consulta inicial","Control","Otro"].map((o) => <option key={o}>{o}</option>)}
-                                                  </select>
+                                                  </Select>
                                                 </div>
                                               </div>
                                               <div>

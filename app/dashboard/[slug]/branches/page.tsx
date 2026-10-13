@@ -17,6 +17,7 @@ import { BACKEND_URL } from "@/lib/backend-url";
 import { RegionCommuneSelect } from "../../../../components/dashboard/RegionCommuneSelect";
 import { isValidRegionCommune } from "../../../../lib/chile-regions";
 import { buildFullAddress } from "../../../../lib/address";
+import Select from "@/components/ui/Select";
 
 type BusinessResponse = {
   business: {
@@ -1816,10 +1817,10 @@ export default function BranchesPage() {
                               <div className="grid gap-2 md:grid-cols-[150px_minmax(0,1fr)_150px_120px_120px_auto] md:items-end">
                                 <DateInputDMY value={specialDateDraft.date} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, date: e.target.value }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
                                 <input type="text" value={specialDateDraft.label} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, label: e.target.value }))} placeholder="Motivo" className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />
-                                <select value={specialDateDraft.is_closed ? "closed" : "partial"} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, is_closed: e.target.value === "closed" }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}>
+                                <Select value={specialDateDraft.is_closed ? "closed" : "partial"} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, is_closed: e.target.value === "closed" }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }}>
                                   <option value="closed">Todo el día</option>
                                   <option value="partial">Horario especial</option>
-                                </select>
+                                </Select>
                                 {!specialDateDraft.is_closed ? (
                                   <>
                                     <input type="text" value={specialDateDraft.start_time} onChange={(e) => setSpecialDateDraft((prev) => ({ ...prev, start_time: normalizeTimeInput(e.target.value) }))} className="h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-main)" }} />

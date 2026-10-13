@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 const PLAN_BADGE: Record<string, { label: string; color: string }> = {
   platinum: { label: 'Platinum', color: 'bg-pink-500/15 text-pink-300 border-pink-500/25' },
@@ -76,13 +77,13 @@ export default function AdminTicketsPage() {
             <h1 className="text-lg font-semibold text-white">Tickets de Soporte</h1>
             <p className="text-sm text-blue-300/50">{tickets.length} ticket{tickets.length !== 1 ? 's' : ''}</p>
           </div>
-          <select
+          <Select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
             className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
           >
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          </Select>
         </div>
 
         {loading ? (

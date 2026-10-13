@@ -31,6 +31,7 @@ import {
   type CustomerCategory,
   type CustomerCategoryThresholds,
 } from "@/lib/customer-categories";
+import Select from "@/components/ui/Select";
 
 // Categoría de cliente calculada por el backend (única fuente de verdad).
 // Las campañas antiguas del historial pueden traer "recurrent"/"frequent".
@@ -1270,7 +1271,7 @@ function RichTextEditor({
             background: "var(--bg-soft)",
           }}
         >
-          <select
+          <Select
             value="p"
             onChange={(e) => applyFormatBlock(e.target.value as "p" | "h1" | "h2")}
             className="h-10 rounded-md border px-3 text-sm outline-none"
@@ -1283,9 +1284,9 @@ function RichTextEditor({
             <option value="p">Normal</option>
             <option value="h1">Título grande</option>
             <option value="h2">Subtítulo</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={currentFontName}
             onChange={(e) => applyFontName(e.target.value)}
             className="h-10 rounded-md border px-3 text-sm outline-none"
@@ -1300,9 +1301,9 @@ function RichTextEditor({
             <option value="Georgia">Georgia</option>
             <option value="Tahoma">Tahoma</option>
             <option value="Times New Roman">Times New Roman</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={currentFontSize}
             onChange={(e) => applyFontSize(e.target.value)}
             className="h-10 rounded-md border px-3 text-sm outline-none"
@@ -1316,7 +1317,7 @@ function RichTextEditor({
             <option value="3">Normal</option>
             <option value="4">Mediana</option>
             <option value="5">Grande</option>
-          </select>
+          </Select>
 
           <ToolbarButton title="Negrita" onClick={() => runCommand("bold")}>
             <span className="font-bold">B</span>
@@ -3441,7 +3442,7 @@ export default function CampaignsPage() {
                 </label>
 
                 <InfoTooltip text={DAYS_WITHOUT_VISIT_HELP} className="flex w-full items-center gap-2">
-                  <select
+                  <Select
                     value={daysWithoutVisit}
                     onChange={(e) => setDaysWithoutVisit(e.target.value)}
                     disabled={segment === "prospect"}
@@ -3458,7 +3459,7 @@ export default function CampaignsPage() {
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </InfoTooltip>
 
                 <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -3476,7 +3477,7 @@ export default function CampaignsPage() {
                   Cantidad a enviar
                 </label>
 
-                <select
+                <Select
                   value={sendLimit}
                   onChange={(e) => setSendLimit(e.target.value)}
                   disabled={availableLimitOptions.length === 0}
@@ -3496,7 +3497,7 @@ export default function CampaignsPage() {
                       </option>
                     ))
                   )}
-                </select>
+                </Select>
               </div>
 
               <div>
@@ -3507,7 +3508,7 @@ export default function CampaignsPage() {
                   Prioridad de envío
                 </label>
 
-                <select
+                <Select
                   value={sort}
                   onChange={(e) => setSort(e.target.value as CampaignSort)}
                   className={selectClass}
@@ -3522,7 +3523,7 @@ export default function CampaignsPage() {
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -4220,7 +4221,7 @@ export default function CampaignsPage() {
                       >
                         Enfoque
                       </label>
-                      <select
+                      <Select
                         value={heroImageFit}
                         onChange={(e) =>
                           setHeroImageFit(e.target.value as ImageFitType)
@@ -4234,7 +4235,7 @@ export default function CampaignsPage() {
                       >
                         <option value="cover">Cover</option>
                         <option value="contain">Contain</option>
-                      </select>
+                      </Select>
                     </div>
                   </div>
 

@@ -42,6 +42,7 @@ import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type Appointment = {
   id: string;
@@ -572,6 +573,11 @@ const [slotMinutes, setSlotMinutes] = useState(30);
   useEffect(() => {
     if (!showDesktopFilters) return;
     function handleClickOutsideFilters(event: MouseEvent) {
+      // El menú de un <Select> se dibuja en un portal fuera del panel: un clic
+      // en una de sus opciones no es "clic afuera".
+      if (event.target instanceof Element && event.target.closest("[data-orbyx-select-menu]")) {
+        return;
+      }
       if (
         desktopFiltersRef.current &&
         !desktopFiltersRef.current.contains(event.target as Node)
@@ -4036,7 +4042,8 @@ const hasActiveFilters =
 
         :root[data-theme="clasico"] .orbyx-agenda-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
         :root[data-theme="clasico"] .orbyx-agenda-page textarea,
-        :root[data-theme="clasico"] .orbyx-agenda-page select {
+        :root[data-theme="clasico"] .orbyx-agenda-page select,
+        :root[data-theme="clasico"] .orbyx-agenda-page .orbyx-select-trigger {
           background-color: #FFFFFF !important;
           border-color: #DDE3EF !important;
           color: #172033 !important;
@@ -4066,7 +4073,8 @@ const hasActiveFilters =
 
         :root[data-theme="nocturno"] .orbyx-agenda-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
         :root[data-theme="nocturno"] .orbyx-agenda-page textarea,
-        :root[data-theme="nocturno"] .orbyx-agenda-page select {
+        :root[data-theme="nocturno"] .orbyx-agenda-page select,
+        :root[data-theme="nocturno"] .orbyx-agenda-page .orbyx-select-trigger {
           background-color: #172640 !important;
           border-color: #203A61 !important;
           color: #E6EBF5 !important;
@@ -4282,7 +4290,7 @@ const hasActiveFilters =
                 <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
                   Profesional
                 </label>
-                <select
+                <Select
                   value={selectedStaffId}
                   onChange={(e) => {
                     setSelectedStaffId(e.target.value);
@@ -4304,14 +4312,14 @@ const hasActiveFilters =
                       {staff.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
                   Servicio
                 </label>
-                <select
+                <Select
                   value={selectedServiceId}
                   onChange={(e) => {
                     setSelectedServiceId(e.target.value);
@@ -4331,14 +4339,14 @@ const hasActiveFilters =
                       {service.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold" style={{ color: "var(--agenda-filter-label)" }}>
                   Estado
                 </label>
-                <select
+                <Select
                   value={activeFilter}
                   onChange={(e) => {
                     setActiveFilter(e.target.value as FilterValue);
@@ -4356,7 +4364,7 @@ const hasActiveFilters =
                       {filterLabels[filter]}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -4739,6 +4747,17 @@ const hasActiveFilters =
                   filter: brightness(1.06);
                 }
 
+                /* Botón "Filtros": hover y foco visibles como cualquier botón. */
+                .orbyx-filter-btn:hover {
+                  border-color: var(--accent-solid) !important;
+                  background: var(--bg-soft) !important;
+                }
+
+                .orbyx-filter-btn:focus-visible {
+                  outline: 2px solid var(--accent-solid);
+                  outline-offset: 2px;
+                }
+
                 .orbyx-pending-pulse {
                   animation: orbyx-pending-pulse 1.5s ease-in-out infinite;
                 }
@@ -4747,16 +4766,6 @@ const hasActiveFilters =
                   0%, 100% { opacity: 0.6; }
                   50% { opacity: 1; }
                 }
-
-                  .orbyx-agenda-filter-select option {
-                    background: #0f3fcf;
-                    color: #ffffff;
-                  }
-
-                  .orbyx-agenda-filter-select option:checked {
-                    background: #2563eb;
-                    color: #ffffff;
-                  }
               `}</style>
 
               <div className="-mt-1 min-w-0">
@@ -4837,21 +4846,22 @@ const hasActiveFilters =
                   <button
                     type="button"
                     onClick={() => setShowDesktopFilters((prev) => !prev)}
-                    aria-label="Filtros"
+                    aria-label={
+                      mobileActiveFilterCount > 0
+                        ? `Filtros (${mobileActiveFilterCount} activos)`
+                        : "Filtros"
+                    }
                     aria-expanded={showDesktopFilters}
-                    className="relative flex h-6 w-6 items-center justify-center rounded-full border transition hover:opacity-80"
+                    aria-haspopup="dialog"
+                    className="orbyx-header-btn orbyx-filter-btn inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold"
                     style={{
-                      borderColor: hasActiveFilters ? "var(--accent-solid)" : "var(--text-muted)",
-                      color: hasActiveFilters ? "var(--accent-solid)" : "var(--text-muted)",
+                      borderColor: hasActiveFilters ? "var(--accent-solid)" : "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: hasActiveFilters ? "var(--accent-solid)" : "var(--text-main)",
                     }}
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
-                    {hasActiveFilters ? (
-                      <span
-                        className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full"
-                        style={{ background: "var(--accent-solid)" }}
-                      />
-                    ) : null}
+                    <SlidersHorizontal className="h-4 w-4" />
+                    {mobileActiveFilterCount > 0 ? `Filtros (${mobileActiveFilterCount})` : "Filtros"}
                   </button>
 
                   {showDesktopFilters ? (
@@ -4899,7 +4909,7 @@ const hasActiveFilters =
                           >
                             Profesional
                           </label>
-                          <select
+                          <Select
                             value={selectedStaffId}
                             onChange={(e) => {
                               setSelectedStaffId(e.target.value);
@@ -4921,7 +4931,7 @@ const hasActiveFilters =
                                 {staff.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         </div>
 
                         <div>
@@ -4931,7 +4941,7 @@ const hasActiveFilters =
                           >
                             Servicio
                           </label>
-                          <select
+                          <Select
                             value={selectedServiceId}
                             onChange={(e) => {
                               setSelectedServiceId(e.target.value);
@@ -4951,7 +4961,7 @@ const hasActiveFilters =
                                 {service.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         </div>
 
                         <div>
@@ -4961,7 +4971,7 @@ const hasActiveFilters =
                           >
                             Estado
                           </label>
-                          <select
+                          <Select
                             value={activeFilter}
                             onChange={(e) => {
                               setActiveFilter(e.target.value as FilterValue);
@@ -4979,7 +4989,7 @@ const hasActiveFilters =
                                 {filterLabels[filter]}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         </div>
                       </div>
 
@@ -7715,7 +7725,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   background: "var(--bg-card)",
                 }}
               >
-                <select
+                <Select
                   value={selectedStaffId}
                   onChange={(e) => {
                     setSelectedStaffId(e.target.value);
@@ -7739,7 +7749,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                       {staff.name}
                     </option>
                   ))}
-                </select>
+                </Select>
 
                 <div
                   className="rounded-xl border px-3 py-2 text-xs"
@@ -9619,7 +9629,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             {getStaffName(draft.staff_id)}
                           </div>
                         ) : (
-                          <select
+                          <Select
                             value={draft.staff_id}
                             onChange={(event) => {
                               const newStaffId = event.target.value;
@@ -9644,7 +9654,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                 {staff.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         )}
                       </div>
 
@@ -9657,7 +9667,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             {services.find((service) => service.id === draft.service_id)?.name || "Servicio"}
                           </div>
                         ) : (
-                          <select
+                          <Select
                             value={draft.service_id}
                             disabled={!draft.staff_id}
                             onChange={(event) => {
@@ -9683,7 +9693,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                                 {service.name}
                               </option>
                             ))}
-                          </select>
+                          </Select>
                         )}
                       </div>
 
@@ -10375,7 +10385,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   Control realizado *
                 </label>
 
-                <select
+                <Select
                   value={closeForm.control_type}
                   onChange={(e) =>
                     setCloseForm((prev) => ({
@@ -10393,7 +10403,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   {CONTROL_TYPES.map((opt) => (
                     <option key={opt}>{opt}</option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {closeForm.control_type === "Otro" ? (
@@ -10559,7 +10569,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                   </p>
                 </div>
 
-                <select
+                <Select
                   value={closeForm.next_control_mode}
                   onChange={(e) =>
                     setCloseForm((prev) => ({
@@ -10584,7 +10594,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
 <option value="1_year">1 año</option>
 <option value="exact_date">Fecha exacta</option>
 <option value="custom">Personalizado</option>
-                </select>
+                </Select>
 
 {closeForm.next_control_mode === "exact_date" ? (
   <div className="mt-3">
@@ -10627,7 +10637,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                       }}
                     />
 
-                    <select
+                    <Select
                       value={closeForm.next_control_custom_unit}
                       onChange={(e) =>
                         setCloseForm((prev) => ({
@@ -10648,7 +10658,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                       <option value="days">Días</option>
                       <option value="months">Meses</option>
                       <option value="years">Años</option>
-                    </select>
+                    </Select>
                   </div>
                 ) : null}
               </div>
