@@ -8,8 +8,14 @@ import { usePermissions } from "../../../../lib/permissions-context";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { isPlanAtLeast } from "@/lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
-
-type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
+import {
+  CUSTOMER_CATEGORY_OPTIONS,
+  DAYS_WITHOUT_VISIT_OPTIONS,
+  describeCustomerCategory,
+  getCustomerCategorySingular,
+  type CustomerCategory,
+  type CustomerCategoryThresholds,
+} from "@/lib/customer-categories";
 
 type Pet = {
   id: string;
@@ -28,7 +34,16 @@ type Customer = {
   total_visits: number;
   created_at: string;
   updated_at: string;
-  segment?: CustomerSegment;
+  // Los calcula el backend (única fuente de verdad): category, motivo,
+  // visitas asistidas, días sin venir e inasistencias. `segment` repite
+  // `category` por compatibilidad.
+  segment?: CustomerCategory;
+  category?: CustomerCategory;
+  category_label?: string;
+  category_reason?: string;
+  attended_visits?: number;
+  days_since_last_visit?: number | null;
+  no_show_count?: number;
   pets?: Pet[];
   has_completed_visit?: boolean;
   has_review?: boolean;
@@ -36,22 +51,22 @@ type Customer = {
 
 type CustomersResponse = {
   total: number;
+  truncated?: boolean;
   customers: Customer[];
+  thresholds?: CustomerCategoryThresholds;
   summary?: {
     total: number;
+    prospectos: number;
     nuevos: number;
-    recurrentes: number;
-    frecuentes: number;
+    activos: number;
+    en_riesgo: number;
     inactivos: number;
   };
 };
 
-const SEGMENT_OPTIONS = [
+const SEGMENT_OPTIONS: Array<{ key: string; label: string }> = [
   { key: "all", label: "Todos" },
-  { key: "new", label: "Nuevos" },
-  { key: "recurrent", label: "Recurrentes" },
-  { key: "frequent", label: "Frecuentes" },
-  { key: "inactive", label: "Inactivos" },
+  ...CUSTOMER_CATEGORY_OPTIONS.map((o) => ({ key: o.key, label: o.label })),
 ];
 
 function formatDate(value?: string | null) {
@@ -113,22 +128,44 @@ function Avatar({ id, name }: { id: string; name: string }) {
   );
 }
 
-function SegmentBadge({ segment }: { segment?: string }) {
-  const map: Record<string, { label: string; tone: SegmentTone }> = {
-    frequent: { label: "Frecuente", tone: "emerald" },
-    recurrent: { label: "Recurrente", tone: "blue" },
-    inactive: { label: "Inactivo", tone: "rose" },
-    new: { label: "Nuevo", tone: "amber" },
+// Gris para "Prospecto" (aún no es cliente): usa las variables neutras de la
+// página, sin tono de color.
+const PROSPECT_TONE = { solid: "var(--cust-muted)", tint: "var(--cust-soft-bg)", text: "var(--cust-ink)" };
+
+function SegmentBadge({ segment, label }: { segment?: string; label?: string }) {
+  const map: Record<string, SegmentTone | "neutral"> = {
+    prospect: "neutral",
+    new: "blue",
+    active: "emerald",
+    at_risk: "amber",
+    inactive: "rose",
   };
-  const { label, tone } = map[segment ?? "new"] ?? map.new;
-  const t = SEGMENT_TONE[tone];
+  const tone = map[segment ?? "prospect"] ?? "neutral";
+  const t = tone === "neutral" ? PROSPECT_TONE : SEGMENT_TONE[tone];
   return (
     <span
       className="inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold"
       style={{ background: t.tint, color: t.text }}
     >
-      {label}
+      {label || getCustomerCategorySingular(segment)}
     </span>
+  );
+}
+
+// "Motivo" de la categoría + inasistencias como dato aparte (no es categoría).
+function CategoryReason({ customer }: { customer: Customer }) {
+  const noShows = Number(customer.no_show_count || 0);
+  if (!customer.category_reason && noShows === 0) return null;
+  return (
+    <p className="mt-1 text-xs" style={{ color: "var(--cust-muted)" }}>
+      {customer.category_reason}
+      {noShows > 0 ? (
+        <>
+          {customer.category_reason ? " · " : ""}
+          {noShows} inasistencia{noShows === 1 ? "" : "s"}
+        </>
+      ) : null}
+    </p>
   );
 }
 
@@ -157,7 +194,10 @@ export default function CustomersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState("all");
-  const [inactiveDays, setInactiveDays] = useState("60");
+  // Mínimo de días sin venir desde la última visita asistida ("" = sin filtro).
+  const [daysWithoutVisit, setDaysWithoutVisit] = useState("");
+  const [thresholds, setThresholds] = useState<CustomerCategoryThresholds | null>(null);
+  const [totalMatching, setTotalMatching] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [requestingReviewFor, setRequestingReviewFor] = useState("");
 
@@ -181,8 +221,9 @@ export default function CustomersPage() {
   // "Invitar por WhatsApp" — igual que "Pedir reseña", 100% frontend
   // (wa.me con mensaje precargado y editable, sin Twilio ni backend): a
   // diferencia de esa, no requiere una visita completada, solo teléfono.
-  // El mensaje varía según el mismo `segment` que ya devuelve
-  // GET /customers/:slug (inactive = reactivación, resto = disponibilidad).
+  // El mensaje varía según la misma `category` que ya devuelve
+  // GET /customers/:slug (en riesgo / inactivo = reactivación, resto =
+  // disponibilidad).
   function handleInviteWhatsApp(customer: Customer) {
     if (!customer.phone) return;
 
@@ -191,7 +232,7 @@ export default function CustomersPage() {
     const bizSuffix = businessName ? ` en ${businessName}` : "";
 
     const message =
-      customer.segment === "inactive"
+      customer.category === "inactive" || customer.category === "at_risk"
         ? `${greeting} Te extrañamos${bizSuffix} 💙 Tenemos horarios disponibles para ti, agenda aquí: ${publicUrl}`
         : `${greeting} Tenemos horarios disponibles${bizSuffix}. Agenda aquí: ${publicUrl}`;
 
@@ -203,9 +244,10 @@ export default function CustomersPage() {
 
   const [summary, setSummary] = useState({
     total: 0,
+    prospectos: 0,
     nuevos: 0,
-    recurrentes: 0,
-    frecuentes: 0,
+    activos: 0,
+    en_riesgo: 0,
     inactivos: 0,
   });
 
@@ -252,7 +294,8 @@ export default function CustomersPage() {
       const params = new URLSearchParams();
       if (search) params.set("q", search);
       if (segment !== "all") params.set("segment", segment);
-      params.set("inactive_days", inactiveDays);
+      if (daysWithoutVisit) params.set("days_without_visit", daysWithoutVisit);
+      params.set("limit", "500");
       if (selectedBranchId) params.set("branch_id", selectedBranchId);
 
       const res = await apiFetch(
@@ -261,11 +304,13 @@ export default function CustomersPage() {
       const data: CustomersResponse = await res.json();
 
       setCustomers(data.customers || []);
+      setTotalMatching(Number(data.total ?? (data.customers || []).length));
+      setThresholds(data.thresholds || null);
       setSummary(data.summary || summary);
     }
 
     if (slug) load();
-  }, [slug, search, segment, inactiveDays, selectedBranchId]);
+  }, [slug, search, segment, daysWithoutVisit, selectedBranchId]);
 
   const activeSegmentLabel = useMemo(() => {
     return SEGMENT_OPTIONS.find((i) => i.key === segment)?.label || "Todos";
@@ -274,7 +319,7 @@ export default function CustomersPage() {
   const mobileActiveFilterCount = [
     searchInput.trim().length > 0,
     segment !== "all",
-    inactiveDays !== "60",
+    daysWithoutVisit !== "",
   ].filter(Boolean).length;
 
   return (
@@ -450,15 +495,17 @@ export default function CustomersPage() {
             </div>
 
             <select
-              value={inactiveDays}
-              onChange={(e) => setInactiveDays(e.target.value)}
+              value={daysWithoutVisit}
+              onChange={(e) => setDaysWithoutVisit(e.target.value)}
+              aria-label="Días sin venir"
               className="mb-3 w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition"
               style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
             >
-              <option value="30">Inactivos: 30 días</option>
-              <option value="60">Inactivos: 60 días</option>
-              <option value="90">Inactivos: 90 días</option>
-              <option value="120">Inactivos: 120 días</option>
+              {DAYS_WITHOUT_VISIT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
+                </option>
+              ))}
             </select>
 
             <p className="mb-4 text-xs" style={{ color: "var(--cust-muted)" }}>
@@ -544,17 +591,25 @@ export default function CustomersPage() {
           </div>
 
           <select
-            value={inactiveDays}
-            onChange={(e) => setInactiveDays(e.target.value)}
+            value={daysWithoutVisit}
+            onChange={(e) => setDaysWithoutVisit(e.target.value)}
+            aria-label="Días sin venir"
             className="shrink-0 rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-2"
             style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
           >
-            <option value="30">Inactivos: 30 días</option>
-            <option value="60">Inactivos: 60 días</option>
-            <option value="90">Inactivos: 90 días</option>
-            <option value="120">Inactivos: 120 días</option>
+            {DAYS_WITHOUT_VISIT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.value ? `Sin venir: ${o.label}` : "Días sin venir: cualquiera"}
+              </option>
+            ))}
           </select>
         </div>
+
+        {segment !== "all" && CUSTOMER_CATEGORY_OPTIONS.some((o) => o.key === segment) ? (
+          <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
+            {describeCustomerCategory(segment as CustomerCategory, thresholds)}
+          </p>
+        ) : null}
 
         <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
           Viendo: <b style={{ color: "var(--cust-ink)" }}>{activeSegmentLabel}</b>
@@ -573,7 +628,9 @@ export default function CustomersPage() {
           {isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
           {customers.length > 0 && (
             <span className="ml-2 text-xs font-normal" style={{ color: "var(--cust-muted)" }}>
-              {customers.length} resultado{customers.length !== 1 ? "s" : ""}
+              {totalMatching > customers.length
+                ? `Mostrando ${customers.length} de ${totalMatching}`
+                : `${customers.length} resultado${customers.length !== 1 ? "s" : ""}`}
             </span>
           )}
         </h2>
@@ -621,8 +678,9 @@ export default function CustomersPage() {
                       )}
                     </div>
                   </div>
-                  <SegmentBadge segment={c.segment} />
+                  <SegmentBadge segment={c.category} label={c.category_label} />
                 </div>
+                <CategoryReason customer={c} />
 
                 <div className="mt-3">
                   <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
@@ -751,7 +809,7 @@ export default function CustomersPage() {
                     Visitas
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
-                    Segmento
+                    Categoría
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "var(--cust-table-head-text)" }}>
                     Última visita
@@ -795,11 +853,12 @@ export default function CustomersPage() {
                     </td>
 
                     <td className="px-4 py-3.5 font-bold" style={{ color: "var(--cust-blue-solid)" }}>
-                      {c.total_visits}
+                      {c.attended_visits ?? c.total_visits}
                     </td>
 
                     <td className="px-4 py-3.5">
-                      <SegmentBadge segment={c.segment} />
+                      <SegmentBadge segment={c.category} label={c.category_label} />
+                      <CategoryReason customer={c} />
                     </td>
 
                     <td className="px-4 py-3.5 text-xs" style={{ color: "var(--cust-ink)" }}>

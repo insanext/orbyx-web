@@ -20,8 +20,18 @@ import { PageHeader } from "../../../../components/dashboard/page-header";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { PLAN_LABELS, isKnownPlanSlug, isPlanAtLeast, type PlanSlug } from "../../../../lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
+import {
+  CUSTOMER_CATEGORY_OPTIONS,
+  DAYS_WITHOUT_VISIT_OPTIONS,
+  describeCustomerCategory,
+  getCustomerCategorySingular,
+  type CustomerCategory,
+  type CustomerCategoryThresholds,
+} from "@/lib/customer-categories";
 
-type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
+// Categoría de cliente calculada por el backend (única fuente de verdad).
+// Las campañas antiguas del historial pueden traer "recurrent"/"frequent".
+type CustomerSegment = CustomerCategory;
 type CampaignChannel = "email" | "whatsapp";
 type CampaignSort = "oldest" | "recent" | "most_visits" | "least_visits";
 type HistoryPeriod = "all" | "7d" | "30d" | "this_month" | "custom";
@@ -63,6 +73,12 @@ type Customer = {
   created_at: string;
   updated_at: string;
   segment?: CustomerSegment;
+  category?: CustomerSegment;
+  category_label?: string;
+  category_reason?: string;
+  attended_visits?: number;
+  days_since_last_visit?: number | null;
+  no_show_count?: number;
   is_inactive?: boolean;
   // Se dio de baja de los correos de campaña de este negocio (I13).
   marketing_opt_out?: boolean;
@@ -80,6 +96,8 @@ type AudienceRecipient = {
   segment?: CustomerSegment;
   last_visit_at?: string | null;
   total_visits?: number;
+  // Motivo de la categoría ("Última visita hace 134 días", etc.)
+  reason?: string;
 };
 
 type ManualRecipientForm = {
@@ -93,15 +111,17 @@ type CustomersResponse = {
   customers: Customer[];
   summary?: {
     total: number;
+    prospectos: number;
     nuevos: number;
-    recurrentes: number;
-    frecuentes: number;
+    activos: number;
+    en_riesgo: number;
     inactivos: number;
   };
+  thresholds?: CustomerCategoryThresholds;
   filters?: {
     q?: string;
     segment?: string | null;
-    inactive_days?: number;
+    days_without_visit?: number | null;
   };
   error?: string;
 };
@@ -286,32 +306,13 @@ function isValidChileanMobile(rawPhone?: string | null) {
   return digits.startsWith("9");
 }
 
+// Las 5 categorías de cliente (mismas que el listado de clientes y los
+// Indicadores). La descripción con días se arma con los umbrales que informa
+// el backend (describeCustomerCategory).
 const SEGMENT_OPTIONS: Array<{
   key: CustomerSegment;
   label: string;
-  description: string;
-}> = [
-  {
-    key: "new",
-    label: "Nuevos",
-    description: "Clientes recientes o de primera visita.",
-  },
-  {
-    key: "recurrent",
-    label: "Recurrentes",
-    description: "Clientes que ya volvieron más de una vez.",
-  },
-  {
-    key: "frequent",
-    label: "Frecuentes",
-    description: "Clientes con alta recurrencia.",
-  },
-  {
-    key: "inactive",
-    label: "Inactivos",
-    description: "Clientes sin actividad en una ventana de días.",
-  },
-];
+}> = CUSTOMER_CATEGORY_OPTIONS.map((o) => ({ key: o.key, label: o.label }));
 
 const CHANNEL_OPTIONS: Array<{
   key: CampaignChannel;
@@ -358,13 +359,6 @@ const SORT_OPTIONS: Array<{
     label: "Menos visitas",
     description: "Prioriza clientes menos recurrentes.",
   },
-];
-
-const INACTIVE_OPTIONS = [
-  { value: "30", label: "30 días" },
-  { value: "60", label: "60 días" },
-  { value: "90", label: "90 días" },
-  { value: "120", label: "120+ días" },
 ];
 
 function normalizePlan(plan?: string): PlanSlug {
@@ -446,38 +440,51 @@ function plainTextToHtml(value?: string | null) {
 }
 
 function getCustomerSegmentMeta(segment?: string) {
-  if (segment === "frequent") {
+  // Valores antiguos del historial: recurrente/frecuente ahora son "activo".
+  const key = segment === "recurrent" || segment === "frequent" ? "active" : segment;
+  const label = getCustomerCategorySingular(key);
+
+  if (key === "active") {
     return {
-      label: "Frecuente",
+      label,
       bg: "rgba(16,185,129,0.14)",
       border: "rgba(16,185,129,0.28)",
       color: "rgb(16 185 129)",
     };
   }
 
-  if (segment === "recurrent") {
+  if (key === "at_risk") {
     return {
-      label: "Recurrente",
-      bg: "rgba(14,165,233,0.14)",
-      border: "rgba(14,165,233,0.28)",
-      color: "rgb(14 165 233)",
+      label,
+      bg: "rgba(245,158,11,0.14)",
+      border: "rgba(245,158,11,0.28)",
+      color: "rgb(245 158 11)",
     };
   }
 
-  if (segment === "inactive") {
+  if (key === "inactive") {
     return {
-      label: "Inactivo",
+      label,
       bg: "rgba(244,63,94,0.14)",
       border: "rgba(244,63,94,0.28)",
       color: "rgb(244 63 94)",
     };
   }
 
+  if (key === "new") {
+    return {
+      label,
+      bg: "rgba(14,165,233,0.14)",
+      border: "rgba(14,165,233,0.28)",
+      color: "rgb(14 165 233)",
+    };
+  }
+
   return {
-    label: "Nuevo",
-    bg: "rgba(245,158,11,0.14)",
-    border: "rgba(245,158,11,0.28)",
-    color: "rgb(245 158 11)",
+    label,
+    bg: "rgba(100,116,139,0.14)",
+    border: "rgba(100,116,139,0.28)",
+    color: "rgb(100 116 139)",
   };
 }
 
@@ -553,6 +560,9 @@ function getSortLabel(sort?: string) {
 }
 
 function getSegmentLabel(segment?: string) {
+  // Campañas anteriores al cambio de categorías guardaron "recurrent"/"frequent".
+  if (segment === "recurrent") return "Recurrentes";
+  if (segment === "frequent") return "Frecuentes";
   return SEGMENT_OPTIONS.find((item) => item.key === segment)?.label || "Segmento";
 }
 
@@ -1474,7 +1484,11 @@ export default function CampaignsPage() {
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segment, setSegment] = useState<CustomerSegment>("inactive");
-  const [inactiveDays, setInactiveDays] = useState("120");
+  // Mínimo de días sin venir desde la última visita ASISTIDA ("" = sin
+  // filtro). Convive con la categoría; los prospectos nunca calzan.
+  const [daysWithoutVisit, setDaysWithoutVisit] = useState("");
+  const [thresholds, setThresholds] = useState<CustomerCategoryThresholds | null>(null);
+  const [audienceTotal, setAudienceTotal] = useState(0);
   const [sendLimit, setSendLimit] = useState("50");
   const [sort, setSort] = useState<CampaignSort>("oldest");
   const [campaignName, setCampaignName] = useState("");
@@ -1784,7 +1798,11 @@ export default function CampaignsPage() {
 
         const params = new URLSearchParams();
         params.set("segment", segment);
-        params.set("inactive_days", inactiveDays);
+        if (daysWithoutVisit) {
+          params.set("days_without_visit", daysWithoutVisit);
+        }
+        params.set("sort", sort);
+        params.set("limit", "2000");
         if (selectedBranchId) {
           params.set("branch_id", selectedBranchId);
         }
@@ -1799,10 +1817,14 @@ export default function CampaignsPage() {
           throw new Error(data?.error || "No se pudo cargar la audiencia");
         }
 
-        setCustomers(Array.isArray(data.customers) ? data.customers : []);
+        const loadedCustomers = Array.isArray(data.customers) ? data.customers : [];
+        setCustomers(loadedCustomers);
+        setAudienceTotal(Number(data.total ?? loadedCustomers.length));
+        setThresholds(data.thresholds || null);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Error cargando audiencia");
         setCustomers([]);
+        setAudienceTotal(0);
       } finally {
         setLoadingAudience(false);
       }
@@ -1811,7 +1833,7 @@ export default function CampaignsPage() {
     if (slug) {
       loadAudience();
     }
-  }, [slug, segment, inactiveDays, selectedBranchId]);
+  }, [slug, segment, daysWithoutVisit, sort, selectedBranchId]);
 
   async function loadCampaignHistory(currentSlug: string) {
     try {
@@ -2103,9 +2125,10 @@ export default function CampaignsPage() {
       name: customer.name || "Sin nombre",
       email: customer.email,
       phone: customer.phone,
-      segment: customer.segment,
+      segment: customer.category || customer.segment,
       last_visit_at: customer.last_visit_at,
-      total_visits: customer.total_visits,
+      total_visits: customer.attended_visits ?? customer.total_visits,
+      reason: customer.category_reason,
     }));
   }, [customers, excludedRecipientIds]);
 
@@ -2216,6 +2239,17 @@ export default function CampaignsPage() {
       availableForChannel: included,
     };
   }, [customers, allAudienceRecipients, includedAudienceRecipients, manualRecipients, channel]);
+
+  // Cuántos clientes calzan con el filtro actual (antes de enviar), y cuántos
+  // tienen un contacto utilizable por canal.
+  const audienceContactCounts = useMemo(
+    () => ({
+      withEmail: customers.filter((c) => !!c.email && !c.marketing_opt_out).length,
+      withWhatsapp: customers.filter((c) => isValidChileanMobile(c.phone)).length,
+      optedOut: customers.filter((c) => !!c.email && c.marketing_opt_out).length,
+    }),
+    [customers]
+  );
 
   const limitedAudienceCount = useMemo(() => {
     return Math.min(Number(sendLimit || 50), includedAudienceRecipients.length || 0);
@@ -2481,7 +2515,8 @@ export default function CampaignsPage() {
             slug,
             campaign_name: campaignName.trim() || null,
             segment,
-            inactive_days: Number(inactiveDays),
+            days_without_visit: daysWithoutVisit ? Number(daysWithoutVisit) : null,
+            inactive_days: Number(daysWithoutVisit || 60),
             sort,
             plan,
             plan_limit: planLimit,
@@ -2537,7 +2572,8 @@ export default function CampaignsPage() {
           channel,
           campaign_name: campaignName.trim() || null,
           segment,
-          inactive_days: Number(inactiveDays),
+          days_without_visit: daysWithoutVisit ? Number(daysWithoutVisit) : null,
+          inactive_days: Number(daysWithoutVisit || 60),
           subject: subject.trim(),
           message: editorHtmlToPlainText(messageHtml).trim(),
           message_html: normalizeEditorHtml(messageHtml),
@@ -3376,7 +3412,13 @@ export default function CampaignsPage() {
               <div>
                 <select
                   value={segment}
-                  onChange={(e) => setSegment(e.target.value as CustomerSegment)}
+                  onChange={(e) => {
+                    const next = e.target.value as CustomerSegment;
+                    setSegment(next);
+                    // Los prospectos no tienen visitas: el filtro por días
+                    // no aplica.
+                    if (next === "prospect") setDaysWithoutVisit("");
+                  }}
                   className={selectClass}
                   style={{
                     borderColor: "var(--border-color)",
@@ -3392,54 +3434,45 @@ export default function CampaignsPage() {
                 </select>
 
                 <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-                  {SEGMENT_OPTIONS.find((s) => s.key === segment)?.description}
+                  {describeCustomerCategory(segment, thresholds)}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
-              {segment === "inactive" ? (
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Inactivos en
-                  </label>
+              <div>
+                <label
+                  className="mb-2 block text-sm font-medium"
+                  style={{ color: "var(--text-main)" }}
+                >
+                  Días sin venir (opcional)
+                </label>
 
-                  <select
-                    value={inactiveDays}
-                    onChange={(e) => setInactiveDays(e.target.value)}
-                    className={selectClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    {INACTIVE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div
-                  className="rounded-md border p-3 sm:p-4"
+                <select
+                  value={daysWithoutVisit}
+                  onChange={(e) => setDaysWithoutVisit(e.target.value)}
+                  disabled={segment === "prospect"}
+                  className={selectClass}
                   style={{
                     borderColor: "var(--border-color)",
-                    background: "var(--bg-soft)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                    opacity: segment === "prospect" ? 0.6 : 1,
                   }}
                 >
-                  <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                    Segmento actual
-                  </p>
-                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                    {selectedSegmentLabel}
-                  </p>
-                </div>
-              )}
+                  {DAYS_WITHOUT_VISIT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                  {segment === "prospect"
+                    ? "Los prospectos aún no tienen visitas, por eso no se filtran por días."
+                    : "Cuenta desde su última visita a la que sí asistió."}
+                </p>
+              </div>
 
               <div>
                 <label
@@ -3497,6 +3530,30 @@ export default function CampaignsPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Cuántos clientes calzan con el filtro, antes de enviar. */}
+            <div
+              className="rounded-md border p-3 sm:p-4"
+              style={{
+                borderColor: "rgba(37,99,235,0.22)",
+                background: "rgba(37,99,235,0.06)",
+              }}
+            >
+              <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                {loadingAudience
+                  ? "Calculando audiencia..."
+                  : `Con este filtro calzan ${audienceTotal} cliente${audienceTotal === 1 ? "" : "s"}`}
+              </p>
+              {!loadingAudience ? (
+                <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                  {audienceContactCounts.withEmail} con email · {audienceContactCounts.withWhatsapp} con
+                  celular válido para WhatsApp
+                  {audienceContactCounts.optedOut > 0
+                    ? ` · ${audienceContactCounts.optedOut} se dieron de baja de tus correos`
+                    : ""}
+                </p>
+              ) : null}
             </div>
           </div>
         </SectionCard>
@@ -3786,6 +3843,7 @@ export default function CampaignsPage() {
                                   className="mt-1 text-xs"
                                   style={{ color: "var(--text-muted)" }}
                                 >
+                                  {item.reason ? `${item.reason} · ` : ""}
                                   Última visita: {formatLastVisit(item.last_visit_at)} · Visitas:{" "}
                                   {item.total_visits || 0}
                                 </p>

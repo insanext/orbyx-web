@@ -49,9 +49,15 @@ type Customer = {
   chronic_conditions?: string | null;
   family_history?: string | null;
   habits?: string | null;
-  // Ya viene en la respuesta de GET /customers/:slug (mismo endpoint que usa
-  // el listado) — no es un campo nuevo, solo faltaba en este tipo local.
+  // Ya vienen en la respuesta de GET /customers/:slug (mismo endpoint y mismo
+  // cálculo que el listado y Campañas): categoría, motivo, visitas asistidas.
   segment?: string;
+  category?: string;
+  category_label?: string;
+  category_reason?: string;
+  attended_visits?: number;
+  days_since_last_visit?: number | null;
+  no_show_count?: number;
 };
 
 type Pet = {
@@ -952,7 +958,7 @@ export default function CustomerDetailPage() {
           setBusinessCategory("");
         }
 
-        const resCustomers = await apiFetch(`${BACKEND_URL}/customers/${slug}`);
+        const resCustomers = await apiFetch(`${BACKEND_URL}/customers/${slug}?limit=2000`);
         const dataCustomers = await resCustomers.json();
 
         const found = dataCustomers.customers?.find(
@@ -1231,7 +1237,6 @@ const cancelledAppointments = useMemo(() => {
   return latestAppointments.filter((appt) => ["canceled", "cancelled"].includes(String(appt.status || "").toLowerCase()));
 }, [latestAppointments]);
 
-const lastValidAppointment = validAppointments[0] || null;
 
 
   const latestPets = useMemo(() => {
@@ -1628,19 +1633,36 @@ const lastValidAppointment = validAppointments[0] || null;
           📞 {customer.phone || "Sin teléfono"} · ✉️ {customer.email || "Sin email"}
         </p>
 
+        {customer.category_label ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white">
+              {customer.category_label}
+            </span>
+            {customer.category_reason ? (
+              <span className="text-xs text-slate-300">{customer.category_reason}</span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Visitas = solo citas efectivamente asistidas (las calcula el
+            backend). Las inasistencias van aparte, no son una categoría. */}
         <p className="mt-3 text-sm text-slate-400">
           {isVeterinaria ? (
-            <>🐶 {pets.length} mascotas · 🩺 {validAppointments.length} visitas</>
+            <>🐶 {pets.length} mascotas · 🩺 {customer.attended_visits ?? 0} visitas</>
           ) : (
-            <>🗓️ {latestAppointments.length} registros</>
+            <>🗓️ {customer.attended_visits ?? 0} visitas</>
           )}
+          {Number(customer.no_show_count || 0) > 0 ? (
+            <>
+              {" "}
+              · {customer.no_show_count} inasistencia{customer.no_show_count === 1 ? "" : "s"}
+            </>
+          ) : null}
         </p>
 
         <p className="mt-2 text-xs text-slate-400">
           Última visita:{" "}
-          {isVeterinaria
-            ? formatDateLong(lastValidAppointment?.start_at)
-            : formatDateLong(lastValidAppointment?.start_at)}
+          {customer.last_visit_at ? formatDateLong(customer.last_visit_at) : "Aún no ha asistido"}
         </p>
 
         {!isVeterinaria && (
@@ -2792,16 +2814,25 @@ const lastValidAppointment = validAppointments[0] || null;
                           <span
                             className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
                             style={
-                              customer?.segment === "inactive"
+                              customer?.category === "inactive"
                                 ? { background: "var(--pat-rose-tint)", color: "var(--pat-rose-text)" }
+                                : customer?.category === "at_risk"
+                                ? { background: "var(--pat-amber-tint)", color: "var(--pat-amber-text)" }
+                                : customer?.category === "prospect"
+                                ? { background: "var(--pat-blue-tint)", color: "var(--pat-blue-text)" }
                                 : { background: "var(--pat-green-tint)", color: "var(--pat-green-text)" }
                             }
                           >
-                            {customer?.segment === "inactive" ? "Inactivo" : "Activo"}
+                            {customer?.category_label || "Prospecto"}
                           </span>
                         </div>
                         <p className="mt-0.5 text-sm" style={{ color: "var(--text-muted)" }}>
-                          Datos del paciente e historial de atenciones clínicas.
+                          {customer?.category_reason
+                            ? `${customer.category_reason}.`
+                            : "Datos del paciente e historial de atenciones clínicas."}
+                          {Number(customer?.no_show_count || 0) > 0
+                            ? ` ${customer?.no_show_count} inasistencia${customer?.no_show_count === 1 ? "" : "s"}.`
+                            : ""}
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">

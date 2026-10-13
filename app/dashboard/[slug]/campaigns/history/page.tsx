@@ -16,7 +16,8 @@ import {
 import { BACKEND_URL } from "@/lib/backend-url";
 
 type CampaignChannel = "email" | "whatsapp";
-type CustomerSegment = "new" | "recurrent" | "frequent" | "inactive";
+// Categorías actuales + las antiguas que siguen apareciendo en campañas ya enviadas.
+type CustomerSegment = "prospect" | "new" | "active" | "at_risk" | "inactive" | "recurrent" | "frequent";
 
 type CampaignHistoryItem = {
   id: string;
@@ -60,10 +61,14 @@ function formatDate(value?: string | null) {
 }
 
 function getSegmentLabel(segment?: string) {
+  if (segment === "prospect") return "Prospectos";
   if (segment === "new") return "Nuevos";
+  if (segment === "active") return "Activos";
+  if (segment === "at_risk") return "En riesgo";
+  if (segment === "inactive") return "Inactivos";
+  // Campañas anteriores al cambio de categorías.
   if (segment === "recurrent") return "Recurrentes";
   if (segment === "frequent") return "Frecuentes";
-  if (segment === "inactive") return "Inactivos";
   return "Segmento";
 }
 

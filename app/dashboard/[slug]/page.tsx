@@ -35,10 +35,26 @@ import { apiFetch } from "@/lib/api";
 import { isPlanAtLeast } from "@/lib/plans";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { CUSTOMER_CATEGORY_OPTIONS, type CustomerCategoryThresholds } from "@/lib/customer-categories";
 
 // ---- Tipos — deben calzar con la respuesta de GET /stats/:slug (server.js) ----
 type ByStatus = { booked: number; completed: number; canceled: number; no_show: number; rescheduled: number };
-type CustomerRow = { id: string; name: string | null; email: string | null; phone: string | null; total_visits: number; last_visit_at: string | null; segment: string };
+// Las categorías, visitas asistidas y días sin venir los calcula el backend
+// (misma función que el listado de clientes y Campañas).
+type CustomerRow = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  total_visits: number;
+  last_visit_at: string | null;
+  segment: string;
+  category?: string;
+  category_label?: string;
+  category_reason?: string;
+  days_since_last_visit?: number | null;
+  no_show_count?: number;
+};
 type ServiceRow = { service_id: string; name: string; total: number };
 type AddonRow = { addon_key: string; name: string; quantity: number; balance: number; billing_cycle: string };
 type UsageInfo = { allowed: boolean; limit: number; base: number; addon: number; used: number; remaining: number };
@@ -60,6 +76,8 @@ type StatsResponse = {
   basic: {
     appointments: { total: number; by_status: ByStatus; no_show_rate: number; cancellation_rate: number };
     customers: { total: number; new_in_period: number };
+    customer_categories?: { prospect: number; new: number; active: number; at_risk: number; inactive: number };
+    customer_category_thresholds?: CustomerCategoryThresholds;
     customer_ranking: { active: CustomerRow[]; inactive: CustomerRow[]; inactive_days_threshold: number };
     top_services: ServiceRow[];
     addons: AddonRow[];
@@ -101,6 +119,7 @@ const INACTIVE_PRESETS = [
   { key: "30", label: "30 días", days: 30 },
   { key: "60", label: "60 días", days: 60 },
   { key: "90", label: "90 días", days: 90 },
+  { key: "120", label: "120 días", days: 120 },
   { key: "custom", label: "Personalizado" },
 ] as const;
 type InactivePresetKey = (typeof INACTIVE_PRESETS)[number]["key"];
@@ -685,13 +704,23 @@ function CustomerRankingList({
                     {item.name || "Cliente"}
                   </span>
                   <span className="shrink-0 text-sm tabular-nums" style={{ color: INK }}>
-                    {mode === "active" ? `${item.total_visits} visita${item.total_visits === 1 ? "" : "s"}` : "—"}
+                    {mode === "active"
+                      ? `${item.total_visits} visita${item.total_visits === 1 ? "" : "s"}`
+                      : item.days_since_last_visit != null
+                        ? `${item.days_since_last_visit} días`
+                        : "—"}
                   </span>
                 </div>
+                {mode === "inactive" ? (
+                  <p className="text-[11px]" style={{ color: TONE.red.text }}>
+                    {item.category_label || "Inactivo"}
+                    {item.category_reason ? ` · ${item.category_reason}` : ""}
+                  </p>
+                ) : null}
                 {mode === "active" ? (
                   <>
                     <p className="text-[11px]" style={{ color: TONE.indigo.solid }}>
-                      {item.segment === "frequent" ? "Frecuente" : "Recurrente"}
+                      {item.category_reason || item.category_label || "Activo"}
                     </p>
                     <div className="mt-1.5 h-1 w-full" style={{ background: TRACK_BG, borderRadius: RADIUS_PILL, overflow: "hidden" }}>
                       <div
@@ -708,7 +737,12 @@ function CustomerRankingList({
                 <p>Teléfono: {item.phone || "—"}</p>
                 <p>Email: {item.email || "—"}</p>
                 {mode === "inactive" ? <p>Última visita: {formatDateCL(item.last_visit_at)}</p> : null}
-                {mode === "inactive" ? <p>Total visitas históricas: {item.total_visits}</p> : null}
+                {mode === "inactive" ? <p>Visitas a las que asistió: {item.total_visits}</p> : null}
+                {Number(item.no_show_count || 0) > 0 ? (
+                  <p>
+                    {item.no_show_count} inasistencia{item.no_show_count === 1 ? "" : "s"}
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1028,22 +1062,25 @@ export default function DashboardHomePage() {
         rows: Object.entries(data.basic.appointments.by_status).map(([estado, total]) => ({ estado, total })),
       },
       {
-        title: "Clientes más activos / recurrentes",
+        title: "Clientes más activos",
         columns: [
           { key: "name", label: "Nombre" },
           { key: "phone", label: "Teléfono" },
           { key: "email", label: "Email" },
+          { key: "category_label", label: "Categoría" },
           { key: "total_visits", label: "Visitas" },
           { key: "last_visit_at", label: "Última visita" },
         ],
         rows: data.basic.customer_ranking.active.map((c) => ({ ...c, last_visit_at: formatDateCL(c.last_visit_at) })),
       },
       {
-        title: "Clientes inactivos",
+        title: "Clientes que dejaron de venir",
         columns: [
           { key: "name", label: "Nombre" },
           { key: "phone", label: "Teléfono" },
           { key: "email", label: "Email" },
+          { key: "category_label", label: "Categoría" },
+          { key: "days_since_last_visit", label: "Días sin venir" },
           { key: "last_visit_at", label: "Última visita" },
         ],
         rows: data.basic.customer_ranking.inactive.map((c) => ({ ...c, last_visit_at: formatDateCL(c.last_visit_at) })),
@@ -1338,8 +1375,38 @@ export default function DashboardHomePage() {
             <SubHeading>Clientes</SubHeading>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <Kpi icon={Users} tone="indigo" label="Clientes totales" value={String(data.basic.customers.total)} />
-              <Kpi icon={UserPlus} tone="indigo" label="Nuevos en el período" value={String(data.basic.customers.new_in_period)} />
+              <Kpi icon={UserPlus} tone="indigo" label="Registrados en el período" value={String(data.basic.customers.new_in_period)} />
             </div>
+
+            <SubHeading icon={Users}>Clientes por categoría</SubHeading>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+              {(
+                [
+                  { key: "prospect", icon: User, tone: "gray" },
+                  { key: "new", icon: UserPlus, tone: "blue" },
+                  { key: "active", icon: Users, tone: "green" },
+                  { key: "at_risk", icon: Clock, tone: "amber" },
+                  { key: "inactive", icon: UserX, tone: "red" },
+                ] as const
+              ).map((c) => (
+                <Kpi
+                  key={c.key}
+                  icon={c.icon}
+                  tone={c.tone}
+                  label={CUSTOMER_CATEGORY_OPTIONS.find((o) => o.key === c.key)?.label || c.key}
+                  value={String(data.basic.customer_categories?.[c.key] ?? 0)}
+                />
+              ))}
+            </div>
+            {data.basic.customer_category_thresholds ? (
+              <p className="text-[11px]" style={{ color: MUTED }}>
+                Solo cuentan las visitas a las que el cliente sí asistió. Nuevo: 1 visita en los últimos{" "}
+                {data.basic.customer_category_thresholds.recent_days} días · Activo: 2 o más visitas, la última
+                en ese plazo · En riesgo: última visita hace {data.basic.customer_category_thresholds.recent_days + 1} a{" "}
+                {data.basic.customer_category_thresholds.at_risk_days} días · Inactivo: hace más de{" "}
+                {data.basic.customer_category_thresholds.at_risk_days} días · Prospecto: aún no ha asistido.
+              </p>
+            ) : null}
 
             <SubHeading icon={Percent}>Conversión y fidelización</SubHeading>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -1363,7 +1430,7 @@ export default function DashboardHomePage() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Panel
                 icon={TrendingUp}
-                title="Más activos / recurrentes"
+                title="Más activos"
                 action={<MostrarControl value={activeLimit} onChange={setActiveLimit} />}
               >
                 <CustomerRankingList
@@ -1372,18 +1439,18 @@ export default function DashboardHomePage() {
                   expandedId={expandedCustomerId}
                   onToggle={toggleCustomer}
                   mode="active"
-                  emptyText="Sin clientes activos en este segmento."
+                  emptyText="Todavía no hay clientes nuevos o activos."
                 />
               </Panel>
 
               <Panel
                 icon={User}
-                title={`Inactivos (+${inactiveDays} días sin visita)`}
+                title={`Sin venir hace ${inactiveDays}+ días`}
                 action={<MostrarControl value={inactiveLimit} onChange={setInactiveLimit} />}
                 meta={
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px]" style={{ color: MUTED }}>
-                      Inactividad:
+                      Días sin venir:
                     </span>
                     <div className="flex items-center border" style={{ borderColor: PANEL_BORDER, borderRadius: RADIUS_SM, overflow: "hidden" }}>
                       {INACTIVE_PRESETS.map((p, idx) => (
@@ -1422,7 +1489,7 @@ export default function DashboardHomePage() {
                   expandedId={expandedCustomerId}
                   onToggle={toggleCustomer}
                   mode="inactive"
-                  emptyText="Sin clientes inactivos."
+                  emptyText="Ningún cliente lleva tanto tiempo sin venir."
                 />
               </Panel>
             </div>

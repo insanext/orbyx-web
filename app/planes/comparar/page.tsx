@@ -88,7 +88,7 @@ const comparisonRows: ComparisonRow[] = [
   {
     label: "Seguimiento y reactivación de clientes",
     values: { starter: "—", business: "—", premium: "Sí" },
-    info: "Segmenta tu cartera (nuevo, recurrente, frecuente, inactivo) para identificar quiénes dejaron de venir y a quién conviene recontactar — conectado con las campañas de WhatsApp y email, también exclusivas de Premium.",
+    info: "Segmenta tu cartera (prospecto, nuevo, activo, en riesgo, inactivo) para identificar quiénes dejaron de venir y a quién conviene recontactar — conectado con las campañas de WhatsApp y email, también exclusivas de Premium.",
     highlight: true,
   },
   {
