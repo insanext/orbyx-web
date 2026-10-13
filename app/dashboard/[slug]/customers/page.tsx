@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Check, Lock, MessageCircle, Search, SlidersHorizontal, Star, UsersRound, X } from "lucide-react";
+import { Check, Lock, MessageCircle, Search, SlidersHorizontal, Star, Upload, UsersRound, X } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { isPlanAtLeast } from "@/lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
+import ImportCustomersModal from "@/components/customers/ImportCustomersModal";
 import {
   CUSTOMER_CATEGORY_OPTIONS,
   DAYS_WITHOUT_VISIT_OPTIONS,
@@ -170,8 +171,12 @@ function CategoryReason({ customer }: { customer: Customer }) {
 }
 
 export default function CustomersPage() {
-  const { canEdit } = usePermissions();
+  const { canEdit, isOwnerOrAdmin } = usePermissions();
   const canEditClientes = canEdit("clientes");
+  // Importar clientes: solo dueño/admin (el backend lo exige igual).
+  const canImportCustomers = isOwnerOrAdmin;
+  const [importOpen, setImportOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const params = useParams();
   const router = useRouter();
   const slug = (params as { slug?: string })?.slug;
@@ -310,7 +315,7 @@ export default function CustomersPage() {
     }
 
     if (slug) load();
-  }, [slug, search, segment, daysWithoutVisit, selectedBranchId]);
+  }, [slug, search, segment, daysWithoutVisit, selectedBranchId, reloadKey]);
 
   const activeSegmentLabel = useMemo(() => {
     return SEGMENT_OPTIONS.find((i) => i.key === segment)?.label || "Todos";
@@ -416,11 +421,22 @@ export default function CustomersPage() {
             </span>
           ) : null}
         </button>
+        {canImportCustomers ? (
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="ml-auto flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+            style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)", color: "var(--cust-ink)" }}
+          >
+            <Upload className="h-4 w-4" />
+            Importar
+          </button>
+        ) : null}
         {(isVeterinaria || isClinica) && canEditClientes ? (
           <button
             type="button"
             onClick={() => router.push(`/dashboard/${slug}/customers/new`)}
-            className="ml-auto flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition hover:opacity-90"
+            className={`${canImportCustomers ? "" : "ml-auto "}flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition hover:opacity-90`}
             style={{ background: "var(--cust-blue-solid)" }}
           >
             <span className="text-base leading-none">＋</span>
@@ -538,17 +554,30 @@ export default function CustomersPage() {
           <h2 className="text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
             Filtros
           </h2>
-          {(isVeterinaria || isClinica) && canEditClientes ? (
-            <button
-              type="button"
-              onClick={() => router.push(`/dashboard/${slug}/customers/new`)}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90"
-              style={{ background: "var(--cust-blue-solid)" }}
-            >
-              <span className="text-base leading-none">＋</span>
-              Crear ficha paciente
-            </button>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {canImportCustomers ? (
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
+                style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)", color: "var(--cust-ink)" }}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Importar clientes
+              </button>
+            ) : null}
+            {(isVeterinaria || isClinica) && canEditClientes ? (
+              <button
+                type="button"
+                onClick={() => router.push(`/dashboard/${slug}/customers/new`)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                style={{ background: "var(--cust-blue-solid)" }}
+              >
+                <span className="text-base leading-none">＋</span>
+                Crear ficha paciente
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -652,6 +681,17 @@ export default function CustomersPage() {
                 ? `No se encontraron clientes para "${search}".`
                 : "Cuando se registren reservas, los clientes aparecerán aquí."}
             </p>
+            {!search && canImportCustomers ? (
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="mt-4 inline-flex items-center gap-1.5 rounded border px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
+                style={{ borderColor: "var(--cust-blue-solid)", color: "var(--cust-blue-solid)" }}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                ¿Vienes de otro sistema? Importa tus clientes
+              </button>
+            ) : null}
           </div>
         )}
 
@@ -950,6 +990,14 @@ export default function CustomersPage() {
           </div>
         )}
       </section>
+
+      {importOpen ? (
+        <ImportCustomersModal
+          slug={String(slug || "")}
+          onClose={() => setImportOpen(false)}
+          onImported={() => setReloadKey((k) => k + 1)}
+        />
+      ) : null}
 
       <style jsx>{`
         .orbyx-customers-row {
