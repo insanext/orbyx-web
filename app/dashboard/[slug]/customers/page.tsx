@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Check, Lock, MessageCircle, Search, SlidersHorizontal, Star, Upload, UsersRound, X } from "lucide-react";
+import { Ban, Check, Lock, MessageCircle, Search, ShieldOff, SlidersHorizontal, Star, Upload, UsersRound, X } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { isPlanAtLeast } from "@/lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
 import ImportCustomersModal from "@/components/customers/ImportCustomersModal";
+import BlockedContactsModal from "@/components/customers/BlockedContactsModal";
+import { blockContactWithConfirm } from "@/lib/blocked-contacts";
 import CategoryFilterButtons from "@/components/customers/CategoryFilterButtons";
 import {
   CUSTOMER_CATEGORY_OPTIONS,
@@ -178,6 +180,10 @@ export default function CustomersPage() {
   // Importar clientes: solo dueño/admin (el backend lo exige igual).
   const canImportCustomers = isOwnerOrAdmin;
   const [importOpen, setImportOpen] = useState(false);
+  // Bloquear contactos de la reserva pública: solo dueño/admin (el backend lo exige igual).
+  const canBlockContacts = isOwnerOrAdmin;
+  const [blockedListOpen, setBlockedListOpen] = useState(false);
+  const [blockingFor, setBlockingFor] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const params = useParams();
   const router = useRouter();
@@ -207,6 +213,20 @@ export default function CustomersPage() {
   const [totalMatching, setTotalMatching] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [requestingReviewFor, setRequestingReviewFor] = useState("");
+
+  async function handleBlockContact(customer: Customer) {
+    setBlockingFor(customer.id);
+    try {
+      const message = await blockContactWithConfirm({
+        slug: String(slug || ""),
+        contactName: customer.name,
+        customerId: customer.id,
+      });
+      if (message) alert(message);
+    } finally {
+      setBlockingFor("");
+    }
+  }
 
   async function handleRequestReview(customer: Customer) {
     if (!customer.phone) return;
@@ -625,16 +645,29 @@ export default function CustomersPage() {
 
       {/* LISTADO */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
-          {isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
-          {customers.length > 0 && (
-            <span className="ml-2 text-xs font-normal" style={{ color: "var(--cust-muted)" }}>
-              {totalMatching > customers.length
-                ? `Mostrando ${customers.length} de ${totalMatching}`
-                : `${customers.length} resultado${customers.length !== 1 ? "s" : ""}`}
-            </span>
-          )}
-        </h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
+            {isVeterinaria ? "Listado de tutores" : "Listado de clientes"}
+            {customers.length > 0 && (
+              <span className="ml-2 text-xs font-normal" style={{ color: "var(--cust-muted)" }}>
+                {totalMatching > customers.length
+                  ? `Mostrando ${customers.length} de ${totalMatching}`
+                  : `${customers.length} resultado${customers.length !== 1 ? "s" : ""}`}
+              </span>
+            )}
+          </h2>
+          {canBlockContacts ? (
+            <button
+              type="button"
+              onClick={() => setBlockedListOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80"
+              style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)", color: "var(--cust-ink)" }}
+            >
+              <ShieldOff className="h-3.5 w-3.5" />
+              Contactos bloqueados
+            </button>
+          ) : null}
+        </div>
 
         {/* Estado vacío */}
         {customers.length === 0 && (
@@ -794,6 +827,20 @@ export default function CustomersPage() {
                       ) : null}
                     </div>
                   ) : null}
+                  {canBlockContacts && (c.phone || c.email) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleBlockContact(c)}
+                      disabled={blockingFor === c.id}
+                      title="Bloquear: no podrá reservar desde la página pública"
+                      aria-label="Bloquear contacto"
+                      className="flex w-full items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold transition disabled:opacity-60"
+                      style={{ borderColor: "var(--cust-border)", color: "var(--cust-muted)" }}
+                    >
+                      <Ban className="h-3.5 w-3.5 shrink-0" />
+                      Bloquear
+                    </button>
+                  ) : null}
                 </div>
               </article>
             ))}
@@ -952,6 +999,23 @@ export default function CustomersPage() {
                             </button>
                           )
                         ) : null}
+                        {canBlockContacts && (c.phone || c.email) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBlockContact(c);
+                            }}
+                            disabled={blockingFor === c.id}
+                            title="Bloquear: no podrá reservar desde la página pública"
+                            aria-label="Bloquear contacto"
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 disabled:opacity-60"
+                            style={{ borderColor: "var(--cust-border)", color: "var(--cust-muted)" }}
+                          >
+                            <Ban className="h-3.5 w-3.5 shrink-0" />
+                            Bloquear
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -962,6 +1026,10 @@ export default function CustomersPage() {
           </div>
         )}
       </section>
+
+      {blockedListOpen ? (
+        <BlockedContactsModal slug={String(slug || "")} onClose={() => setBlockedListOpen(false)} />
+      ) : null}
 
       {importOpen ? (
         <ImportCustomersModal

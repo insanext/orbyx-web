@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { backendProxyHeaders } from "@/lib/backend-proxy-headers";
 
 function normalizeUuidLike(value: unknown) {
   if (value === null || value === undefined) return null;
@@ -39,6 +40,9 @@ export async function POST(req: Request) {
       customer_name: body.customer_name,
       customer_phone: body.customer_phone,
       customer_email: body.customer_email,
+      // Token de Turnstile (reserva pública). Las reservas del dashboard no
+      // llevan captcha.
+      ...(isDashboardBooking ? {} : { captcha_token: body.captcha_token || null }),
       source: isDashboardBooking ? "dashboard" : "public_page",
       customer_data: body.customer_data || null,
       ...(isDashboardBooking ? { booking_origin: "dashboard" } : {}),
@@ -48,6 +52,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...backendProxyHeaders(req),
         ...(isDashboardBooking && authorization ? { Authorization: authorization } : {}),
       },
       body: JSON.stringify(payload),

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { backendProxyHeaders } from "@/lib/backend-proxy-headers";
 
 export async function GET(
   req: NextRequest,
@@ -31,6 +32,7 @@ export async function GET(
 
     const res = await fetch(backendUrl, {
       cache: "no-store",
+      headers: backendProxyHeaders(req),
     });
 
     const data = await res.json().catch(() => ({

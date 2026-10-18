@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { backendProxyHeaders } from "@/lib/backend-proxy-headers";
 
 export async function GET(
   req: NextRequest,
@@ -14,7 +15,7 @@ export async function GET(
 
     const backendRes = await fetch(
       `${BACKEND_URL}/public/reviews/${encodeURIComponent(slug)}`,
-      { cache: "no-store" }
+      { cache: "no-store", headers: backendProxyHeaders(req) }
     );
 
     const data = await backendRes.json().catch(() => ({
@@ -47,7 +48,7 @@ export async function POST(
       `${BACKEND_URL}/public/reviews/${encodeURIComponent(slug)}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...backendProxyHeaders(req) },
         body: JSON.stringify(body),
       }
     );

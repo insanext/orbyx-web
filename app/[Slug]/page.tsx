@@ -9,6 +9,7 @@ import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
 import { BACKEND_URL } from "@/lib/backend-url";
 import Select from "@/components/ui/Select";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 type StaffItem = {
   id: string;
@@ -1528,6 +1529,13 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Turnstile (captcha) del paso final. El token es de un solo uso: se pide
+  // uno nuevo cada vez que se envía la reserva (ver handleSubmitBooking).
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaWidgetFailed, setCaptchaWidgetFailed] = useState(false);
+  const turnstileRef = useRef<any>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
   const [submitError, setSubmitError] = useState("");
   const [bookingSuccess, setBookingSuccess] =
     useState<BookingSuccessData | null>(null);
@@ -2362,6 +2370,8 @@ finally {
   }
 
   async function handleSubmitBooking() {
+    // true una vez que el token de Turnstile viajó al servidor (ya no sirve).
+    let captchaTokenSent = false;
     try {
       setSubmitError("");
 
@@ -2386,6 +2396,15 @@ finally {
         return;
       }
 
+      if (turnstileSiteKey && !captchaToken) {
+        setSubmitError(
+          captchaWidgetFailed
+            ? "No pudimos verificar que no eres un robot. Desactiva el bloqueador de anuncios o intenta desde otro navegador."
+            : "Espera unos segundos a que termine la verificación de seguridad e intenta de nuevo."
+        );
+        return;
+      }
+
       setSubmitting(true);
 
 
@@ -2404,6 +2423,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         staff_id: selectedStaffId || selectedSlot?.staff_id || null,
         date: formatDate(new Date(selectedSlot.slot_start)),
         slot_start: selectedSlot.slot_start,
+        captcha_token: captchaToken || null,
         customer_name: customerData.name.trim(),
         customer_phone: toE164(phoneIso2, customerData.phone.trim()),
         customer_email: customerData.email.trim(),
@@ -2431,6 +2451,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 },
       };
 
+      captchaTokenSent = true;
       const res = await fetch("/api/appointments/slot", {
         method: "POST",
         headers: {
@@ -2520,6 +2541,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         error instanceof Error ? error.message : "No se pudo crear la reserva."
       );
     } finally {
+      // El token ya se gastó (con éxito o con error): si el cliente reintenta
+      // necesita uno nuevo, así que se reinicia el widget.
+      if (captchaTokenSent) {
+        turnstileRef.current?.reset();
+        setCaptchaToken("");
+      }
       setSubmitting(false);
     }
   }
@@ -3887,6 +3914,32 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       />
                     ))}
                   </div>
+
+                  {turnstileSiteKey ? (
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                      <Turnstile
+                        ref={turnstileRef}
+                        siteKey={turnstileSiteKey}
+                        onSuccess={(token) => {
+                          setCaptchaToken(token);
+                          setCaptchaWidgetFailed(false);
+                        }}
+                        onExpire={() => setCaptchaToken("")}
+                        onError={() => {
+                          setCaptchaToken("");
+                          setCaptchaWidgetFailed(true);
+                        }}
+                        onUnsupported={() => setCaptchaWidgetFailed(true)}
+                        scriptOptions={{ onError: () => setCaptchaWidgetFailed(true) }}
+                        options={{ theme: "light" }}
+                      />
+                      {captchaWidgetFailed && !captchaToken ? (
+                        <p className="text-center text-xs text-rose-700">
+                          No pudimos verificar que no eres un robot. Desactiva el bloqueador de anuncios o intenta desde otro navegador.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   {submitError ? (
                     <div className="mt-4 rounded-none border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

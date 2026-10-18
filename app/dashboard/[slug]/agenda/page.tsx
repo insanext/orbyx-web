@@ -4,6 +4,7 @@ import { CSSProperties, Fragment, useEffect, useMemo, useRef, useState } from "r
 import { apiFetch } from "@/lib/api";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
+  Ban,
   BellRing,
   CalendarDays,
   Check,
@@ -32,6 +33,8 @@ import {
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { Panel } from "../../../../components/dashboard/panel";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
+import { blockContactWithConfirm } from "@/lib/blocked-contacts";
+import { usePermissions } from "@/lib/permissions-context";
 import {
   APPOINTMENT_STATUS_COLORS,
   STATUS_STYLESHEET,
@@ -478,6 +481,29 @@ const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessName, setBusinessName] = useState("");
   const [businessAddress, setBusinessAddress] = useState<string | null>(null);
   const [requestingReview, setRequestingReview] = useState(false);
+  // Bloquear contactos de la reserva pública: solo dueño/admin.
+  const { isOwnerOrAdmin: canBlockContacts } = usePermissions();
+  const [blockingContact, setBlockingContact] = useState(false);
+
+  async function handleBlockContactFromAppointment(appt: {
+    id: string;
+    customer_name?: string | null;
+    customer_id?: string | null;
+  }) {
+    if (!slug) return;
+    setBlockingContact(true);
+    try {
+      const message = await blockContactWithConfirm({
+        slug,
+        contactName: appt.customer_name || "",
+        customerId: appt.customer_id || null,
+        appointmentId: appt.id,
+      });
+      if (message) alert(message);
+    } finally {
+      setBlockingContact(false);
+    }
+  }
 
   async function handleRequestReview(appt: { customer_id?: string | null; customer_phone?: string | null }) {
     if (!slug || !appt.customer_id || !appt.customer_phone) return;
@@ -7982,6 +8008,25 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                             >
                               <BellRing className="h-3.5 w-3.5" />
                               Recordar por WhatsApp
+                            </button>
+                          ) : null}
+
+                          {canBlockContacts &&
+                          (selectedAppointment.customer_phone || selectedAppointment.customer_email) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleBlockContactFromAppointment(selectedAppointment)}
+                              disabled={blockingContact}
+                              title="No podrá reservar desde la página pública"
+                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              <Ban className="h-3.5 w-3.5" />
+                              Bloquear contacto
                             </button>
                           ) : null}
                         </div>

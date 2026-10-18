@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { backendProxyHeaders } from "@/lib/backend-proxy-headers";
 
 export async function POST(
   req: NextRequest,
@@ -18,7 +19,7 @@ export async function POST(
       `${BACKEND_URL}/public/reviews/${encodeURIComponent(slug)}/verify-token`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...backendProxyHeaders(req) },
         body: JSON.stringify(body),
       }
     );

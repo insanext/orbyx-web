@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { backendProxyHeaders } from "@/lib/backend-proxy-headers";
 
 export async function GET(
   request: Request,
@@ -51,9 +52,10 @@ export async function GET(
       `${BACKEND_URL}/public/slots/${encodeURIComponent(slug)}/${encodeURIComponent(serviceId)}?${backendQuery.toString()}`,
       {
         cache: "no-store",
-        ...(isDashboard && authorization
-          ? { headers: { Authorization: authorization } }
-          : {}),
+        headers: {
+          ...backendProxyHeaders(request),
+          ...(isDashboard && authorization ? { Authorization: authorization } : {}),
+        },
       }
     );
 
