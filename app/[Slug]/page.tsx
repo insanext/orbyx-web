@@ -80,7 +80,6 @@ type SlotItem = {
 
 type PetItem = {
   id: string;
-  customer_id?: string | null;
   name?: string | null;
   species_base?: string | null;
   species_custom?: string | null;
@@ -1976,9 +1975,16 @@ const nextAvailableDays = useMemo(() => {
 
   useEffect(() => {
     const normalizedPhone = normalizePhoneDigits(customerData.phone);
-    const normalizedEmail = normalizeEmail(customerData.email);
+    // El backend solo busca coincidencia exacta de teléfono o correo: no se
+    // consulta hasta que el dato esté completo/válido.
+    const normalizedEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(
+      normalizeEmail(customerData.email)
+    )
+      ? normalizeEmail(customerData.email)
+      : "";
+    const phoneComplete = normalizedPhone.length >= 9;
 
-    if ((!normalizedPhone || normalizedPhone.length < 6) && !normalizedEmail) {
+    if (!phoneComplete && !normalizedEmail) {
       setPets([]);
       setSelectedPetId("");
       setPetMode("new");
@@ -1993,7 +1999,7 @@ const nextAvailableDays = useMemo(() => {
 
         const query = new URLSearchParams();
 
-        if (normalizedPhone && normalizedPhone.length >= 6) {
+        if (phoneComplete) {
           query.set("phone", normalizedPhone);
         }
 
@@ -2383,10 +2389,6 @@ finally {
       setSubmitting(true);
 
 
-const detectedCustomerId =
-  existingCustomerFound && selectedPetId
-    ? pets.find((p) => p.id === selectedPetId)?.customer_id || null
-    : null;
 const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
   Record<string, string>
 >((acc, field) => {
@@ -2402,7 +2404,6 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         staff_id: selectedStaffId || selectedSlot?.staff_id || null,
         date: formatDate(new Date(selectedSlot.slot_start)),
         slot_start: selectedSlot.slot_start,
-	customer_id: detectedCustomerId,
         customer_name: customerData.name.trim(),
         customer_phone: toE164(phoneIso2, customerData.phone.trim()),
         customer_email: customerData.email.trim(),

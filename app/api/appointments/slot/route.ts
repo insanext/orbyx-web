@@ -59,7 +59,6 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: data?.error || "No se pudo crear la reserva",
-          debug_payload: payload,
         },
         { status: res.status }
       );

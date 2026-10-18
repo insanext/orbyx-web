@@ -24,6 +24,10 @@ export default function InvitePage() {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
   const turnstileRef = useRef<any>(null);
+  // La invitación es para un correo que YA tiene cuenta: no se crea ni se
+  // cambia ninguna contraseña; la persona inicia sesión y acepta con su sesión.
+  const [joinedExisting, setJoinedExisting] = useState(false);
+  const [sessionMatches, setSessionMatches] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -35,8 +39,20 @@ export default function InvitePage() {
         }
         return res.json();
       })
-      .then(data => {
+      .then(async data => {
         setInvitation(data);
+        if (data.account_exists) {
+          try {
+            const supabase = createClient();
+            const { data: sessionData } = await supabase.auth.getSession();
+            const sessionEmail = String(sessionData.session?.user?.email || "").toLowerCase();
+            setSessionMatches(
+              Boolean(sessionEmail) && sessionEmail === String(data.email || "").toLowerCase()
+            );
+          } catch {
+            setSessionMatches(false);
+          }
+        }
         setStep("form");
       })
       .catch(e => {
@@ -44,6 +60,63 @@ export default function InvitePage() {
         setStep("error");
       });
   }, [token]);
+
+  const handleAcceptExisting = async () => {
+    if (!sessionMatches && !password) {
+      setSubmitMsg("Ingresa tu contraseña.");
+      return;
+    }
+    if (!sessionMatches && !captchaToken) {
+      setSubmitMsg("Completa la verificación de seguridad.");
+      return;
+    }
+    setSubmitting(true);
+    setSubmitMsg("");
+    try {
+      const supabase = createClient();
+      let accessToken = "";
+
+      if (sessionMatches) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        accessToken = sessionData.session?.access_token || "";
+      }
+
+      if (!accessToken) {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: invitation.email,
+          password,
+          options: { captchaToken },
+        });
+        if (signInErr) throw new Error(signInErr.message);
+        accessToken = signInData.session?.access_token || "";
+      }
+
+      const res = await fetch(`${BACKEND_URL}/invitations/accept/${token}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al aceptar invitación.");
+
+      setJoinedExisting(true);
+      setStep("success");
+      setTimeout(() => {
+        router.push(data.tenant_slug ? `/dashboard/${data.tenant_slug}/agenda` : "/");
+      }, 2000);
+    } catch (e: any) {
+      setSubmitMsg(e.message);
+      // Sesión vencida o de otro usuario: pasa al formulario con contraseña.
+      setSessionMatches(false);
+      turnstileRef.current?.reset();
+      setCaptchaToken("");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleAccept = async () => {
     if (password.length < 8) {
@@ -67,7 +140,16 @@ export default function InvitePage() {
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error al aceptar invitación.");
+      if (!res.ok) {
+        // Alguien creó la cuenta entre la carga de la página y este envío.
+        if (data.requires_login) {
+          setInvitation((prev: any) => ({ ...prev, account_exists: true }));
+          setPassword("");
+          setConfirmPwd("");
+          setCaptchaToken("");
+        }
+        throw new Error(data.error ?? "Error al aceptar invitación.");
+      }
 
       const supabase = createClient();
       const { error: signInErr } = await supabase.auth.signInWithPassword({
@@ -117,11 +199,93 @@ export default function InvitePage() {
           <div className="rounded-2xl border border-green-500/20 p-8 text-center" style={{ background: "#0f1729" }}>
             <p className="text-4xl mb-3">✓</p>
             <h2 className="text-white font-semibold mb-2">¡Bienvenido a Orbyx!</h2>
-            <p className="text-sm text-green-400/70">Tu cuenta fue creada. Redirigiendo al dashboard...</p>
+            <p className="text-sm text-green-400/70">
+              {joinedExisting
+                ? "Ya eres parte del equipo. Redirigiendo al dashboard..."
+                : "Tu cuenta fue creada. Redirigiendo al dashboard..."}
+            </p>
           </div>
         )}
 
-        {step === "form" && invitation && (
+        {step === "form" && invitation && invitation.account_exists && (
+          <div className="rounded-2xl border border-blue-900/25 p-6" style={{ background: "#0f1729" }}>
+            <h2 className="text-white font-semibold text-lg mb-1">Ya tienes una cuenta</h2>
+            <p className="text-sm mb-6" style={{ color: "rgba(147,197,253,0.5)" }}>
+              Fuiste invitado a{" "}
+              <span className="text-white font-medium">{invitation.tenant_name}</span>.
+              {" "}{sessionMatches
+                ? "Ya iniciaste sesión con este correo: acepta la invitación para unirte."
+                : "Inicia sesión con tu contraseña de siempre para aceptar la invitación."}
+            </p>
+
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="text-xs mb-1.5 block" style={{ color: "rgba(147,197,253,0.6)" }}>
+                  Correo electrónico
+                </label>
+                <input
+                  value={invitation.email}
+                  disabled
+                  className="w-full rounded-xl border px-3 py-2 text-sm cursor-not-allowed opacity-40 outline-none"
+                  style={{ background: "rgba(10,15,30,0.5)", borderColor: "rgba(37,99,235,0.2)", color: "#e2e8f0" }}
+                />
+              </div>
+              {!sessionMatches && (
+                <div>
+                  <label className="text-xs mb-1.5 block" style={{ color: "rgba(147,197,253,0.6)" }}>
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <input
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Tu contraseña"
+                      className="w-full rounded-xl border pl-3 pr-10 py-2 text-sm text-white outline-none transition-colors"
+                      style={{ background: "#0a0f1e", borderColor: "rgba(37,99,235,0.3)" }}
+                    />
+                    <PasswordVisibilityToggle
+                      visible={showPassword}
+                      onToggle={() => setShowPassword(v => !v)}
+                      className="text-blue-300/50 hover:text-blue-200"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!sessionMatches && (
+              <div className="flex justify-center mb-5">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  onSuccess={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken("")}
+                  onError={() => setCaptchaToken("")}
+                  options={{ theme: "dark" }}
+                />
+              </div>
+            )}
+
+            {submitMsg && (
+              <p className="text-xs text-red-400 mb-3">{submitMsg}</p>
+            )}
+
+            <button
+              onClick={handleAcceptExisting}
+              disabled={submitting || (!sessionMatches && (!password || !captchaToken))}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-40"
+            >
+              {submitting
+                ? "Aceptando..."
+                : sessionMatches
+                ? "Aceptar invitación"
+                : "Iniciar sesión y aceptar"}
+            </button>
+          </div>
+        )}
+
+        {step === "form" && invitation && !invitation.account_exists && (
           <div className="rounded-2xl border border-blue-900/25 p-6" style={{ background: "#0f1729" }}>
             <h2 className="text-white font-semibold text-lg mb-1">Crea tu contraseña</h2>
             <p className="text-sm mb-6" style={{ color: "rgba(147,197,253,0.5)" }}>
