@@ -2833,18 +2833,21 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           <div className="w-full rounded-2xl bg-gradient-to-br from-sky-400 via-emerald-400 to-indigo-500 p-[2.5px] shadow-[0_35px_90px_-45px_rgba(16,185,129,0.42)] md:rounded-[28px]">
             <div className="grid overflow-hidden rounded-[15px] bg-white md:grid-cols-[1.35fr_1fr] md:rounded-[26px]">
               {/* MASCOTA — arriba en mobile, columna derecha en desktop */}
-              <div className="relative order-1 flex min-h-[170px] items-center justify-center overflow-hidden bg-gradient-to-b from-indigo-950 via-slate-950 to-slate-900 p-4 md:order-2 md:min-h-0 md:p-5">
-                <div className="absolute right-4 top-4 flex items-center gap-1.5 md:right-6 md:top-6">
-                  <img src="/orbyx-mark-dark.png" alt="" className="h-5 w-5 md:h-6 md:w-6" />
-                  <span className="text-xs font-extrabold tracking-[0.18em] text-white md:text-sm">
-                    ORBYX
-                  </span>
-                </div>
-
+              {/* El logo ORBYX ya viene dentro de la imagen. Mobile: banner recortado
+                  (object-cover). Desktop: la imagen es cuadrada y el panel más alto
+                  que ancho, así que ocupa todo el ancho y sus bordes superior/inferior
+                  se difuminan hacia el color de borde de la imagen (sin cuadro visible). */}
+              <div
+                className="relative order-1 h-[200px] overflow-hidden md:order-2 md:flex md:h-auto md:items-center"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, rgb(0,20,47) 50%, rgb(8,13,28) 50%)",
+                }}
+              >
                 <img
                   src="/mascota-confirmacion.png"
                   alt=""
-                  className="h-auto w-[50%] max-w-[170px] object-contain md:w-[96%] md:max-w-none"
+                  className="h-full w-full object-cover object-[center_40%] md:h-auto md:object-contain md:[-webkit-mask-image:linear-gradient(to_bottom,transparent,#000_16%,#000_84%,transparent)] md:[mask-image:linear-gradient(to_bottom,transparent,#000_16%,#000_84%,transparent)]"
                 />
               </div>
 
