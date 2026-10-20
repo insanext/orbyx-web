@@ -15,6 +15,7 @@ import {
   FileText,
   Info,
   Landmark,
+  List,
   Lock,
   Mail,
   MessageCircle,
@@ -3840,16 +3841,304 @@ const hasActiveFilters =
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
-  // Lista de reservas reales de los días indicados. Lee appointmentsByDay (la
-  // misma fuente que la grilla: loadAppointments + Realtime + applyAppointmentUpdate),
-  // por eso se actualiza sola; solo excluye canceladas y días sin reservas.
-  // Las filas reutilizan el markup de la lista móvil que ya existía.
+  // Estilo del contenedor de una columna de día (semana). Compartido por la
+  // grilla semanal y por la vista Lista para que ambas se vean igual.
+  function getWeekDayColumnStyle(
+    isToday: boolean,
+    isClosedScheduleDay: boolean,
+    dayPendingCount: number
+  ): CSSProperties {
+    return {
+  borderColor: dayPendingCount > 0
+    ? "rgba(244,63,94,0.28)"
+    : isClosedScheduleDay
+    ? "var(--agenda-closed-border)"
+    : isToday
+    ? "rgba(37,99,235,0.42)"
+    : "var(--border-color)",
+  background: dayPendingCount > 0
+    ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
+    : isClosedScheduleDay
+    ? "var(--agenda-closed-bg)"
+    : isToday
+    ? "var(--agenda-today-bg)"
+    : "var(--agenda-calendar-column-bg)",
+  boxShadow: isToday
+    ? "0 0 0 1px rgba(37,99,235,0.14), 0 10px 30px -18px rgba(37,99,235,0.45)"
+    : "none",
+    };
+  }
+
+  // Encabezado de una columna de día (nombre, fecha, badges, "Hoy"). Compartido
+  // por la grilla semanal y la vista Lista.
+  function renderWeekDayHeader(
+    day: Date,
+    {
+      isToday,
+      isClosedScheduleDay,
+      dayPendingCount,
+      dayCanceledCount,
+    }: {
+      isToday: boolean;
+      isClosedScheduleDay: boolean;
+      dayPendingCount: number;
+      dayCanceledCount: number;
+    }
+  ) {
+    return (
+                      <div
+  className="static z-20 flex h-[58px] items-center px-2.5 xl:sticky"
+  style={{
+    top: "78px",
+    borderBottom: `1px solid ${
+      dayPendingCount > 0
+        ? "rgba(244,63,94,0.24)"
+        : isClosedScheduleDay
+        ? "var(--agenda-closed-border)"
+        : isToday
+        ? "rgba(56,189,248,0.24)"
+        : "var(--border-color)"
+    }`,
+    background: dayPendingCount > 0
+      ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
+      : isClosedScheduleDay
+      ? "var(--agenda-closed-bg)"
+      : isToday
+      ? "var(--agenda-today-header-bg)"
+      : getWeekdaySoftBg(day),
+    backdropFilter: "blur(8px)",
+  }}
+>
+                        <div className="flex items-center justify-between gap-2">
+  <div className="flex flex-col">
+    <span
+      className="text-xs font-semibold"
+      style={{
+        color: isToday ? "#60a5fa" : "var(--text-main)",
+        ...(isClosedScheduleDay ? { color: "var(--agenda-closed-text)" } : {}),
+      }}
+    >
+      {getWeekdayLabel(day)}
+    </span>
+
+    <span
+      className="text-[11px]"
+      style={{
+        color: isClosedScheduleDay
+          ? "var(--agenda-closed-muted)"
+          : isToday
+          ? "#38bdf8"
+          : "var(--text-muted)",
+      }}
+    >
+      {formatDayMonthLabel(day)}
+    </span>
+  </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {dayCanceledCount > 0 ? (
+                              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                {dayCanceledCount} c
+                              </span>
+                            ) : null}
+
+                            {dayPendingCount > 0 ? (
+                              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                {dayPendingCount}
+                              </span>
+                            ) : null}
+
+                            {isToday ? (
+                              <span
+  className="rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
+  style={{
+    background: "linear-gradient(135deg, #2563eb, #38bdf8)",
+    boxShadow: "0 6px 16px -8px rgba(37,99,235,0.85)",
+  }}
+>
+  Hoy
+</span>
+                            ) : null}
+
+                          </div>
+                        </div>
+
+       
+                      </div>
+    );
+  }
+
+  // Encabezado de una columna de profesional (modo Día por profesional).
+  // Compartido por la grilla del día y la vista Lista.
+  function renderDayStaffHeader(staff: StaffItem) {
+    return (
+                        <div
+                          key={staff.id}
+                          className="flex h-[64px] items-center gap-3 border-r px-2.5 last:border-r-0"
+                          style={{
+                            borderColor: "var(--border-color)",
+                            background: "var(--agenda-calendar-header-bg)",
+                          }}
+                        >
+                          <div
+                            className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border text-sm font-bold text-white shadow-sm"
+                            style={{
+                              borderColor: "var(--border-color)",
+                              background: staff.color || "#2563eb",
+                            }}
+                          >
+                            {staff.photo_url || staff.avatar ? (
+                              <img
+                                src={staff.photo_url || staff.avatar || ""}
+                                alt={staff.name}
+                                className="h-full w-full scale-110 object-cover object-center"
+                              />
+                            ) : (
+                              staff.name
+                                .split(" ")
+                                .map((part) => part[0])
+                                .join("")
+                                .slice(0, 2)
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p
+                              className="truncate text-sm font-semibold"
+                              style={{ color: "var(--text-main)" }}
+                            >
+                              {staff.name}
+                            </p>
+                            {staff.role ? (
+                              <p
+                                className="truncate text-xs"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {staff.role}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+    );
+  }
+
+  // Tarjeta de una reserva (o bloque de actividad grupal) de la vista Lista.
+  // compact: versión apilada para columnas angostas; hideStaff: oculta el
+  // profesional cuando la columna ya es de un profesional.
+  function renderReservationCard(
+    group: Appointment[],
+    options?: { compact?: boolean; hideStaff?: boolean }
+  ) {
+    const first = group[0];
+    if (!first) return null;
+    const compact = Boolean(options?.compact);
+    const isGroupSlot = isGroupAppointment(first);
+    const capacity = Number(first.service_capacity || 0) || group.length;
+    const depositPending = first.status === "booked" && first.deposit_status === "pending";
+    const branchName =
+      branches.length > 1 && first.branch_id && first.branch_id !== selectedBranchId
+        ? branches.find((b) => b.id === first.branch_id)?.name
+        : "";
+    const isSelected = selectedAppointment?.id === first.id;
+    const statusColor = APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex;
+    const badgeLabel = depositPending ? "Depósito pendiente" : getStatusLabel(first);
+    const staffLine = options?.hideStaff
+      ? branchName || ""
+      : `${first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}${
+          branchName ? ` · ${branchName}` : ""
+        }`;
+    const cardStyle = {
+      borderColor: isSelected ? "var(--accent-solid)" : "var(--border-color)",
+      background: "var(--bg-card)",
+    };
+    const title = isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name;
+    const subtitle = isGroupSlot
+      ? `${group.length}/${capacity} inscritos`
+      : (first.service_name_snapshot || "Reserva");
+
+    if (compact) {
+      return (
+        <button
+          key={getAppointmentGroupKey(first)}
+          type="button"
+          data-calendar-selectable="true"
+          onClick={() => handleSelectAppointment(first)}
+          className="relative block w-full overflow-hidden rounded-md border py-2 pl-4 pr-2 text-left"
+          style={cardStyle}
+        >
+          <span className="absolute inset-y-0 left-0 w-1" style={{ background: statusColor }} />
+          <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
+            {formatHour(first.start_at)} – {formatHour(first.end_at)}
+          </span>
+          <span className="mt-0.5 block truncate text-sm" style={{ color: "var(--text-main)" }}>
+            {title}
+          </span>
+          <span className="block truncate text-xs" style={{ color: "var(--text-muted)" }}>
+            {subtitle}
+          </span>
+          {staffLine ? (
+            <span
+              className="mt-0.5 flex items-center gap-1 truncate text-[11px]"
+              style={{ color: "var(--text-muted)", opacity: 0.85 }}
+            >
+              {options?.hideStaff ? null : <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />}
+              <span className="truncate">{staffLine}</span>
+            </span>
+          ) : null}
+          <span className={`mt-1.5 inline-block max-w-full truncate rounded border px-2 py-0.5 text-[10px] ${getStatusBadgeClass(first)}`}>
+            {badgeLabel}
+          </span>
+        </button>
+      );
+    }
+
+    return (
+      <button
+        key={getAppointmentGroupKey(first)}
+        type="button"
+        data-calendar-selectable="true"
+        onClick={() => handleSelectAppointment(first)}
+        className="flex w-full items-center gap-3 rounded-md border p-3 text-left"
+        style={cardStyle}
+      >
+        <span className="flex w-12 shrink-0 flex-col text-sm leading-tight" style={{ color: "var(--text-main)" }}>
+          <span>{formatHour(first.start_at)}</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            – {formatHour(first.end_at)}
+          </span>
+        </span>
+        <span className="h-9 w-1 shrink-0 rounded-full" style={{ background: statusColor }} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm" style={{ color: "var(--text-main)" }}>
+            {title}
+          </p>
+          <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
+            {subtitle}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 truncate text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.85 }}>
+            <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{staffLine}</span>
+          </p>
+        </div>
+        <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] ${getStatusBadgeClass(first)}`}>
+          {badgeLabel}
+        </span>
+      </button>
+    );
+  }
+
+  // Reservas reales (sin canceladas) de un día. Lee appointmentsByDay, la misma
+  // fuente que la grilla (loadAppointments + Realtime + applyAppointmentUpdate),
+  // por eso la lista se actualiza sola.
+  function getListItemsForDay(dayKey: string) {
+    return (appointmentsByDay[dayKey] || []).filter((a) => a.status !== "canceled");
+  }
+
+  // Lista vertical agrupada por día (móvil).
   function renderReservationList(days: Date[], emptyText: string) {
-    const showBranch = branches.length > 1;
     const dayBlocks = days
       .map((day) => {
         const dayKey = formatDateYYYYMMDD(day);
-        const items = (appointmentsByDay[dayKey] || []).filter((a) => a.status !== "canceled");
+        const items = getListItemsForDay(dayKey);
         return { day, dayKey, items, groups: groupAppointmentsByBlock(items) };
       })
       .filter((block) => block.items.length > 0);
@@ -3876,65 +4165,126 @@ const hasActiveFilters =
                 {items.length} {items.length === 1 ? "reserva" : "reservas"}
               </span>
             </p>
-            <div className="space-y-2">
-              {groups.map((group) => {
-                const first = group[0];
-                if (!first) return null;
-                const isGroupSlot = isGroupAppointment(first);
-                const capacity = Number(first.service_capacity || 0) || group.length;
-                const depositPending = first.status === "booked" && first.deposit_status === "pending";
-                const branchName =
-                  showBranch && first.branch_id && first.branch_id !== selectedBranchId
-                    ? branches.find((b) => b.id === first.branch_id)?.name
-                    : "";
-                const isSelected = selectedAppointment?.id === first.id;
-
-                return (
-                  <button
-                    key={getAppointmentGroupKey(first)}
-                    type="button"
-                    data-calendar-selectable="true"
-                    onClick={() => handleSelectAppointment(first)}
-                    className="flex w-full items-center gap-3 rounded-md border p-3 text-left"
-                    style={{
-                      borderColor: isSelected ? "var(--accent-solid)" : "var(--border-color)",
-                      background: "var(--bg-card)",
-                    }}
-                  >
-                    <span className="flex w-12 shrink-0 flex-col text-sm leading-tight" style={{ color: "var(--text-main)" }}>
-                      <span>{formatHour(first.start_at)}</span>
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        – {formatHour(first.end_at)}
-                      </span>
-                    </span>
-                    <span
-                      className="h-9 w-1 shrink-0 rounded-full"
-                      style={{ background: APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm" style={{ color: "var(--text-main)" }}>
-                        {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
-                      </p>
-                      <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
-                        {isGroupSlot ? `${group.length}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
-                      </p>
-                      <p className="mt-0.5 flex items-center gap-1 truncate text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.85 }}>
-                        <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />
-                        <span className="truncate">
-                          {first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}
-                          {branchName ? ` · ${branchName}` : ""}
-                        </span>
-                      </p>
-                    </div>
-                    <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] ${getStatusBadgeClass(first)}`}>
-                      {depositPending ? "Depósito pendiente" : getStatusLabel(first)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <div className="space-y-2">{groups.map((group) => renderReservationCard(group))}</div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  const listEmptyColumnText = (
+    <p className="px-1 py-3 text-center text-xs" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
+      Sin reservas
+    </p>
+  );
+
+  // Semana + Lista (escritorio): mismas columnas y encabezados que la grilla
+  // semanal, sin columna de horas ni filas por horario; solo tarjetas.
+  function renderWeekReservationColumns() {
+    return (
+      <div className="hidden gap-3 overflow-x-auto pb-2 md:flex xl:grid xl:gap-0 xl:overflow-visible xl:pb-0 xl:grid-cols-[repeat(7,minmax(0,1fr))]">
+        {weekDays.map((day) => {
+          const dayKey = formatDateYYYYMMDD(day);
+          const groups = groupAppointmentsByBlock(getListItemsForDay(dayKey));
+          const isToday = dayKey === todayKey;
+          const isClosedScheduleDay = mobileWeekDayAvailability.get(dayKey)?.isClosedDay ?? false;
+          const dayAppointmentsAll = appointments.filter(
+            (appt) => formatDateYYYYMMDD(new Date(appt.start_at)) === dayKey
+          );
+          const dayPendingCount = dayAppointmentsAll.filter(isPastPendingClosure).length;
+          const dayCanceledCount = dayAppointmentsAll.filter(isCanceled).length;
+
+          return (
+            <div
+              key={dayKey}
+              className="w-[260px] shrink-0 rounded-none border xl:w-auto xl:shrink xl:border-l-0 first:xl:border-l"
+              style={getWeekDayColumnStyle(isToday, isClosedScheduleDay, dayPendingCount)}
+            >
+              {renderWeekDayHeader(day, { isToday, isClosedScheduleDay, dayPendingCount, dayCanceledCount })}
+              <div className="space-y-2 p-2">
+                {groups.length === 0
+                  ? listEmptyColumnText
+                  : groups.map((group) => renderReservationCard(group, { compact: true }))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Día por profesional + Lista (escritorio): una columna por profesional con
+  // el mismo encabezado que la grilla del día. Las reservas sin profesional (o
+  // de uno que ya no tiene columna) van en una columna extra para que ninguna
+  // reserva real quede fuera de la lista.
+  function renderDayReservationColumns() {
+    const dayItems = getListItemsForDay(selectedDayKey);
+    const columnIds = new Set(dayStaffColumns.map((staff) => staff.id));
+    const orphanItems = dayItems.filter((appt) => !appt.staff_id || !columnIds.has(appt.staff_id));
+
+    if (dayStaffColumns.length === 0 && orphanItems.length === 0) {
+      return (
+        <div
+          className="hidden rounded-md border border-dashed px-4 py-8 text-sm md:block"
+          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+        >
+          No hay profesionales activos para esta sucursal.
+        </div>
+      );
+    }
+
+    const columnCount = dayStaffColumns.length + (orphanItems.length > 0 ? 1 : 0);
+
+    return (
+      <div className="hidden md:block">
+        <p className="mb-2 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+          {formattedDayTitle}
+          <span className="ml-2 text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+            {dayItems.length} {dayItems.length === 1 ? "reserva" : "reservas"}
+          </span>
+        </p>
+        <div className="overflow-x-auto border" style={{ borderColor: "var(--border-color)" }}>
+          <div
+            className="grid w-max min-w-full"
+            style={{
+              gridTemplateColumns: `repeat(${columnCount}, 260px)`,
+              background: "var(--agenda-calendar-column-bg)",
+            }}
+          >
+            {dayStaffColumns.map((staff) => {
+              const groups = groupAppointmentsByBlock(dayItems.filter((appt) => appt.staff_id === staff.id));
+              return (
+                <div key={staff.id} className="border-r last:border-r-0" style={{ borderColor: "var(--border-color)" }}>
+                  {renderDayStaffHeader(staff)}
+                  <div className="space-y-2 p-2">
+                    {groups.length === 0
+                      ? listEmptyColumnText
+                      : groups.map((group) => renderReservationCard(group, { compact: true, hideStaff: true }))}
+                  </div>
+                </div>
+              );
+            })}
+            {orphanItems.length > 0 ? (
+              <div className="border-r last:border-r-0" style={{ borderColor: "var(--border-color)" }}>
+                <div
+                  className="flex h-[64px] items-center border-b px-3 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--agenda-calendar-header-bg)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Sin profesional asignado
+                </div>
+                <div className="space-y-2 p-2">
+                  {groupAppointmentsByBlock(orphanItems).map((group) =>
+                    renderReservationCard(group, { compact: true })
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
     );
   }
@@ -5350,29 +5700,31 @@ const hasActiveFilters =
                       <span className="md:hidden">Día</span>
                       <span className="hidden md:inline">Día por profesional</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={toggleListMode}
-                      aria-pressed={listMode}
-                      title="Ver las reservas como lista (se combina con Semana / Día)"
-                      className="orbyx-header-btn flex h-9 flex-1 items-center justify-center rounded-md border px-3 text-xs font-semibold md:inline-flex md:flex-none"
-                      style={
-                        listMode
-                          ? {
-                              borderColor: "var(--accent-solid)",
-                              background: "var(--accent-solid)",
-                              color: "#fff",
-                            }
-                          : {
-                              color: "var(--text-main)",
-                              borderColor: "var(--border-color)",
-                              background: "var(--bg-card)",
-                            }
-                      }
-                    >
-                      Lista
-                    </button>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={toggleListMode}
+                    aria-pressed={listMode}
+                    title="Ver las reservas como lista (se combina con Semana / Día)"
+                    className="orbyx-header-btn flex h-9 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold"
+                    style={
+                      listMode
+                        ? {
+                            borderColor: "var(--accent-solid)",
+                            background: "var(--accent-solid)",
+                            color: "#fff",
+                          }
+                        : {
+                            color: "var(--text-main)",
+                            borderColor: "var(--border-color)",
+                            background: "var(--bg-card)",
+                          }
+                    }
+                  >
+                    <List className="h-4 w-4" />
+                    Lista
+                  </button>
 
                   {depositRequired ? (
                     <button
@@ -5462,43 +5814,44 @@ const hasActiveFilters =
                 </button>
               </div>
 
-              <div
-                className="flex items-center gap-1 rounded-lg border p-1"
-                style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}
-              >
-                {(
-                  [
-                    ["week", "Semana"],
-                    ["day", "Día"],
-                  ] as [typeof mobileTab, string][]
-                ).map(([tab, label]) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setMobileTab(tab)}
-                    className="h-9 flex-1 rounded-md text-xs font-semibold"
-                    style={
-                      mobileTab === tab
-                        ? { background: "#3B82F6", color: "#fff" }
-                        : { background: "transparent", color: "var(--text-main)" }
-                    }
-                  >
-                    {label}
-                  </button>
-                ))}
-                {/* Lista ya no es una pestaña exclusiva: es un interruptor que
-                    se combina con Semana / Día (igual que en escritorio). */}
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex flex-1 items-center gap-1 rounded-lg border p-1"
+                  style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}
+                >
+                  {(
+                    [
+                      ["week", "Semana"],
+                      ["day", "Día"],
+                    ] as [typeof mobileTab, string][]
+                  ).map(([tab, label]) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setMobileTab(tab)}
+                      className="h-9 flex-1 rounded-md text-xs font-semibold"
+                      style={
+                        mobileTab === tab
+                          ? { background: "#3B82F6", color: "#fff" }
+                          : { background: "transparent", color: "var(--text-main)" }
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   type="button"
                   onClick={toggleListMode}
                   aria-pressed={listMode}
-                  className="h-9 flex-1 rounded-md text-xs font-semibold"
+                  className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold"
                   style={
                     listMode
-                      ? { background: "#3B82F6", color: "#fff" }
-                      : { background: "transparent", color: "var(--text-main)" }
+                      ? { borderColor: "var(--accent-solid)", background: "var(--accent-solid)", color: "#fff" }
+                      : { borderColor: "var(--border-color)", background: "var(--bg-card)", color: "var(--text-main)" }
                   }
                 >
+                  <List className="h-4 w-4" />
                   Lista
                 </button>
               </div>
@@ -6104,12 +6457,7 @@ const hasActiveFilters =
                 Cargando agenda...
               </div>
             ) : listMode ? (
-              <div className="hidden md:block">
-                {renderReservationList(
-                  agendaView === "day" ? [weekBaseDate] : weekDays,
-                  "No hay reservas en este período"
-                )}
-              </div>
+              agendaView === "day" ? renderDayReservationColumns() : renderWeekReservationColumns()
             ) : agendaView === "day" ? (
               <div className="hidden space-y-4 md:block">
                 <style>{`
@@ -6210,52 +6558,7 @@ const hasActiveFilters =
                       </div>
                     ) : (
                       dayStaffColumns.map((staff) => (
-                        <div
-                          key={staff.id}
-                          className="flex h-[64px] items-center gap-3 border-r px-2.5 last:border-r-0"
-                          style={{
-                            borderColor: "var(--border-color)",
-                            background: "var(--agenda-calendar-header-bg)",
-                          }}
-                        >
-                          <div
-                            className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border text-sm font-bold text-white shadow-sm"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: staff.color || "#2563eb",
-                            }}
-                          >
-                            {staff.photo_url || staff.avatar ? (
-                              <img
-                                src={staff.photo_url || staff.avatar || ""}
-                                alt={staff.name}
-                                className="h-full w-full scale-110 object-cover object-center"
-                              />
-                            ) : (
-                              staff.name
-                                .split(" ")
-                                .map((part) => part[0])
-                                .join("")
-                                .slice(0, 2)
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p
-                              className="truncate text-sm font-semibold"
-                              style={{ color: "var(--text-main)" }}
-                            >
-                              {staff.name}
-                            </p>
-                            {staff.role ? (
-                              <p
-                                className="truncate text-xs"
-                                style={{ color: "var(--text-muted)" }}
-                              >
-                                {staff.role}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
+                        renderDayStaffHeader(staff)
                       ))
                     )}
                   </div>
@@ -6754,105 +7057,9 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                         }
                       }}
                       className="min-h-[660px] w-[260px] shrink-0 rounded-none border first:xl:rounded-l-none last:xl:rounded-r-none xl:w-auto xl:shrink xl:rounded-none xl:border-l-0"
-                      style={{
-  borderColor: dayPendingCount > 0
-    ? "rgba(244,63,94,0.28)"
-    : isClosedScheduleDay
-    ? "var(--agenda-closed-border)"
-    : isToday
-    ? "rgba(37,99,235,0.42)"
-    : "var(--border-color)",
-  background: dayPendingCount > 0
-    ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
-    : isClosedScheduleDay
-    ? "var(--agenda-closed-bg)"
-    : isToday
-    ? "var(--agenda-today-bg)"
-    : "var(--agenda-calendar-column-bg)",
-  boxShadow: isToday
-    ? "0 0 0 1px rgba(37,99,235,0.14), 0 10px 30px -18px rgba(37,99,235,0.45)"
-    : "none",
-}}
+                      style={getWeekDayColumnStyle(isToday, isClosedScheduleDay, dayPendingCount)}
                     >
-                      <div
-  className="static z-20 flex h-[58px] items-center px-2.5 xl:sticky"
-  style={{
-    top: "78px",
-    borderBottom: `1px solid ${
-      dayPendingCount > 0
-        ? "rgba(244,63,94,0.24)"
-        : isClosedScheduleDay
-        ? "var(--agenda-closed-border)"
-        : isToday
-        ? "rgba(56,189,248,0.24)"
-        : "var(--border-color)"
-    }`,
-    background: dayPendingCount > 0
-      ? "linear-gradient(180deg, rgba(244,63,94,0.08), var(--bg-card))"
-      : isClosedScheduleDay
-      ? "var(--agenda-closed-bg)"
-      : isToday
-      ? "var(--agenda-today-header-bg)"
-      : getWeekdaySoftBg(day),
-    backdropFilter: "blur(8px)",
-  }}
->
-                        <div className="flex items-center justify-between gap-2">
-  <div className="flex flex-col">
-    <span
-      className="text-xs font-semibold"
-      style={{
-        color: isToday ? "#60a5fa" : "var(--text-main)",
-        ...(isClosedScheduleDay ? { color: "var(--agenda-closed-text)" } : {}),
-      }}
-    >
-      {getWeekdayLabel(day)}
-    </span>
-
-    <span
-      className="text-[11px]"
-      style={{
-        color: isClosedScheduleDay
-          ? "var(--agenda-closed-muted)"
-          : isToday
-          ? "#38bdf8"
-          : "var(--text-muted)",
-      }}
-    >
-      {formatDayMonthLabel(day)}
-    </span>
-  </div>
-
-                          <div className="flex items-center gap-1.5">
-                            {dayCanceledCount > 0 ? (
-                              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                {dayCanceledCount} c
-                              </span>
-                            ) : null}
-
-                            {dayPendingCount > 0 ? (
-                              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                {dayPendingCount}
-                              </span>
-                            ) : null}
-
-                            {isToday ? (
-                              <span
-  className="rounded-full px-2.5 py-1 text-[10px] font-semibold text-white"
-  style={{
-    background: "linear-gradient(135deg, #2563eb, #38bdf8)",
-    boxShadow: "0 6px 16px -8px rgba(37,99,235,0.85)",
-  }}
->
-  Hoy
-</span>
-                            ) : null}
-
-                          </div>
-                        </div>
-
-       
-                      </div>
+                      {renderWeekDayHeader(day, { isToday, isClosedScheduleDay, dayPendingCount, dayCanceledCount })}
 
                       <div className="space-y-0">
                         {showClosedBySchedule ? (
