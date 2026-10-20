@@ -2,7 +2,7 @@
 
 import { CSSProperties, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Ban,
   BellRing,
@@ -62,6 +62,7 @@ type Appointment = {
   service_is_group?: boolean | null;
   service_capacity?: number | null;
   status: string;
+  deposit_status?: string | null;
   notes?: string | null;
   wa_confirmacion_enviada?: boolean | null;
   has_review?: boolean;
@@ -471,6 +472,10 @@ export default function AgendaPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  // Vista "Lista" (interruptor que se combina con Semana / Día): vive en la
+  // URL (?vista=lista) para sobrevivir a un refresco, mismo patrón que ?tab=.
+  const [listMode, setListMode] = useState(() => searchParams.get("vista") === "lista");
   const slug =
     ((params as { slug?: string })?.slug as string) ||
     ((params as { Slug?: string })?.Slug as string);
@@ -701,7 +706,7 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   // controlando exclusivamente el layout de escritorio, sin tocar). Reusa
   // los mismos datos ya cargados (appointments/weekDays/weekBaseDate); no
   // dispara fetches nuevos.
-  const [mobileTab, setMobileTab] = useState<"week" | "day" | "list">("week");
+  const [mobileTab, setMobileTab] = useState<"week" | "day">("week");
   const [mobileActiveDayKey, setMobileActiveDayKey] = useState("");
   // Sub-toggle solo dentro de la pestaña "Día": lista cronológica (como
   // siempre) o agrupada por profesional.
@@ -3809,6 +3814,131 @@ const hasActiveFilters =
     setHoverCard(null);
   }
 
+  // Si la URL cambia desde fuera (botón atrás, link con ?vista=lista) el
+  // interruptor la sigue.
+  useEffect(() => {
+    setListMode(searchParams.get("vista") === "lista");
+  }, [searchParams]);
+
+  function toggleListMode() {
+    const next = !listMode;
+    setListMode(next);
+    const sp = new URLSearchParams(searchParams.toString());
+    if (next) sp.set("vista", "lista");
+    else sp.delete("vista");
+    // openDeposits ya se consumió al abrir el modal; si quedara en la URL,
+    // este cambio de query lo reabriría.
+    sp.delete("openDeposits");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
+  function formatListDayHeading(day: Date) {
+    const text = day
+      .toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })
+      .replace(",", "");
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  // Lista de reservas reales de los días indicados. Lee appointmentsByDay (la
+  // misma fuente que la grilla: loadAppointments + Realtime + applyAppointmentUpdate),
+  // por eso se actualiza sola; solo excluye canceladas y días sin reservas.
+  // Las filas reutilizan el markup de la lista móvil que ya existía.
+  function renderReservationList(days: Date[], emptyText: string) {
+    const showBranch = branches.length > 1;
+    const dayBlocks = days
+      .map((day) => {
+        const dayKey = formatDateYYYYMMDD(day);
+        const items = (appointmentsByDay[dayKey] || []).filter((a) => a.status !== "canceled");
+        return { day, dayKey, items, groups: groupAppointmentsByBlock(items) };
+      })
+      .filter((block) => block.items.length > 0);
+
+    if (dayBlocks.length === 0) {
+      return (
+        <div
+          className="rounded-md border border-dashed px-4 py-8 text-center text-sm"
+          style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+        >
+          {emptyText}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-5">
+        {dayBlocks.map(({ day, dayKey, items, groups }) => (
+          <div key={dayKey}>
+            <p className="mb-2 text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+              {formatListDayHeading(day)}
+              {dayKey === todayKey ? " · Hoy" : ""}
+              <span className="ml-2 text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+                {items.length} {items.length === 1 ? "reserva" : "reservas"}
+              </span>
+            </p>
+            <div className="space-y-2">
+              {groups.map((group) => {
+                const first = group[0];
+                if (!first) return null;
+                const isGroupSlot = isGroupAppointment(first);
+                const capacity = Number(first.service_capacity || 0) || group.length;
+                const depositPending = first.status === "booked" && first.deposit_status === "pending";
+                const branchName =
+                  showBranch && first.branch_id && first.branch_id !== selectedBranchId
+                    ? branches.find((b) => b.id === first.branch_id)?.name
+                    : "";
+                const isSelected = selectedAppointment?.id === first.id;
+
+                return (
+                  <button
+                    key={getAppointmentGroupKey(first)}
+                    type="button"
+                    data-calendar-selectable="true"
+                    onClick={() => handleSelectAppointment(first)}
+                    className="flex w-full items-center gap-3 rounded-md border p-3 text-left"
+                    style={{
+                      borderColor: isSelected ? "var(--accent-solid)" : "var(--border-color)",
+                      background: "var(--bg-card)",
+                    }}
+                  >
+                    <span className="flex w-12 shrink-0 flex-col text-sm leading-tight" style={{ color: "var(--text-main)" }}>
+                      <span>{formatHour(first.start_at)}</span>
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        – {formatHour(first.end_at)}
+                      </span>
+                    </span>
+                    <span
+                      className="h-9 w-1 shrink-0 rounded-full"
+                      style={{ background: APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm" style={{ color: "var(--text-main)" }}>
+                        {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
+                      </p>
+                      <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
+                        {isGroupSlot ? `${group.length}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 truncate text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.85 }}>
+                        <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />
+                        <span className="truncate">
+                          {first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}
+                          {branchName ? ` · ${branchName}` : ""}
+                        </span>
+                      </p>
+                    </div>
+                    <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] ${getStatusBadgeClass(first)}`}>
+                      {depositPending ? "Depósito pendiente" : getStatusLabel(first)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (loading) return;
     if (scrollRestoreRef.current === null) return;
@@ -5220,6 +5350,28 @@ const hasActiveFilters =
                       <span className="md:hidden">Día</span>
                       <span className="hidden md:inline">Día por profesional</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={toggleListMode}
+                      aria-pressed={listMode}
+                      title="Ver las reservas como lista (se combina con Semana / Día)"
+                      className="orbyx-header-btn flex h-9 flex-1 items-center justify-center rounded-md border px-3 text-xs font-semibold md:inline-flex md:flex-none"
+                      style={
+                        listMode
+                          ? {
+                              borderColor: "var(--accent-solid)",
+                              background: "var(--accent-solid)",
+                              color: "#fff",
+                            }
+                          : {
+                              color: "var(--text-main)",
+                              borderColor: "var(--border-color)",
+                              background: "var(--bg-card)",
+                            }
+                      }
+                    >
+                      Lista
+                    </button>
                   </div>
 
                   {depositRequired ? (
@@ -5318,7 +5470,6 @@ const hasActiveFilters =
                   [
                     ["week", "Semana"],
                     ["day", "Día"],
-                    ["list", "Lista"],
                   ] as [typeof mobileTab, string][]
                 ).map(([tab, label]) => (
                   <button
@@ -5335,6 +5486,21 @@ const hasActiveFilters =
                     {label}
                   </button>
                 ))}
+                {/* Lista ya no es una pestaña exclusiva: es un interruptor que
+                    se combina con Semana / Día (igual que en escritorio). */}
+                <button
+                  type="button"
+                  onClick={toggleListMode}
+                  aria-pressed={listMode}
+                  className="h-9 flex-1 rounded-md text-xs font-semibold"
+                  style={
+                    listMode
+                      ? { background: "#3B82F6", color: "#fff" }
+                      : { background: "transparent", color: "var(--text-main)" }
+                  }
+                >
+                  Lista
+                </button>
               </div>
 
               {mobileTab === "day" ? (
@@ -5385,7 +5551,7 @@ const hasActiveFilters =
                 </div>
               ) : null}
 
-              {mobileTab === "day" ? (
+              {mobileTab === "day" && !listMode ? (
                 <div className="flex items-center gap-1 rounded-lg border p-1 text-xs" style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}>
                   {(
                     [
@@ -5410,7 +5576,28 @@ const hasActiveFilters =
                 </div>
               ) : null}
 
-              {mobileTab === "week" ? (
+              {listMode ? (
+                !selectedBranchId ? (
+                  <div
+                    className="rounded-md border border-dashed px-4 py-8 text-center text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                  >
+                    Selecciona una sucursal para ver la agenda.
+                  </div>
+                ) : loading ? (
+                  <div
+                    className="rounded-md border border-dashed px-4 py-8 text-center text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
+                  >
+                    Cargando agenda...
+                  </div>
+                ) : (
+                  renderReservationList(
+                    mobileTab === "day" ? [mobileDayKeyToDate(mobileActiveDayKey || todayKey)] : weekDays,
+                    "No hay reservas en este período"
+                  )
+                )
+              ) : mobileTab === "week" ? (
                 !selectedBranchId ? (
                   <div
                     className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
@@ -5700,74 +5887,6 @@ const hasActiveFilters =
                 >
                   Cargando agenda...
                 </div>
-              ) : mobileTab === "list" ? (
-                <div className="space-y-4">
-                  {weekDays.map((day) => {
-                    const dayKey = formatDateYYYYMMDD(day);
-                    const dayGroups = groupAppointmentsByBlock(appointmentsByDay[dayKey] || []);
-                    if (dayGroups.length === 0) return null;
-
-                    return (
-                      <div key={dayKey}>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                          {formatMobileShortWeekday(day)} {day.getDate()}
-                          {dayKey === todayKey ? " · Hoy" : ""}
-                        </p>
-                        <div className="space-y-2">
-                          {dayGroups.map((group) => {
-                            const first = group[0];
-                            if (!first) return null;
-                            const isGroupSlot = isGroupAppointment(first);
-                            const activeCount = group.filter((a) => a.status !== "canceled").length;
-                            const capacity = Number(first.service_capacity || 0) || activeCount || group.length;
-
-                            return (
-                              <button
-                                key={getAppointmentGroupKey(first)}
-                                type="button"
-                                data-calendar-selectable="true"
-                                onClick={() => handleSelectAppointment(first)}
-                                className="flex w-full items-center gap-3 rounded-xl border p-3 text-left"
-                                style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
-                              >
-                                <span className="w-12 shrink-0 text-sm font-bold" style={{ color: "var(--text-main)" }}>
-                                  {formatHour(first.start_at)}
-                                </span>
-                                <span
-                                  className="h-8 w-1 shrink-0 rounded-full"
-                                  style={{ background: APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex }}
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-                                    {isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name}
-                                  </p>
-                                  <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
-                                    {isGroupSlot ? `${activeCount}/${capacity} inscritos` : (first.service_name_snapshot || "Reserva")}
-                                  </p>
-                                  <p className="mt-0.5 flex items-center gap-1 truncate text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.85 }}>
-                                    <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />
-                                    <span className="truncate">{first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}</span>
-                                  </p>
-                                </div>
-                                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClass(first)}`}>
-                                  {getStatusLabel(first)}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {weekDays.every((day) => (appointmentsByDay[formatDateYYYYMMDD(day)] || []).length === 0) ? (
-                    <div
-                      className="rounded-xl border border-dashed px-4 py-8 text-center text-sm"
-                      style={{ borderColor: "var(--border-color)", background: "var(--bg-soft)", color: "var(--text-muted)" }}
-                    >
-                      Sin reservas esta semana.
-                    </div>
-                  ) : null}
-                </div>
               ) : mobileDayGroupBy === "staff" ? (
                 (appointmentsByDay[mobileActiveDayKey] || []).length === 0 ? (
                   <div
@@ -5983,6 +6102,13 @@ const hasActiveFilters =
                 }}
               >
                 Cargando agenda...
+              </div>
+            ) : listMode ? (
+              <div className="hidden md:block">
+                {renderReservationList(
+                  agendaView === "day" ? [weekBaseDate] : weekDays,
+                  "No hay reservas en este período"
+                )}
               </div>
             ) : agendaView === "day" ? (
               <div className="hidden space-y-4 md:block">
