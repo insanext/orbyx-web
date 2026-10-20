@@ -4062,30 +4062,25 @@ const hasActiveFilters =
           type="button"
           data-calendar-selectable="true"
           onClick={() => handleSelectAppointment(first)}
-          className="relative block w-full overflow-hidden rounded-md border py-2 pl-4 pr-2 text-left"
+          title={`${title} · ${subtitle}${staffLine ? ` · ${staffLine}` : ""}`}
+          className="relative block w-full overflow-hidden rounded-md border py-1.5 pl-3 pr-1.5 text-left"
           style={cardStyle}
         >
-          <span className="absolute inset-y-0 left-0 w-1" style={{ background: statusColor }} />
-          <span className="block text-xs" style={{ color: "var(--text-muted)" }}>
-            {formatHour(first.start_at)} – {formatHour(first.end_at)}
+          <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: statusColor }} />
+          <span className="flex items-center justify-between gap-1.5">
+            <span className="shrink-0 text-[10px]" style={{ color: "var(--text-muted)" }}>
+              {formatHour(first.start_at)} – {formatHour(first.end_at)}
+            </span>
+            <span className={`min-w-0 truncate rounded border px-1.5 text-[9px] leading-4 ${getStatusBadgeClass(first)}`}>
+              {badgeLabel}
+            </span>
           </span>
-          <span className="mt-0.5 block truncate text-sm" style={{ color: "var(--text-main)" }}>
+          <span className="block truncate text-xs leading-snug" style={{ color: "var(--text-main)" }}>
             {title}
           </span>
-          <span className="block truncate text-xs" style={{ color: "var(--text-muted)" }}>
+          <span className="block truncate text-[10px] leading-snug" style={{ color: "var(--text-muted)" }}>
             {subtitle}
-          </span>
-          {staffLine ? (
-            <span
-              className="mt-0.5 flex items-center gap-1 truncate text-[11px]"
-              style={{ color: "var(--text-muted)", opacity: 0.85 }}
-            >
-              {options?.hideStaff ? null : <UserRound className="h-3 w-3 shrink-0" aria-hidden="true" />}
-              <span className="truncate">{staffLine}</span>
-            </span>
-          ) : null}
-          <span className={`mt-1.5 inline-block max-w-full truncate rounded border px-2 py-0.5 text-[10px] ${getStatusBadgeClass(first)}`}>
-            {badgeLabel}
+            {staffLine ? ` · ${staffLine}` : ""}
           </span>
         </button>
       );
@@ -4173,7 +4168,7 @@ const hasActiveFilters =
   }
 
   const listEmptyColumnText = (
-    <p className="px-1 py-3 text-center text-xs" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
+    <p className="px-1 py-2 text-center text-[11px]" style={{ color: "var(--text-muted)", opacity: 0.7 }}>
       Sin reservas
     </p>
   );
@@ -4201,7 +4196,7 @@ const hasActiveFilters =
               style={getWeekDayColumnStyle(isToday, isClosedScheduleDay, dayPendingCount)}
             >
               {renderWeekDayHeader(day, { isToday, isClosedScheduleDay, dayPendingCount, dayCanceledCount })}
-              <div className="space-y-2 p-2">
+              <div className="space-y-1.5 p-1.5">
                 {groups.length === 0
                   ? listEmptyColumnText
                   : groups.map((group) => renderReservationCard(group, { compact: true }))}
@@ -4256,7 +4251,7 @@ const hasActiveFilters =
               return (
                 <div key={staff.id} className="border-r last:border-r-0" style={{ borderColor: "var(--border-color)" }}>
                   {renderDayStaffHeader(staff)}
-                  <div className="space-y-2 p-2">
+                  <div className="space-y-1.5 p-1.5">
                     {groups.length === 0
                       ? listEmptyColumnText
                       : groups.map((group) => renderReservationCard(group, { compact: true, hideStaff: true }))}
@@ -4276,7 +4271,7 @@ const hasActiveFilters =
                 >
                   Sin profesional asignado
                 </div>
-                <div className="space-y-2 p-2">
+                <div className="space-y-1.5 p-1.5">
                   {groupAppointmentsByBlock(orphanItems).map((group) =>
                     renderReservationCard(group, { compact: true })
                   )}
