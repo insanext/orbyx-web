@@ -19,7 +19,8 @@ export type AppointmentStatusKey =
   | "rescheduled"
   | "canceled"
   | "pending_close"
-  | "group_activity";
+  | "group_activity"
+  | "deposit_pending";
 
 export interface AppointmentStatusColor {
   /** "R,G,B" para usar dentro de rgba(...) */
@@ -48,6 +49,9 @@ export const APPOINTMENT_STATUS_COLORS: Record<
   // Actividad grupal usa un morado/índigo distinto del de "Reagendado" para
   // que ambos se puedan diferenciar cuando aparecen cerca en el calendario.
   group_activity: { rgb: "99,102,241", hex: "#6366F1", onDark: "#EEF2FF", label: "Actividad grupal" },
+  // Reserva con depósito por revisar: ámbar, distinto del azul de "Agendado"
+  // y del rojo de "Falta cierre".
+  deposit_pending: { rgb: "245,158,11", hex: "#F59E0B", onDark: "#FFFBEB", label: "Depósito pendiente" },
 };
 
 const CARD_BORDER_ALPHA_OVERRIDE: Partial<Record<AppointmentStatusKey, number>> = {

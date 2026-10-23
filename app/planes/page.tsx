@@ -1492,8 +1492,8 @@ function PlanesPageContent() {
 
             <div className="mt-5 grid gap-3 rounded-[16px] border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-300 md:grid-cols-2 xl:grid-cols-4">
               {[
-                [`Versión de prueba ${TRIAL_LABEL} en Pro`, "Prueba sin riesgos.", CalendarDays],
-                ["Sin tarjeta de credito", "Comienza en segundos.", Lock],
+                [`Versión de prueba ${TRIAL_LABEL} en Starter`, "Solo en el plan Starter.", CalendarDays],
+                ["Sin tarjeta en la prueba", "Comienza en segundos.", Lock],
                 ["Cambia cuando quieras", "Upgrade, downgrade o cancela.", Zap],
                 ["Siempre seguro", "Tus datos estan protegidos.", ShieldCheck],
               ].map(([title, text, Icon]) => {

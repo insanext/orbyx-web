@@ -1524,6 +1524,14 @@ const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   // true cuando el backend indica que el negocio no acepta reservas
   // públicas (pausado, o bloqueado por falta de pago hace más de 7 días).
   const [bookingClosed, setBookingClosed] = useState(false);
+  // "Modo caído": el backend no respondió o dio 5xx al cargar la página.
+  const [serviceDown, setServiceDown] = useState(false);
+  const [downContact, setDownContact] = useState<{
+    name: string;
+    phone: string;
+    whatsapp: string;
+  } | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -1905,10 +1913,15 @@ const nextAvailableDays = useMemo(() => {
     async function loadInitial() {
       try {
         setLoadingPage(true);
+        setServiceDown(false);
 
         const res = await fetch(`/api/public-services/${slug}`, {
           cache: "no-store",
         });
+
+        if (res.status >= 500) {
+          throw new Error(`Backend no disponible (${res.status})`);
+        }
 
         const data: PublicServicesResponse = await res.json();
 
@@ -1947,6 +1960,24 @@ const nextAvailableDays = useMemo(() => {
         );
       } catch (error) {
         console.error("Error cargando página pública:", error);
+        setServiceDown(true);
+        // Datos de contacto desde una ruta que no depende del backend. Si
+        // tampoco responde, igual se muestra el aviso con "Reintentar".
+        try {
+          const fbRes = await fetch(`/api/public-business-fallback/${slug}`, {
+            signal: AbortSignal.timeout(6000),
+          });
+          if (fbRes.ok) {
+            const fb = await fbRes.json();
+            setDownContact({
+              name: String(fb?.name || ""),
+              phone: String(fb?.phone || ""),
+              whatsapp: String(fb?.whatsapp || ""),
+            });
+          }
+        } catch {
+          // sin datos de contacto: solo mensaje + Reintentar
+        }
         setBusiness(null);
         setCalendarId("");
         setBranches([]);
@@ -1960,7 +1991,7 @@ const nextAvailableDays = useMemo(() => {
     }
 
     loadInitial();
-  }, [slug]);
+  }, [slug, reloadKey]);
 
   useEffect(() => {
     if (!slug) return;
@@ -2549,6 +2580,64 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
       }
       setSubmitting(false);
     }
+  }
+
+  if (serviceDown && !loadingPage) {
+    const downName = downContact?.name?.trim() || "el negocio";
+    const downWhatsapp = normalizeWhatsappNumber(
+      downContact?.whatsapp || downContact?.phone
+    );
+    const downPhone = (downContact?.phone || "").trim();
+    const downPhoneDigits = downPhone.replace(/[^\d+]/g, "");
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 px-3 py-4 sm:px-4 md:px-8 md:py-10">
+        <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-xl items-center justify-center md:min-h-[calc(100vh-5rem)]">
+          <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm md:p-10">
+            <p className="text-base font-semibold text-slate-950 md:text-lg">
+              Estamos con problemas técnicos en este momento.
+            </p>
+            {downContact ? (
+              <p className="mt-3 text-sm leading-6 text-slate-600 md:text-base">
+                Puedes contactar a <strong>{downName}</strong> directamente:
+              </p>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-slate-600 md:text-base">
+                Intenta de nuevo en unos minutos.
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-col items-stretch gap-3">
+              {downWhatsapp ? (
+                <a
+                  href={`https://wa.me/${downWhatsapp}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  Escribir por WhatsApp
+                </a>
+              ) : null}
+              {downPhone && downPhoneDigits ? (
+                <a
+                  href={`tel:${downPhoneDigits}`}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Llamar al {downPhone}
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (bookingClosed && !loadingPage) {

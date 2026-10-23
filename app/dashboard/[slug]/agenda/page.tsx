@@ -1033,6 +1033,7 @@ function generateSlotsFromWindows(
   }
 
   function getVisualStatus(appt: Appointment) {
+    if (appt.status === "booked" && appt.deposit_status === "pending") return "deposit_pending";
     if (isPastPendingClosure(appt)) return "pending_close";
     return appt.status;
   }
@@ -1049,6 +1050,8 @@ function generateSlotsFromWindows(
         return "No asistió";
       case "rescheduled":
         return "Reagendó";
+      case "deposit_pending":
+        return "Depósito pendiente";
       case "pending_close":
         return "Pendiente de cierre";
       case "canceled":
@@ -1070,6 +1073,8 @@ function generateSlotsFromWindows(
         return "No asistió";
       case "rescheduled":
         return "Reagendó";
+      case "deposit_pending":
+        return "Depósito pend.";
       case "pending_close":
         return "Pendiente";
       case "canceled":
@@ -1092,6 +1097,8 @@ function generateSlotsFromWindows(
         return "canceled";
       case "pending_close":
         return "pending_close";
+      case "deposit_pending":
+        return "deposit_pending";
       case "booked":
       default:
         return "booked";
@@ -5320,6 +5327,7 @@ const hasActiveFilters =
                             ["No asistió", "no_show"],
                             ["Reagendado", "rescheduled"],
                             ["Falta cierre", "pending_close"],
+                            ["Depósito pendiente", "deposit_pending"],
                             ["Actividad grupal", "group_activity"],
                           ] as [string, keyof typeof APPOINTMENT_STATUS_COLORS][]
                         ).map(([label, colorKey]) => (

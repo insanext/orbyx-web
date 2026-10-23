@@ -52,7 +52,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
     items: [
       {
         question: '¿Cómo agrego una nueva sucursal?',
-        answer: 'Desde Sucursales, según el límite de tu plan actual (Pro: 1, Premium: 2, VIP: 3, Platinum: 10).',
+        answer: 'Desde Sucursales, según el límite de tu plan actual (Starter: 1, Business: 2, Premium: 3).',
       },
       {
         question: '¿Cómo doy acceso a mi equipo con permisos limitados?',
@@ -80,7 +80,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
     items: [
       {
         question: '¿Qué hago si mi pregunta no está aquí?',
-        answer: 'Crea un ticket de soporte directamente desde esta misma sección — nuestro equipo responde según la prioridad de tu plan.',
+        answer: 'Crea un ticket de soporte directamente desde esta misma sección — nuestro equipo los atiende por orden de prioridad según tu plan: Premium primero, luego Business y Starter. El soporte es solo por tickets (no hay correo ni chat).',
       },
     ],
   },

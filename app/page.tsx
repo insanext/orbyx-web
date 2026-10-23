@@ -65,7 +65,7 @@ function LandingContent() {
     { icon: RefreshCcw, title: "Vuelves a contactarlos", desc: "con campañas cuando dejan de venir" },
   ];
 
-  const ctaBadges = [`${TRIAL_LABEL} gratis`, "Sin tarjeta de crédito", "Cancelas cuando quieras"];
+  const ctaBadges = [`${TRIAL_LABEL} gratis en el plan Starter`, "Sin tarjeta en la prueba", "Cancelas cuando quieras"];
 
   return (
     <main
