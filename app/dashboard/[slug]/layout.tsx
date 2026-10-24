@@ -298,6 +298,34 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
 
+  // Menú "⋯" del header en <640px: agrupa copiar URL / QR / tema, que en
+  // pantallas angostas cortaban el nombre del negocio.
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const [moreMenuMobileTop, setMoreMenuMobileTop] = useState<number | null>(null);
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [moreMenuOpen]);
+
+  useLayoutEffect(() => {
+    if (!moreMenuOpen) return;
+    if (typeof window === "undefined" || window.innerWidth >= 640) {
+      setMoreMenuMobileTop(null);
+      return;
+    }
+    if (moreMenuTriggerRef.current) {
+      setMoreMenuMobileTop(moreMenuTriggerRef.current.getBoundingClientRect().bottom + 8);
+    }
+  }, [moreMenuOpen]);
+
   if (pathname?.includes("/clinical-report/")) {
     return <>{children}</>;
   }
@@ -1986,7 +2014,7 @@ export default function DashboardLayout({
                 </p>
                 <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2 sm:mt-1 sm:gap-3">
                   <h2
-                    className="truncate text-base font-semibold tracking-tight sm:text-xl"
+                    className="line-clamp-2 break-words text-base font-semibold leading-tight tracking-tight sm:truncate sm:text-xl"
                     style={{ color: textMain }}
                   >
                     {businessName || slug || "Gestión del negocio"}
@@ -2018,14 +2046,91 @@ export default function DashboardLayout({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                <div ref={moreMenuRef} className="relative sm:hidden">
+                  <button
+                    ref={moreMenuTriggerRef}
+                    type="button"
+                    aria-label="Acciones rápidas"
+                    aria-haspopup="menu"
+                    aria-expanded={moreMenuOpen}
+                    onClick={() => setMoreMenuOpen((prev) => !prev)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition"
+                    style={{
+                      background: moreMenuOpen ? "rgba(37,99,235,0.08)" : softBg,
+                      borderColor: moreMenuOpen ? "rgba(37,99,235,0.40)" : sidebarBorder,
+                      color: textMain,
+                    }}
+                  >
+                    <MoreHorizontal size={18} />
+                  </button>
+
+                  {moreMenuOpen ? (
+                    <div
+                      role="menu"
+                      className="fixed left-4 right-4 z-50 overflow-hidden rounded-2xl border"
+                      style={{
+                        top: moreMenuMobileTop !== null ? `${moreMenuMobileTop}px` : undefined,
+                        background: dropdownBg,
+                        borderColor: sidebarBorder,
+                        boxShadow:
+                          "0 12px 40px -8px rgba(0,0,0,0.28), 0 4px 16px -4px rgba(0,0,0,0.18)",
+                      }}
+                    >
+                      {slug ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            void copyPublicUrl();
+                            setMoreMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium transition hover:bg-black/5"
+                          style={{ color: textMain }}
+                        >
+                          <Link2 size={16} />
+                          Copiar URL pública
+                        </button>
+                      ) : null}
+                      {slug ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setMoreMenuOpen(false);
+                            void openQrModal();
+                          }}
+                          className="flex w-full items-center gap-2.5 border-t px-4 py-3 text-left text-sm font-medium transition hover:bg-black/5"
+                          style={{ color: textMain, borderColor: sidebarBorder }}
+                        >
+                          <QrCode size={16} />
+                          Generar QR
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          toggleTheme();
+                          setMoreMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2.5 border-t px-4 py-3 text-left text-sm font-medium transition hover:bg-black/5"
+                        style={{ color: textMain, borderColor: sidebarBorder }}
+                      >
+                        {mounted && theme === "nocturno" ? <Sun size={16} /> : <Moon size={16} />}
+                        {mounted && theme === "nocturno" ? "Cambiar a clásico" : "Cambiar a nocturno"}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
                 {slug ? (
                   <button
                     type="button"
                     onClick={copyPublicUrl}
                     aria-label="Copiar URL pública"
                     title={`Copiar ${publicUrl}`}
-                    className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition sm:h-11 sm:px-3 sm:text-sm"
+                    className="hidden h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition sm:inline-flex sm:h-11 sm:px-3 sm:text-sm"
                     style={{
                       background: copiedPublicUrl ? "rgba(16,185,129,0.12)" : softBg,
                       borderColor: copiedPublicUrl ? "rgba(16,185,129,0.45)" : sidebarBorder,
@@ -2045,7 +2150,7 @@ export default function DashboardLayout({
                     onClick={openQrModal}
                     aria-label="Generar QR de la página pública"
                     title="Generar QR"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
+                    className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:inline-flex sm:h-11 sm:w-11"
                     style={{
                       background: softBg,
                       borderColor: sidebarBorder,
@@ -2073,7 +2178,7 @@ export default function DashboardLayout({
                         : "Cambiar a clásico"
                       : "Cambiar tema"
                   }
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:h-11 sm:w-11"
+                  className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-2xl border transition sm:inline-flex sm:h-11 sm:w-11"
                   style={{
                     background: softBg,
                     borderColor: sidebarBorder,
