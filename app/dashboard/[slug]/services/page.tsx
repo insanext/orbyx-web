@@ -12,7 +12,8 @@ import {
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragOverlay,
@@ -27,6 +28,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { BACKEND_URL } from "@/lib/backend-url";
+import Select from "@/components/ui/Select";
 
 type BusinessResponse = {
   business: {
@@ -88,6 +90,21 @@ type BranchItem = {
   name: string;
   is_active?: boolean;
 };
+
+// Puntero fino con hover (mouse/trackpad). En pantallas táctiles el arrastre
+// solo se activa desde el ícono de agarre (⋮⋮) con long-press, para no
+// bloquear el scroll de la lista.
+function useFinePointer() {
+  const [fine, setFine] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setFine(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return fine;
+}
 
 type NoticeTone =
   | "info"
@@ -227,18 +244,22 @@ function SortableServiceRow({
   service,
   onEdit,
   onDelete,
+  onMove,
   hasStaff,
   readOnly,
 }: {
   service: Service;
   onEdit: (s: Service) => void;
   onDelete: (s: Service) => void;
+  onMove: (s: Service) => void;
   hasStaff?: boolean;
   readOnly?: boolean;
 }) {
+  const finePointer = useFinePointer();
   const {
     attributes,
     listeners,
+    setActivatorNodeRef,
     setNodeRef,
     transform,
     transition,
@@ -256,12 +277,28 @@ function SortableServiceRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex flex-col gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row cursor-grab active:cursor-grabbing touch-none md:flex-row md:items-center"
-      {...attributes}
-      {...listeners}
+      className={`flex flex-col gap-2 px-3 py-2.5 border-b border-blue-900/10 last:border-b-0 hover:bg-blue-950/20 transition-colors group/row md:flex-row md:items-center ${
+        finePointer && !readOnly ? "cursor-grab active:cursor-grabbing" : ""
+      }`}
+      // Desktop: se mantiene el arrastre desde toda la fila. Táctil: solo
+      // desde el ícono de agarre (ver más abajo).
+      {...(finePointer && !readOnly ? listeners : {})}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="text-blue-900/40 flex-shrink-0" aria-hidden="true">
+        <span
+          ref={setActivatorNodeRef}
+          {...(readOnly ? {} : attributes)}
+          {...(readOnly ? {} : listeners)}
+          aria-label={`Arrastrar ${service.name}`}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md select-none md:h-6 md:w-5"
+          style={{
+            color: "var(--text-muted)",
+            touchAction: "none",
+            cursor: readOnly ? "default" : "grab",
+            WebkitTouchCallout: "none",
+            WebkitUserSelect: "none",
+          }}
+        >
           <svg
             width="16"
             height="16"
@@ -315,7 +352,21 @@ function SortableServiceRow({
         </div>
       </div>
       {readOnly ? null : (
-        <div className="flex gap-1.5 pl-6 opacity-100 transition-opacity flex-shrink-0 md:pl-0 md:opacity-0 md:group-hover/row:opacity-100">
+        <div
+          className={`flex flex-wrap gap-1.5 pl-6 opacity-100 transition-opacity flex-shrink-0 md:pl-0 ${
+            finePointer
+              ? "md:opacity-0 md:group-hover/row:opacity-100 md:group-focus-within/row:opacity-100"
+              : ""
+          }`}
+        >
+          <button
+            onClick={() => onMove(service)}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="text-xs px-2.5 py-1 rounded-md border border-blue-900/30 hover:border-blue-500/40 transition-colors"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Mover a…
+          </button>
           <button
             onClick={() => onEdit(service)}
             onPointerDown={(e) => e.stopPropagation()}
@@ -386,6 +437,8 @@ const [businessCategory, setBusinessCategory] = useState("");
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [moveTarget, setMoveTarget] = useState<Service | null>(null);
+  const [movingGroupKey, setMovingGroupKey] = useState<string | null>(null);
 
 const [form, setForm] = useState({
   name: "",
@@ -396,6 +449,7 @@ const [form, setForm] = useState({
   is_group: false,
   capacity: "1",
   customer_instructions: "",
+  group_id: "",
 });
 
 const [editForm, setEditForm] = useState({
@@ -408,6 +462,7 @@ const [editForm, setEditForm] = useState({
   is_group: false,
   capacity: "1",
   customer_instructions: "",
+  group_id: "",
 });
 
   const branchStorageKey = useMemo(() => {
@@ -430,8 +485,13 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
   const excessServices = Math.max(0, activeServicesCount - maxServices);
   const hasExcess = excessServices > 0;
 
+  // Mouse: arrastre tras mover 5px. Táctil: long-press de 250ms (el handle
+  // ⋮⋮ tiene touch-action: none; el resto de la fila deja pasar el scroll).
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
+    })
   );
   const activeService = services.find((s) => s.id === activeId);
 
@@ -496,14 +556,84 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
         group_id: s.group_id ?? null,
         sort_order: i,
       }));
-      apiFetch(`${BACKEND_URL}/services/reorder`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId, order }),
-      }).catch((e) => console.error("Error guardando orden:", e));
+      persistServicesOrder(order).catch((e) =>
+        console.error("Error guardando orden:", e)
+      );
 
       return reordered;
     });
+  }
+
+  // Único punto que guarda orden/categoría de servicios: el arrastre, el botón
+  // "Mover a…" y el campo "Categoría" de los formularios usan el mismo
+  // endpoint (PATCH /services/reorder) y la misma forma de payload.
+  async function persistServicesOrder(
+    order: { id: string; group_id: string | null; sort_order: number }[]
+  ) {
+    const res = await apiFetch(`${BACKEND_URL}/services/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tenant_id: tenantId, order }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error || "No se pudo guardar la categoría");
+    }
+  }
+
+  // Asigna un servicio a una categoría (null = "Sin categoría") dejándolo al
+  // final de ella, como lo haría soltarlo al final de la lista arrastrando.
+  async function persistServiceGroup(
+    serviceId: string,
+    targetGroupId: string | null
+  ) {
+    const maxSort = services.reduce(
+      (max, s) => Math.max(max, Number(s.sort_order ?? 0)),
+      0
+    );
+    await persistServicesOrder([
+      {
+        id: serviceId,
+        group_id: targetGroupId,
+        sort_order: Math.max(services.length, maxSort + 1),
+      },
+    ]);
+  }
+
+  async function handleMoveService(
+    service: Service,
+    targetGroupId: string | null
+  ) {
+    if ((service.group_id ?? null) === targetGroupId) {
+      setMoveTarget(null);
+      return;
+    }
+    const previous = services;
+    setMovingGroupKey(targetGroupId ?? "none");
+    setSaveError("");
+    setSaveOk("");
+    try {
+      await persistServiceGroup(service.id, targetGroupId);
+      setServices((prev) => {
+        const moved = prev.find((s) => s.id === service.id);
+        if (!moved) return prev;
+        return [
+          ...prev.filter((s) => s.id !== service.id),
+          { ...moved, group_id: targetGroupId },
+        ];
+      });
+      setMoveTarget(null);
+    } catch (error: unknown) {
+      setServices(previous);
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo mover el servicio"
+      );
+      setMoveTarget(null);
+    } finally {
+      setMovingGroupKey(null);
+    }
   }
 
   function renderServiceItem(service: Service) {
@@ -682,6 +812,35 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 ) : null}
               </div>
             ) : null}
+            {groups.length > 0 && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                  Categoría
+                </label>
+                <Select
+                  value={editForm.group_id}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      group_id: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border px-4 py-2 text-sm"
+                  style={{
+                    borderColor: "var(--border-color)",
+                    background: "var(--bg-card)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="">Sin categoría</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
             {staff.length > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
@@ -762,6 +921,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
             name: s.name,
           })
         }
+        onMove={(s) => setMoveTarget(s)}
         hasStaff={getSelectedStaffIdsForService(service.id).length > 0}
         readOnly={!canEditServicios}
       />
@@ -1099,6 +1259,7 @@ setForm({
   is_group: false,
   capacity: "1",
   customer_instructions: "",
+  group_id: "",
 });
       setSaveError("");
       setSaveOk("");
@@ -1119,6 +1280,7 @@ setForm({
   is_group: false,
   capacity: "1",
   customer_instructions: "",
+  group_id: "",
 });
       setSaveError("");
       setSaveOk("");
@@ -1284,6 +1446,20 @@ customer_instructions: form.customer_instructions.trim() || null,
       }
 
       await saveServiceStaffRelations(createdServiceId, form.staff_ids);
+
+      // Categoría elegida en el formulario (mismo endpoint que el arrastre).
+      let groupError = "";
+      if (form.group_id) {
+        try {
+          await persistServiceGroup(createdServiceId, form.group_id);
+        } catch (groupErr: unknown) {
+          groupError =
+            groupErr instanceof Error
+              ? groupErr.message
+              : "No se pudo guardar la categoría";
+        }
+      }
+
       await fetchBranchData(tenantId, selectedBranchId);
 
 setForm({
@@ -1295,9 +1471,16 @@ setForm({
   is_group: false,
   capacity: "1",
   customer_instructions: "",
+  group_id: "",
 });
 
-      setSaveOk("Servicio creado correctamente.");
+      if (groupError) {
+        setSaveError(
+          `Servicio creado, pero no se pudo asignar la categoría: ${groupError}`
+        );
+      } else {
+        setSaveOk("Servicio creado correctamente.");
+      }
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "No se pudo crear el servicio";
@@ -1321,6 +1504,7 @@ function startEditing(service: Service) {
     is_group: Boolean(service.is_group),
     capacity: String(service.capacity || 1),
     customer_instructions: service.customer_instructions || "",
+    group_id: service.group_id || "",
   });
 }
 
@@ -1378,9 +1562,31 @@ customer_instructions: editForm.customer_instructions.trim() || null,
       }
 
       await saveServiceStaffRelations(serviceId, editForm.staff_ids);
+
+      // Categoría: solo se guarda si cambió, por el mismo endpoint que el arrastre.
+      let groupError = "";
+      const currentGroupId =
+        services.find((s) => s.id === serviceId)?.group_id || "";
+      if (editForm.group_id !== currentGroupId) {
+        try {
+          await persistServiceGroup(serviceId, editForm.group_id || null);
+        } catch (groupErr: unknown) {
+          groupError =
+            groupErr instanceof Error
+              ? groupErr.message
+              : "No se pudo guardar la categoría";
+        }
+      }
+
       await fetchBranchData(tenantId, selectedBranchId);
 
-      setSaveOk("Servicio actualizado correctamente.");
+      if (groupError) {
+        setSaveError(
+          `Servicio actualizado, pero no se pudo cambiar la categoría: ${groupError}`
+        );
+      } else {
+        setSaveOk("Servicio actualizado correctamente.");
+      }
       setEditingId(null);
     } catch (error: unknown) {
       const message =
@@ -1609,10 +1815,10 @@ customer_instructions: editForm.customer_instructions.trim() || null,
         }}
       >
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-semibold" style={{ color: "var(--text-main)" }}>
             Gestión de servicios
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Administra los servicios disponibles y crea nuevos en un solo lugar.
           </p>
         </div>
@@ -1620,7 +1826,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
         <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
                 Servicios actuales
               </h3>
               {selectedBranchId && !loading && (
@@ -1716,15 +1922,15 @@ customer_instructions: editForm.customer_instructions.trim() || null,
             )}
 
             {!selectedBranchId ? (
-              <div className="text-sm text-slate-500">
+              <div className="text-sm" style={{ color: "var(--text-muted)" }}>
                 Selecciona una sucursal para ver servicios.
               </div>
             ) : loading ? (
-              <div className="text-sm text-slate-500">
+              <div className="text-sm" style={{ color: "var(--text-muted)" }}>
                 Cargando servicios...
               </div>
             ) : (services.length === 0 && groups.length === 0) ? (
-              <div className="text-sm text-slate-500">
+              <div className="text-sm" style={{ color: "var(--text-muted)" }}>
                 No tienes servicios aún.
               </div>
             ) : (
@@ -1927,7 +2133,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                                   borderColor: "var(--border-color)",
                                 }}
                               >
-                                Arrastra servicios aquí
+                                Arrastra servicios aquí o usa «Mover a…»
                               </div>
                             ) : (
                               groupServices.map((service) =>
@@ -2016,7 +2222,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                                 className="px-3 py-5 text-center text-xs"
                                 style={{ color: "var(--text-muted)" }}
                               >
-                                Arrastra servicios aquí
+                                Arrastra servicios aquí o usa «Mover a…»
                               </div>
                             ) : (
                               ungrouped.map((service) =>
@@ -2054,7 +2260,7 @@ customer_instructions: editForm.customer_instructions.trim() || null,
             )}
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
               Crear servicio
             </h3>
 
@@ -2226,6 +2432,33 @@ customer_instructions: editForm.customer_instructions.trim() || null,
 ) : null}
 
 
+              {groups.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+                    Categoría (opcional)
+                  </label>
+                  <Select
+                    value={form.group_id}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, group_id: e.target.value }))
+                    }
+                    className="w-full rounded-md border px-4 py-2 text-sm"
+                    style={{
+                      borderColor: "var(--border-color)",
+                      background: "var(--bg-card)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    <option value="">Sin categoría</option>
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+
               {staff.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
@@ -2376,6 +2609,91 @@ customer_instructions: editForm.customer_instructions.trim() || null,
           </div>
         </div>
       )}
+      {moveTarget ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => (movingGroupKey ? null : setMoveTarget(null))}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mover servicio a una categoría"
+            className="relative z-10 w-full max-w-sm rounded-t-lg border p-5 shadow-2xl sm:mx-4 sm:rounded"
+            style={{
+              background: "var(--bg-card)",
+              borderColor: "var(--border-color)",
+            }}
+          >
+            <h3
+              className="mb-1 text-base font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Mover a…
+            </h3>
+            <p className="mb-4 text-sm" style={{ color: "var(--text-muted)" }}>
+              Elige la categoría de{" "}
+              <span className="font-medium" style={{ color: "var(--text-main)" }}>
+                &quot;{moveTarget.name}&quot;
+              </span>
+              .
+            </p>
+            <div className="max-h-[50vh] space-y-1.5 overflow-y-auto">
+              {[
+                { id: null as string | null, name: "Sin categoría" },
+                ...groups.map((g) => ({ id: g.id as string | null, name: g.name })),
+              ].map((option) => {
+                const isCurrent = (moveTarget.group_id ?? null) === option.id;
+                const busy = movingGroupKey === (option.id ?? "none");
+                return (
+                  <button
+                    key={option.id ?? "none"}
+                    type="button"
+                    disabled={isCurrent || !!movingGroupKey}
+                    onClick={() => handleMoveService(moveTarget, option.id)}
+                    className="flex w-full items-center justify-between rounded-md border px-3 py-3 text-left text-sm transition-colors disabled:cursor-default"
+                    style={{
+                      borderColor: isCurrent
+                        ? "rgba(37,99,235,0.50)"
+                        : "var(--border-color)",
+                      background: isCurrent
+                        ? "rgba(37,99,235,0.10)"
+                        : "var(--bg-card)",
+                      color: "var(--text-main)",
+                      opacity: !isCurrent && movingGroupKey && !busy ? 0.5 : 1,
+                    }}
+                  >
+                    <span className="truncate">{option.name}</span>
+                    <span
+                      className="ml-3 flex-shrink-0 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {busy ? "Guardando..." : isCurrent ? "Actual" : ""}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {groups.length === 0 ? (
+              <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
+                Aún no tienes categorías. Crea una con «Nueva categoría».
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setMoveTarget(null)}
+              disabled={!!movingGroupKey}
+              className="mt-4 w-full rounded-md border py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+              style={{
+                borderColor: "var(--border-color)",
+                color: "var(--text-muted)",
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
