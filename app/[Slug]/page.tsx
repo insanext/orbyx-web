@@ -802,6 +802,7 @@ function BusinessBannerCard({
   onBranchChange,
   reviewSummary,
   onOpenReviews,
+  contact,
 }: {
   business: BusinessItem | null;
   slug: string;
@@ -810,27 +811,36 @@ function BusinessBannerCard({
   onBranchChange: (branchId: string) => void;
   reviewSummary: ReviewsSummary | null;
   onOpenReviews: () => void;
+  contact: BusinessContactProps;
 }) {
   const showBranchSelector = branches.length > 1;
   const selectedBranch = branches.find((b) => b.id === selectedBranchId);
   const bannerUrl =
     (selectedBranch?.effective_banner_url || business?.banner_url || "").trim();
+  const showContact = hasBusinessContact(contact);
 
-  // Con banner de portada: foto ancha arriba, logo centrado flotando sobre
-  // su borde inferior, y nombre/rating/sucursal centrados debajo.
-  if (bannerUrl) {
-    return (
-      <div className="min-w-0 overflow-hidden rounded-none border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)]">
+  // Portada arriba (si existe). Debajo, dos columnas en pantallas anchas:
+  // logo + nombre + descripción a la izquierda y mapa + contacto a la
+  // derecha, separadas por una línea. En el celular el contacto va debajo.
+  return (
+    <div className="min-w-0 overflow-hidden rounded-none border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)]">
+      {bannerUrl ? (
         <div className="aspect-[3/1] w-full overflow-hidden bg-slate-200">
-          <img
-            src={bannerUrl}
-            alt=""
-            className="h-full w-full object-cover"
-          />
+          <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
         </div>
+      ) : null}
 
-        <div className="flex min-w-0 flex-col items-center px-4 pb-5 text-center md:px-7 md:pb-7">
-          <div className="-mt-10 rounded-2xl bg-white p-1.5 shadow-[0_16px_32px_-20px_rgba(15,23,42,0.55)] md:-mt-14">
+      <div
+        className={`grid min-w-0 ${
+          showContact ? "sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" : ""
+        }`}
+      >
+        <div className={`min-w-0 px-4 pb-5 sm:px-6 sm:pb-6 ${bannerUrl ? "" : "pt-5 sm:pt-6"}`}>
+          <div
+            className={`relative inline-block rounded-2xl bg-white p-1.5 shadow-[0_16px_32px_-20px_rgba(15,23,42,0.55)] ${
+              bannerUrl ? "-mt-10 md:-mt-14" : ""
+            }`}
+          >
             {business?.logo_url ? (
               <img
                 src={business.logo_url}
@@ -856,7 +866,7 @@ function BusinessBannerCard({
             <button
               type="button"
               onClick={onOpenReviews}
-              className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-sm"
+              className="mt-2 flex flex-wrap items-center gap-1.5 text-sm"
             >
               <span className="flex items-center gap-0.5 text-amber-400">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -878,7 +888,7 @@ function BusinessBannerCard({
           ) : null}
 
           {showBranchSelector ? (
-            <div className="mt-4 w-full max-w-xs text-left">
+            <div className="mt-4 w-full max-w-xs">
               <BranchPicker
                 branches={branches}
                 selectedBranchId={selectedBranchId}
@@ -887,69 +897,12 @@ function BusinessBannerCard({
             </div>
           ) : null}
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-w-0 overflow-hidden rounded-none border border-slate-200 bg-gradient-to-br from-white to-[#F1EFFC] p-4 shadow-[0_16px_45px_-34px_rgba(76,29,149,0.25)] md:rounded-none md:p-7">
-      <div className="flex min-w-0 items-start gap-4 md:gap-5">
-        {business?.logo_url ? (
-          <img
-            src={business.logo_url}
-            alt={business?.name || slug || "Logo"}
-            className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28"
-          />
-        ) : (
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-2xl font-bold text-white shadow-[0_16px_32px_-24px_rgba(15,23,42,0.5)] md:h-28 md:w-28 md:text-3xl">
-            {getBusinessInitials(business?.name || slug)}
+        {showContact ? (
+          <div className="min-w-0 border-t border-slate-200 px-4 pb-2 pt-3 sm:my-5 sm:border-l sm:border-t-0 sm:px-5 sm:py-0">
+            <BusinessLocationPanel {...contact} />
           </div>
-        )}
-
-        <div className="min-w-0 pt-1">
-          <h1 className="text-xl font-bold tracking-tight text-slate-950 md:text-[28px]">
-            {business?.name || slug || "Reserva"}
-          </h1>
-
-          {business?.description?.trim() ? (
-            <BusinessDescription text={business.description.trim()} />
-          ) : null}
-
-          {reviewSummary && reviewSummary.count > 0 ? (
-            <button
-              type="button"
-              onClick={onOpenReviews}
-              className="mt-2 flex items-center gap-1.5 text-sm"
-            >
-              <span className="flex items-center gap-0.5 text-amber-400">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <StarIcon
-                    key={star}
-                    filled={star <= Math.round(reviewSummary.average)}
-                    className="h-4 w-4"
-                  />
-                ))}
-              </span>
-              <span className="font-semibold text-slate-800">
-                {reviewSummary.average.toFixed(1)}
-              </span>
-              <span className="text-slate-500 underline decoration-slate-300 underline-offset-2">
-                (Ver {reviewSummary.count}{" "}
-                {reviewSummary.count === 1 ? "reseña" : "reseñas"})
-              </span>
-            </button>
-          ) : null}
-
-          {showBranchSelector ? (
-            <div className="mt-4 max-w-xs">
-              <BranchPicker
-                branches={branches}
-                selectedBranchId={selectedBranchId}
-                onBranchChange={onBranchChange}
-              />
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </div>
   );
@@ -1255,6 +1208,121 @@ function ServiceCatalogAccordion({
   );
 }
 
+type WeeklyHoursRow = {
+  day: number;
+  label: string;
+  enabled: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+// Horario en un cuadro aparte (portal sobre la página). Se cierra con la X,
+// tocando fuera del cuadro o con Escape.
+function HoursDialog({
+  weeklyHours,
+  onClose,
+}: {
+  weeklyHours: WeeklyHoursRow[];
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+  const todayDay = new Date().getDay();
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/40 px-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="orbyx-hours-title"
+        className="w-full max-w-xs rounded-xl border border-slate-200 bg-white p-4 shadow-[0_30px_80px_-30px_rgba(15,23,42,0.6)]"
+      >
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p id="orbyx-hours-title" className="flex items-center gap-2 text-sm font-bold text-slate-950">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 text-indigo-600" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 3" />
+            </svg>
+            Horario de atención
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar horario"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {weeklyHours.map((row) => {
+            const isToday = row.day === todayDay;
+            return (
+              <div
+                key={row.day}
+                className={`flex items-center justify-between gap-3 py-2 text-sm ${
+                  isToday ? "font-semibold text-indigo-700" : "text-slate-600"
+                }`}
+              >
+                <span>
+                  {row.label}
+                  {isToday ? <span className="ml-1.5 text-[11px] font-medium text-indigo-500">(hoy)</span> : null}
+                </span>
+                <span className={row.enabled ? (isToday ? "" : "font-medium text-slate-800") : "text-slate-400"}>
+                  {row.enabled
+                    ? `${formatHourLabel(row.start_time)} a ${formatHourLabel(row.end_time)} hrs`
+                    : "Cerrado"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+type BusinessContactProps = {
+  mapsEmbedUrl: string;
+  mapsLinkUrl: string;
+  address?: string | null;
+  phone?: string | null;
+  whatsappNumber: string;
+  weeklyHours: WeeklyHoursRow[];
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+};
+
+function hasBusinessContact(contact: BusinessContactProps) {
+  return Boolean(
+    contact.mapsEmbedUrl ||
+      contact.address ||
+      contact.phone ||
+      contact.whatsappNumber ||
+      contact.instagramUrl ||
+      contact.facebookUrl ||
+      contact.weeklyHours.some((row) => row.enabled)
+  );
+}
+
+// Mapa + dirección, teléfono, WhatsApp y horario. Va dentro de la tarjeta
+// del negocio (columna derecha en pantallas anchas, debajo en el celular).
 function BusinessLocationPanel({
   mapsEmbedUrl,
   mapsLinkUrl,
@@ -1264,86 +1332,49 @@ function BusinessLocationPanel({
   weeklyHours,
   instagramUrl,
   facebookUrl,
-}: {
-  mapsEmbedUrl: string;
-  mapsLinkUrl: string;
-  address?: string | null;
-  phone?: string | null;
-  whatsappNumber: string;
-  weeklyHours: {
-    day: number;
-    label: string;
-    enabled: boolean;
-    start_time: string | null;
-    end_time: string | null;
-  }[];
-  instagramUrl?: string | null;
-  facebookUrl?: string | null;
-}) {
+}: BusinessContactProps) {
   const [hoursOpen, setHoursOpen] = useState(false);
   const hasHours = weeklyHours.some((row) => row.enabled);
+  const rowClass = "flex items-start gap-2.5 py-2 text-sm text-slate-700 sm:py-2.5";
+  const iconClass = "mt-0.5 h-4 w-4 shrink-0 text-slate-500";
 
   return (
-    <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)]">
-      {instagramUrl || facebookUrl ? (
-        <div className="flex items-center justify-end gap-2 border-b border-slate-100 px-3 py-2">
-          {instagramUrl ? (
+    <div className="min-w-0">
+      {mapsEmbedUrl ? (
+        <div className="relative mb-1 overflow-hidden rounded-lg border border-slate-200">
+          <iframe
+            src={mapsEmbedUrl}
+            title="Ubicación"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="block h-[110px] w-full border-0 sm:h-[150px]"
+          />
+          {mapsLinkUrl ? (
             <a
-              href={instagramUrl}
+              href={mapsLinkUrl}
               target="_blank"
               rel="noreferrer"
-              aria-label="Instagram"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              aria-label="Abrir en Google Maps"
+              className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-md transition hover:bg-indigo-50"
             >
-              <InstagramBrandIcon />
-            </a>
-          ) : null}
-
-          {facebookUrl ? (
-            <a
-              href={facebookUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Facebook"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
-            >
-              <FacebookBrandIcon />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" />
+              </svg>
             </a>
           ) : null}
         </div>
       ) : null}
 
-      {mapsEmbedUrl ? (
-        <iframe
-          src={mapsEmbedUrl}
-          title="Ubicación"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          className="h-[150px] w-full border-0"
-        />
-      ) : null}
-
-      <div className="divide-y divide-slate-100 py-1">
+      <div className="divide-y divide-slate-100">
         {address ? (
           <a
             href={mapsLinkUrl || undefined}
             target={mapsLinkUrl ? "_blank" : undefined}
             rel={mapsLinkUrl ? "noreferrer" : undefined}
-            className="flex items-start gap-2.5 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50 md:px-5"
+            className={`${rowClass} transition hover:text-indigo-700`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 21s7-4.35 7-11a7 7 0 10-14 0c0 6.65 7 11 7 11z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={iconClass} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21s7-4.35 7-11a7 7 0 10-14 0c0 6.65 7 11 7 11z" />
               <circle cx="12" cy="10" r="2.5" />
             </svg>
             <span className="min-w-0 break-words">{address}</span>
@@ -1351,15 +1382,8 @@ function BusinessLocationPanel({
         ) : null}
 
         {phone ? (
-          <div className="flex items-start gap-2.5 px-4 py-2.5 text-sm text-slate-700 md:px-5">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-            >
+          <a href={`tel:${phone.replace(/\s+/g, "")}`} className={`${rowClass} transition hover:text-indigo-700`}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={iconClass} aria-hidden="true">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1367,7 +1391,7 @@ function BusinessLocationPanel({
               />
             </svg>
             <span className="min-w-0 break-words">{phone}</span>
-          </div>
+          </a>
         ) : null}
 
         {whatsappNumber ? (
@@ -1375,14 +1399,9 @@ function BusinessLocationPanel({
             href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noreferrer"
-            className="flex items-start gap-2.5 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 md:px-5"
+            className="flex items-start gap-2.5 py-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700 sm:py-2.5"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="mt-0.5 h-4 w-4 shrink-0"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.198.297-.768.966-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.787-1.48-1.759-1.653-2.056-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.793.372-.273.297-1.04 1.016-1.04 2.479s1.065 2.875 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.174-1.413-.075-.124-.273-.198-.57-.347z" />
               <path d="M20.52 3.449A11.94 11.94 0 0 0 12.043 0C5.495 0 .161 5.334.161 11.882c0 2.094.547 4.139 1.587 5.945L0 24l6.356-1.667a11.86 11.86 0 0 0 5.687 1.448h.005c6.548 0 11.882-5.334 11.882-11.882a11.8 11.8 0 0 0-3.41-8.45zm-8.477 18.32h-.004a9.86 9.86 0 0 1-5.026-1.378l-.361-.214-3.772.99 1.007-3.676-.235-.377a9.86 9.86 0 0 1-1.52-5.232c.003-5.44 4.43-9.867 9.875-9.867 2.637 0 5.114 1.027 6.978 2.893a9.82 9.82 0 0 1 2.889 6.983c-.003 5.443-4.43 9.878-9.87 9.878z" />
             </svg>
@@ -1391,60 +1410,49 @@ function BusinessLocationPanel({
         ) : null}
 
         {hasHours ? (
-          <div>
-            <button
-              type="button"
-              onClick={() => setHoursOpen((current) => !current)}
-              className="flex w-full items-center justify-between gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 md:px-5"
-            >
-              <span className="flex items-center gap-2.5">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-4 w-4 shrink-0 text-slate-400"
-                >
-                  <circle cx="12" cy="12" r="9" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 3" />
-                </svg>
-                Ver horario
-              </span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
-                  hoursOpen ? "rotate-180" : ""
-                }`}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+          <button
+            type="button"
+            onClick={() => setHoursOpen(true)}
+            aria-haspopup="dialog"
+            className="flex w-full items-center gap-2.5 py-2 text-left text-sm font-semibold text-slate-800 transition hover:text-indigo-700 sm:py-2.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 3" />
+            </svg>
+            Ver horario
+          </button>
+        ) : null}
 
-            {hoursOpen ? (
-              <div className="space-y-1 px-4 pb-3 md:px-5">
-                {weeklyHours.map((row) => (
-                  <div
-                    key={row.day}
-                    className="flex items-center justify-between text-xs text-slate-600"
-                  >
-                    <span>{row.label}</span>
-                    <span className={row.enabled ? "font-medium text-slate-800" : "text-slate-400"}>
-                      {row.enabled
-                        ? `${formatHourLabel(row.start_time)} a ${formatHourLabel(row.end_time)} hrs`
-                        : "Cerrado"}
-                    </span>
-                  </div>
-                ))}
-              </div>
+        {instagramUrl || facebookUrl ? (
+          <div className="flex items-center gap-2 py-2.5">
+            {instagramUrl ? (
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              >
+                <InstagramBrandIcon />
+              </a>
+            ) : null}
+            {facebookUrl ? (
+              <a
+                href={facebookUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Facebook"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+              >
+                <FacebookBrandIcon />
+              </a>
             ) : null}
           </div>
         ) : null}
       </div>
+
+      {hoursOpen ? <HoursDialog weeklyHours={weeklyHours} onClose={() => setHoursOpen(false)} /> : null}
     </div>
   );
 }
@@ -1515,6 +1523,29 @@ function ProfessionalsPanel({
   );
 }
 
+// Título numerado de cada paso de la reserva (semana, profesional, día y hora).
+function BookingStepHeader({
+  step,
+  title,
+  hint,
+}: {
+  step: number;
+  title: string;
+  hint?: string;
+}) {
+  return (
+    <div className="mb-2.5 flex items-center gap-2">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+        {step}
+      </span>
+      <p className="text-sm font-semibold text-slate-900">
+        {title}
+        {hint ? <span className="ml-1 font-normal text-slate-500">{hint}</span> : null}
+      </p>
+    </div>
+  );
+}
+
 // Carrusel horizontal de profesionales (estilo "stories"), justo arriba de los
 // días. Primer ítem "Cualquiera". Solo hace scroll dentro del carrusel.
 function StaffCarousel({
@@ -1534,10 +1565,7 @@ function StaffCarousel({
       : "ring-1 ring-slate-200 group-hover:ring-indigo-300";
 
   return (
-    <div className="mb-3 md:mb-4">
-      <p className="mb-2 text-sm font-semibold text-slate-900">
-        Profesional <span className="font-normal text-slate-500">(opcional)</span>
-      </p>
+    <div>
       <div
         className="-mx-3 overflow-x-auto px-3 [scrollbar-width:none] md:-mx-4 md:px-4 [&::-webkit-scrollbar]:hidden"
         role="radiogroup"
@@ -1962,6 +1990,16 @@ const nextAvailableDays = useMemo(() => {
       end_time: row?.end_time || null,
     };
   });
+  const businessContact: BusinessContactProps = {
+    mapsEmbedUrl,
+    mapsLinkUrl,
+    address: visibleAddress,
+    phone: visiblePhone,
+    whatsappNumber: visibleWhatsappNumber,
+    weeklyHours: weeklyHoursOrdered,
+    instagramUrl: business?.instagram_url,
+    facebookUrl: business?.facebook_url,
+  };
   const weekStartDate = weekDates[0];
   const weekEndDate = weekDates[weekDates.length - 1];
   const todayKey = formatDate(new Date());
@@ -3375,6 +3413,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 onBranchChange={handleBranchChange}
                 reviewSummary={reviewSummary}
                 onOpenReviews={() => setShowReviewsModal(true)}
+                contact={businessContact}
               />
 
               <div className="grid gap-4 lg:grid-cols-[230px_1fr] lg:gap-5 xl:gap-6">
@@ -3433,19 +3472,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               </div>
             </div>
 
-            <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-              <BusinessLocationPanel
-                mapsEmbedUrl={mapsEmbedUrl}
-                mapsLinkUrl={mapsLinkUrl}
-                address={visibleAddress}
-                phone={visiblePhone}
-                whatsappNumber={visibleWhatsappNumber}
-                weeklyHours={weeklyHoursOrdered}
-                instagramUrl={business?.instagram_url}
-                facebookUrl={business?.facebook_url}
-              />
-
-              <div className="hidden lg:block">
+            <div className="hidden space-y-4 lg:sticky lg:top-4 lg:block lg:self-start">
+              <div>
                 <ProfessionalsPanel
                   staff={panelStaff}
                   hasSelectedService={Boolean(selectedService)}
@@ -3478,15 +3506,29 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               onBranchChange={handleBranchChange}
               reviewSummary={reviewSummary}
               onOpenReviews={() => setShowReviewsModal(true)}
+              contact={businessContact}
             />
 
           <div className="min-w-0 flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
-            <div className="mb-3 flex flex-col gap-3 md:mb-4 lg:flex-row lg:items-center lg:justify-between">
+            {selectedService ? (
+              <div className="-mx-3 -mt-3 mb-3 flex items-center gap-2 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-white px-3 py-2.5 md:-mx-4 md:-mt-4 md:mb-4 md:px-4">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-indigo-500">
+                  Tu servicio
+                </span>
+                <span className="min-w-0 truncate text-sm font-semibold text-indigo-900">
+                  {bookingServiceLabel || selectedService!.name}
+                  <span className="font-normal text-indigo-600"> · {bookingTotalMinutes} min</span>
+                </span>
+              </div>
+            ) : null}
+
+            <BookingStepHeader step={1} title="Elige la semana" />
+            <div className="mb-3 md:mb-4">
               <div className="relative flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(-7)}
-                  className="flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-none"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-indigo-600 bg-indigo-600 text-lg font-bold text-white shadow-[0_8px_18px_-10px_rgba(79,70,229,0.9)] transition hover:bg-indigo-700 md:h-11 md:w-11"
                   aria-label="Semana anterior"
                 >
                   ‹
@@ -3495,7 +3537,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => setShowDatePopover((current) => !current)}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-none border border-indigo-200 bg-white px-3 text-xs font-bold text-slate-950 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 sm:flex-none md:h-11 md:rounded-none md:px-4 md:text-sm"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-none border border-indigo-300 bg-indigo-50 px-3 text-xs font-bold text-indigo-900 shadow-sm transition hover:border-indigo-500 hover:bg-indigo-100 sm:flex-none md:h-11 md:px-4 md:text-sm"
                 >
                   <span>{weekRangeLabel}</span>
                   <svg
@@ -3503,7 +3545,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.8"
+                    strokeWidth="2"
                     className="h-4 w-4 text-indigo-600"
                   >
                     <path
@@ -3517,15 +3559,29 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(7)}
-                  className="flex h-10 w-10 items-center justify-center rounded-none border border-slate-200 bg-white text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 md:h-11 md:w-11 md:rounded-none"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-indigo-600 bg-indigo-600 text-lg font-bold text-white shadow-[0_8px_18px_-10px_rgba(79,70,229,0.9)] transition hover:bg-indigo-700 md:h-11 md:w-11"
                   aria-label="Semana siguiente"
                 >
                   ›
                 </button>
 
                 {showDatePopover ? (
-                  <div className="absolute left-0 top-14 z-40 w-[310px] overflow-hidden rounded-none border border-slate-200 bg-white p-3 shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)] [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0">
+                  <div className="orbyx-week-calendar absolute left-0 top-14 z-40 w-[310px] max-w-full overflow-hidden rounded-none border border-indigo-200 bg-white p-3 shadow-[0_28px_90px_-38px_rgba(15,23,42,0.55)] [&_.react-calendar]:w-full [&_.react-calendar]:max-w-full [&_.react-calendar]:border-0">
+                    {/* Colores del calendario solo para este selector (no toca los estilos globales). */}
+                    <style>{`
+                      .orbyx-week-calendar .react-calendar { border: 0; padding: 4px; }
+                      .orbyx-week-calendar .react-calendar__tile:disabled { background: transparent; color: #cbd5e1; }
+                      .orbyx-week-calendar .react-calendar__month-view__days__day--weekend:enabled { color: #0f172a; }
+                      .orbyx-week-calendar .react-calendar__navigation button { color: #4338ca; font-weight: 700; }
+                      .orbyx-week-calendar .react-calendar__navigation button:enabled:hover { background: #eef2ff; }
+                      .orbyx-week-calendar .react-calendar__navigation button:disabled { background: transparent; color: #cbd5e1; }
+                      .orbyx-week-calendar .react-calendar__tile:enabled:hover { background: #eef2ff; color: #3730a3; }
+                      .orbyx-week-calendar .react-calendar__tile--now { background: #e0e7ff; color: #3730a3; font-weight: 700; }
+                      .orbyx-week-calendar .react-calendar__tile--active { background: #4f46e5 !important; color: #fff !important; font-weight: 700; }
+                    `}</style>
                     <Calendar
+                      locale="es-CL"
+                      calendarType="iso8601"
                       minDate={new Date()}
                       onChange={(value: unknown) => {
                         const picked = Array.isArray(value) ? value[0] : value;
@@ -3541,23 +3597,23 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                   </div>
                 ) : null}
               </div>
-
-              {selectedService ? (
-                <div className="w-fit max-w-full truncate rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
-                  {bookingServiceLabel || selectedService!.name}
-                  {selectedExtras.length > 0 ? ` · ${bookingTotalMinutes} min` : ""}
-                </div>
-              ) : null}
             </div>
 
             {selectedService ? (
-              <StaffCarousel
-                staff={staffOptions}
-                selectedStaffId={selectedStaffId}
-                onSelect={selectStaff}
-                loading={loadingStaff}
-              />
+              <div className="mb-3 border-t border-slate-200 pt-3 md:mb-4 md:pt-4">
+                <BookingStepHeader step={2} title="Profesional" hint="(opcional)" />
+                <StaffCarousel
+                  staff={staffOptions}
+                  selectedStaffId={selectedStaffId}
+                  onSelect={selectStaff}
+                  loading={loadingStaff}
+                />
+              </div>
             ) : null}
+
+            <div className="border-t border-slate-200 pt-3 md:pt-4">
+              <BookingStepHeader step={selectedService ? 3 : 2} title="Elige día y hora" />
+            </div>
 
             {!selectedService ? (
               <div className="mb-6 rounded-none border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
@@ -3728,7 +3784,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             </div>
 
             <div className="md:hidden">
-              <div className="-mx-1 mb-3 flex snap-x gap-2 overflow-x-auto px-1 pb-2">
+              <div className="mb-3 grid grid-cols-7 gap-1">
                 {weekDates.map((dateObj) => {
                   const dateKey = formatDate(dateObj);
                   const isActiveMobileDay = mobileSelectedDateKey === dateKey;
@@ -3746,41 +3802,49 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         setSelectedDate(dateObj);
                         setSelectedSlot(null);
                       }}
-                      className={`min-w-[68px] snap-start rounded-none border px-2.5 py-2 text-left transition ${
+                      aria-label={dateObj.toLocaleDateString("es-CL", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                      aria-pressed={isActiveMobileDay}
+                      className={`relative min-w-0 rounded-md border px-0.5 py-1.5 text-center transition ${
                         isActiveMobileDay
-                          ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_14px_28px_-20px_rgba(79,70,229,0.85)]"
+                          ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_10px_20px_-14px_rgba(79,70,229,0.9)]"
                           : isClosedDay
                           ? "border-rose-100 bg-rose-50 text-rose-700"
+                          : isToday
+                          ? "border-indigo-300 bg-indigo-50 text-indigo-900"
                           : "border-slate-200 bg-white text-slate-700"
                       }`}
                     >
-                      <p className="text-[11px] font-bold uppercase">
-                        {dateObj.toLocaleDateString("es-CL", { weekday: "short" })}
+                      <p className="text-[10px] font-bold uppercase leading-none">
+                        {dateObj
+                          .toLocaleDateString("es-CL", { weekday: "short" })
+                          .replace(".", "")
+                          .slice(0, 3)}
                       </p>
-                      <p className="mt-1 text-base font-bold leading-none">
-                        {dateObj.getDate()}
-                        {isToday ? (
-                          <span
-                            className={`ml-1 rounded-full px-1.5 py-0.5 text-[9px] ${
-                              isActiveMobileDay
-                                ? "bg-white/20 text-white"
-                                : "bg-indigo-600 text-white"
-                            }`}
-                          >
-                            Hoy
-                          </span>
-                        ) : null}
-                      </p>
+                      <p className="mt-1 text-base font-bold leading-none">{dateObj.getDate()}</p>
                       {selectedService ? (
                         <p
-                          className={`mt-1 text-[10px] font-medium ${
-                            isActiveMobileDay ? "text-indigo-100" : "text-slate-400"
+                          className={`mt-1 truncate text-[9px] font-medium leading-none ${
+                            isActiveMobileDay
+                              ? "text-indigo-100"
+                              : isClosedDay
+                              ? "text-rose-500"
+                              : "text-slate-400"
                           }`}
                         >
-                          {daySlots.length > 0
-                            ? `${daySlots.length} horas`
-                            : "Sin horas"}
+                          {daySlots.length > 0 ? `${daySlots.length} horas` : "Sin horas"}
                         </p>
+                      ) : null}
+                      {isToday ? (
+                        <span
+                          className={`absolute left-1/2 top-0.5 h-1 w-1 -translate-x-1/2 rounded-full ${
+                            isActiveMobileDay ? "bg-white" : "bg-indigo-600"
+                          }`}
+                          aria-hidden="true"
+                        />
                       ) : null}
                     </button>
                   );
@@ -4474,17 +4538,6 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
           </div>
 
           <div className="space-y-3 md:space-y-4">
-            <BusinessLocationPanel
-              mapsEmbedUrl={mapsEmbedUrl}
-              mapsLinkUrl={mapsLinkUrl}
-              address={visibleAddress}
-              phone={visiblePhone}
-              whatsappNumber={visibleWhatsappNumber}
-              weeklyHours={weeklyHoursOrdered}
-              instagramUrl={business?.instagram_url}
-              facebookUrl={business?.facebook_url}
-            />
-
             <div className="rounded-none border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4">
               <div className="rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-none md:p-4">
                 <p className="text-sm font-semibold text-slate-900">
