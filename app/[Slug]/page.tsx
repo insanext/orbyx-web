@@ -646,8 +646,8 @@ function BusinessDescription({ text }: { text: string }) {
     <div className="mt-1.5 max-w-md">
       <p
         ref={paragraphRef}
-        className={`text-sm leading-snug text-slate-500 md:text-base md:leading-normal ${
-          expanded ? "" : "line-clamp-3"
+        className={`text-[13px] leading-snug text-slate-500 sm:text-sm md:text-base md:leading-normal ${
+          expanded ? "" : "line-clamp-4 sm:line-clamp-3"
         }`}
       >
         {text}
@@ -832,29 +832,29 @@ function BusinessBannerCard({
 
       <div
         className={`grid min-w-0 ${
-          showContact ? "sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" : ""
+          showContact ? "grid-cols-2 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" : ""
         }`}
       >
-        <div className={`min-w-0 px-4 pb-5 sm:px-6 sm:pb-6 ${bannerUrl ? "" : "pt-5 sm:pt-6"}`}>
+        <div className={`min-w-0 pb-4 ${showContact ? "pl-3 pr-2.5" : "px-4"} sm:px-6 sm:pb-6 ${bannerUrl ? "" : "pt-4 sm:pt-6"}`}>
           <div
-            className={`relative inline-block rounded-2xl bg-white p-1.5 shadow-[0_16px_32px_-20px_rgba(15,23,42,0.55)] ${
-              bannerUrl ? "-mt-10 md:-mt-14" : ""
+            className={`relative inline-block rounded-2xl bg-white p-1 shadow-[0_16px_32px_-20px_rgba(15,23,42,0.55)] ${
+              bannerUrl ? "-mt-8 sm:-mt-10 md:-mt-14" : ""
             }`}
           >
             {business?.logo_url ? (
               <img
                 src={business.logo_url}
                 alt={business?.name || slug || "Logo"}
-                className="h-20 w-20 rounded-xl object-cover md:h-28 md:w-28"
+                className="h-16 w-16 rounded-xl object-cover sm:h-20 sm:w-20 md:h-28 md:w-28"
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-slate-950 text-2xl font-bold text-white md:h-28 md:w-28 md:text-3xl">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-950 text-xl font-bold text-white sm:h-20 sm:w-20 sm:text-2xl md:h-28 md:w-28 md:text-3xl">
                 {getBusinessInitials(business?.name || slug)}
               </div>
             )}
           </div>
 
-          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-950 md:text-[28px]">
+          <h1 className="mt-2.5 text-lg font-bold leading-tight tracking-tight text-slate-950 sm:mt-3 sm:text-xl md:text-[28px]">
             {business?.name || slug || "Reserva"}
           </h1>
 
@@ -899,7 +899,7 @@ function BusinessBannerCard({
         </div>
 
         {showContact ? (
-          <div className="min-w-0 border-t border-slate-200 px-4 pb-2 pt-3 sm:my-5 sm:border-l sm:border-t-0 sm:px-5 sm:py-0">
+          <div className="my-3 min-w-0 border-l border-slate-200 pl-2.5 pr-3 sm:my-5 sm:px-5">
             <BusinessLocationPanel {...contact} />
           </div>
         ) : null}
@@ -1335,19 +1335,20 @@ function BusinessLocationPanel({
 }: BusinessContactProps) {
   const [hoursOpen, setHoursOpen] = useState(false);
   const hasHours = weeklyHours.some((row) => row.enabled);
-  const rowClass = "flex items-start gap-2.5 py-2 text-sm text-slate-700 sm:py-2.5";
-  const iconClass = "mt-0.5 h-4 w-4 shrink-0 text-slate-500";
+  const rowClass = "flex items-start gap-2 py-1.5 text-xs text-slate-700 sm:gap-2.5 sm:py-2.5 sm:text-sm";
+  const iconClass = "mt-px h-3.5 w-3.5 shrink-0 text-slate-500 sm:mt-0.5 sm:h-4 sm:w-4";
 
   return (
     <div className="min-w-0">
       {mapsEmbedUrl ? (
-        <div className="relative mb-1 overflow-hidden rounded-lg border border-slate-200">
+        <div className="relative mb-1 h-24 overflow-hidden rounded-lg border border-slate-200 sm:h-[150px]">
+          {/* Se sube 44px para ocultar el recuadro "Maps" del embed (ya hay botón propio); la atribución de Google abajo queda visible. */}
           <iframe
             src={mapsEmbedUrl}
             title="Ubicación"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            className="block h-[110px] w-full border-0 sm:h-[150px]"
+            className="absolute inset-x-0 -top-11 block h-[calc(100%+44px)] w-full border-0"
           />
           {mapsLinkUrl ? (
             <a
@@ -1355,7 +1356,7 @@ function BusinessLocationPanel({
               target="_blank"
               rel="noreferrer"
               aria-label="Abrir en Google Maps"
-              className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-md transition hover:bg-indigo-50"
+              className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-md transition hover:bg-indigo-50 sm:right-2 sm:top-2 sm:h-9 sm:w-9"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5" />
@@ -1399,9 +1400,9 @@ function BusinessLocationPanel({
             href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noreferrer"
-            className="flex items-start gap-2.5 py-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700 sm:py-2.5"
+            className="flex items-start gap-2 py-1.5 text-xs font-semibold text-emerald-600 transition hover:text-emerald-700 sm:gap-2.5 sm:py-2.5 sm:text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="mt-px h-3.5 w-3.5 shrink-0 sm:mt-0.5 sm:h-4 sm:w-4" aria-hidden="true">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.198.297-.768.966-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.787-1.48-1.759-1.653-2.056-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.793.372-.273.297-1.04 1.016-1.04 2.479s1.065 2.875 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.174-1.413-.075-.124-.273-.198-.57-.347z" />
               <path d="M20.52 3.449A11.94 11.94 0 0 0 12.043 0C5.495 0 .161 5.334.161 11.882c0 2.094.547 4.139 1.587 5.945L0 24l6.356-1.667a11.86 11.86 0 0 0 5.687 1.448h.005c6.548 0 11.882-5.334 11.882-11.882a11.8 11.8 0 0 0-3.41-8.45zm-8.477 18.32h-.004a9.86 9.86 0 0 1-5.026-1.378l-.361-.214-3.772.99 1.007-3.676-.235-.377a9.86 9.86 0 0 1-1.52-5.232c.003-5.44 4.43-9.867 9.875-9.867 2.637 0 5.114 1.027 6.978 2.893a9.82 9.82 0 0 1 2.889 6.983c-.003 5.443-4.43 9.878-9.87 9.878z" />
             </svg>
@@ -1414,9 +1415,9 @@ function BusinessLocationPanel({
             type="button"
             onClick={() => setHoursOpen(true)}
             aria-haspopup="dialog"
-            className="flex w-full items-center gap-2.5 py-2 text-left text-sm font-semibold text-slate-800 transition hover:text-indigo-700 sm:py-2.5"
+            className="flex w-full items-center gap-2 py-1.5 text-left text-xs font-semibold text-slate-800 transition hover:text-indigo-700 sm:gap-2.5 sm:py-2.5 sm:text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5 shrink-0 text-slate-500 sm:h-4 sm:w-4" aria-hidden="true">
               <circle cx="12" cy="12" r="9" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 3" />
             </svg>
@@ -1425,14 +1426,14 @@ function BusinessLocationPanel({
         ) : null}
 
         {instagramUrl || facebookUrl ? (
-          <div className="flex items-center gap-2 py-2.5">
+          <div className="flex items-center gap-1.5 py-1.5 sm:gap-2 sm:py-2.5">
             {instagramUrl ? (
               <a
                 href={instagramUrl}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Instagram"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 sm:h-8 sm:w-8"
               >
                 <InstagramBrandIcon />
               </a>
@@ -1443,7 +1444,7 @@ function BusinessLocationPanel({
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Facebook"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600 sm:h-8 sm:w-8"
               >
                 <FacebookBrandIcon />
               </a>
