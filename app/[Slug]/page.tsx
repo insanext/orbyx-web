@@ -31,6 +31,16 @@ type ServiceItem = {
   requires_deposit?: boolean | null;
   deposit_amount?: number | null;
   customer_instructions?: string | null;
+  // Extras que ofrece el servicio (GET /public/services). Vacío si no tiene.
+  extras?: ServiceExtraOption[];
+};
+
+type ServiceExtraOption = {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  duration_minutes: number;
 };
 
 type ServiceGroupItem = {
@@ -934,7 +944,7 @@ function BusinessBannerCard({
   );
 }
 
-const CATEGORY_HEADER_GRADIENT = "linear-gradient(135deg, #E7E9ED, #C5CAD2)";
+const CATEGORY_HEADER_GRADIENT = "linear-gradient(90deg, #EEF0FF 0%, #F6F5FF 55%, #FFFFFF 100%)";
 
 type CatalogCategoryOption = {
   key: string;
@@ -1012,18 +1022,77 @@ function CatalogSidebar({
   );
 }
 
+// Extras del servicio elegido, debajo de su fila en el catálogo.
+function ServiceExtrasChooser({
+  service,
+  selectedExtraIds,
+  onToggleExtra,
+}: {
+  service: ServiceItem;
+  selectedExtraIds: string[];
+  onToggleExtra: (extraId: string) => void;
+}) {
+  const extras = service.extras || [];
+  if (extras.length === 0) return null;
+  const chosen = extras.filter((e) => selectedExtraIds.includes(e.id));
+  const totalPrice = Number(service.price || 0) + chosen.reduce((sum, e) => sum + Number(e.price || 0), 0);
+  const totalMinutes =
+    Number(service.duration_minutes || 0) + chosen.reduce((sum, e) => sum + Number(e.duration_minutes || 0), 0);
+
+  return (
+    <div className="border-l-4 border-indigo-600 bg-indigo-50/60 px-3 pb-4 pt-1 md:px-5">
+      <p className="mb-2 text-xs font-semibold text-indigo-900">¿Quieres agregar algo?</p>
+      <div className="flex flex-wrap gap-2">
+        {extras.map((extra) => {
+          const selected = selectedExtraIds.includes(extra.id);
+          return (
+            <button
+              key={extra.id}
+              type="button"
+              onClick={() => onToggleExtra(extra.id)}
+              aria-pressed={selected}
+              className={`rounded-full border px-3 py-1.5 text-left text-xs font-medium transition ${
+                selected
+                  ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
+                  : "border-indigo-200 bg-white text-slate-700 hover:border-indigo-400"
+              }`}
+            >
+              {selected ? "✓ " : "+ "}
+              {extra.name}
+              <span className={selected ? "text-indigo-100" : "text-slate-500"}>
+                {" "}
+                · {formatPrice(extra.price)}
+                {extra.duration_minutes > 0 ? ` · +${extra.duration_minutes} min` : ""}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {chosen.length > 0 ? (
+        <p className="mt-3 text-sm font-semibold text-slate-900">
+          Total: {formatPrice(totalPrice)} · {totalMinutes} min
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function ServiceCatalogAccordion({
   categories,
   selectedServiceId,
   onSelect,
   collapsedKeys,
   onToggleCategory,
+  selectedExtraIds,
+  onToggleExtra,
 }: {
   categories: { key: string; name: string; totalCount: number; services: ServiceItem[] }[];
   selectedServiceId: string;
   onSelect: (service: ServiceItem) => void;
   collapsedKeys: Set<string>;
   onToggleCategory: (key: string) => void;
+  selectedExtraIds: string[];
+  onToggleExtra: (extraId: string) => void;
 }) {
   if (categories.length === 0) {
     return (
@@ -1046,12 +1115,12 @@ function ServiceCatalogAccordion({
             <button
               type="button"
               onClick={() => onToggleCategory(category.key)}
-              className="flex w-full items-center justify-between gap-2 px-3 py-3.5 text-left transition md:px-5"
+              className="flex w-full items-center justify-between gap-2 border-b border-indigo-100 border-l-4 border-l-indigo-600 px-3 py-3.5 text-left transition hover:brightness-[0.98] md:px-5"
               style={{ background: CATEGORY_HEADER_GRADIENT }}
             >
-              <span className="flex items-center gap-2 text-sm font-bold text-slate-800 md:text-base">
+              <span className="flex items-center gap-2 text-sm font-bold text-indigo-950 md:text-base">
                 {category.name}
-                <span className="rounded-full bg-white/60 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                <span className="rounded-full bg-indigo-600/10 px-2 py-0.5 text-xs font-semibold text-indigo-700">
                   {category.totalCount}
                 </span>
               </span>
@@ -1061,7 +1130,7 @@ function ServiceCatalogAccordion({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className={`h-4 w-4 shrink-0 text-slate-600 transition-transform ${
+                className={`h-4 w-4 shrink-0 text-indigo-600 transition-transform ${
                   open ? "rotate-180" : ""
                 }`}
               >
@@ -1080,8 +1149,8 @@ function ServiceCatalogAccordion({
                     const isSelected = selectedServiceId === service.id;
 
                     return (
+                      <div key={service.id}>
                       <button
-                        key={service.id}
                         type="button"
                         onClick={() => onSelect(service)}
                         className={`flex w-full items-center justify-between gap-2 border-l-4 px-3 py-3.5 text-left transition sm:gap-3 md:px-5 ${
@@ -1123,6 +1192,14 @@ function ServiceCatalogAccordion({
                           </span>
                         </div>
                       </button>
+                      {isSelected ? (
+                        <ServiceExtrasChooser
+                          service={service}
+                          selectedExtraIds={selectedExtraIds}
+                          onToggleExtra={onToggleExtra}
+                        />
+                      ) : null}
+                      </div>
                     );
                   })
                 )}
@@ -1481,6 +1558,8 @@ const isGroupBookingBusiness =
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [serviceGroups, setServiceGroups] = useState<ServiceGroupItem[]>([]);
   const [businessHours, setBusinessHours] = useState<BusinessHourDay[]>([]);
+  // Extras elegidos para el servicio seleccionado (se reinician al cambiar de servicio).
+  const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(
     null
   );
@@ -1816,7 +1895,29 @@ const nextAvailableDays = useMemo(() => {
     }));
   }
 
+  // Extras elegidos: solo los que siguen existiendo en el servicio actual.
+  const selectedExtras: ServiceExtraOption[] = (selectedService?.extras || []).filter((extra) =>
+    selectedExtraIds.includes(extra.id)
+  );
+  const extrasMinutes = selectedExtras.reduce((sum, e) => sum + Number(e.duration_minutes || 0), 0);
+  const extrasPrice = selectedExtras.reduce((sum, e) => sum + Number(e.price || 0), 0);
+  const bookingTotalMinutes = Number(selectedService?.duration_minutes || 0) + extrasMinutes;
+  const bookingTotalPrice = Number(selectedService?.price || 0) + extrasPrice;
+  // Clave estable para pedir horarios con los extras elegidos.
+  const extraIdsKey = selectedExtras.map((e) => e.id).sort().join(",");
+  const bookingServiceLabel = selectedService
+    ? [selectedService.name, ...selectedExtras.map((e) => e.name)].join(" + ")
+    : "";
+
+  function toggleSelectedExtra(extraId: string) {
+    setSelectedExtraIds((prev) =>
+      prev.includes(extraId) ? prev.filter((id) => id !== extraId) : [...prev, extraId]
+    );
+    setSelectedSlot(null);
+  }
+
   function resetAfterBranchChange() {
+    setSelectedExtraIds([]);
     setSelectedService(null);
     setStaffOptions([]);
     setSelectedStaffId("");
@@ -1836,6 +1937,9 @@ const nextAvailableDays = useMemo(() => {
   }
 
   function selectCatalogService(service: ServiceItem) {
+    if (selectedService?.id !== service.id) {
+      setSelectedExtraIds([]);
+    }
     resetAfterServiceChange();
     setSelectedService(service);
   }
@@ -2220,6 +2324,10 @@ const nextAvailableDays = useMemo(() => {
               query.set("staff_id", selectedStaffId);
             }
 
+            if (extraIdsKey) {
+              query.set("extra_ids", extraIdsKey);
+            }
+
             const res = await fetch(
               `/api/public-slots/${slug}/${serviceId}?${query.toString()}`,
               {
@@ -2288,6 +2396,7 @@ setLoadingNextSlots(true);
 
       if (selectedBranchId) query.set("branch_id", selectedBranchId);
       if (selectedStaffId) query.set("staff_id", selectedStaffId);
+      if (extraIdsKey) query.set("extra_ids", extraIdsKey);
 
       const res = await fetch(
         `/api/public-slots/${slug}/${selectedService.id}?${query.toString()}`,
@@ -2326,6 +2435,7 @@ finally {
     selectedBranchId,
     selectedStaffId,
     weekDates,
+    extraIdsKey,
   ]);
 
 
@@ -2451,6 +2561,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         calendar_id: calendarId,
         branch_id: selectedBranchId || null,
         service_id: selectedService.id,
+        extra_ids: selectedExtras.map((e) => e.id),
         staff_id: selectedStaffId || selectedSlot?.staff_id || null,
         date: formatDate(new Date(selectedSlot.slot_start)),
         slot_start: selectedSlot.slot_start,
@@ -2502,7 +2613,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         staffOptions.find((staff) => staff.id === resolvedStaffId) || null;
 
       const startDate = new Date(selectedSlot.slot_start);
-      const durationMinutes = Number(selectedService.duration_minutes || 0);
+      const durationMinutes = bookingTotalMinutes;
       const endDate = new Date(
         startDate.getTime() + durationMinutes * 60 * 1000
       );
@@ -2515,13 +2626,13 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           appointmentId: data.appointment.id,
           uploadToken: data.deposit_upload_token,
           holdExpiresAt: data.deposit_hold_expires_at,
-          serviceName: selectedService.name,
+          serviceName: bookingServiceLabel || selectedService.name,
           date: formatFullDate(selectedSlot.slot_start),
           time: formatHour(selectedSlot.slot_start),
         });
       } else {
         setBookingSuccess({
-          serviceName: selectedService.name,
+          serviceName: bookingServiceLabel || selectedService.name,
           date: formatFullDate(selectedSlot.slot_start),
           time: formatHour(selectedSlot.slot_start),
           branchName: selectedBranch?.name || undefined,
@@ -3136,6 +3247,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       categories={visibleCatalogCategories}
                       selectedServiceId={selectedService?.id || ""}
                       onSelect={selectCatalogService}
+                      selectedExtraIds={selectedExtraIds}
+                      onToggleExtra={toggleSelectedExtra}
                       collapsedKeys={collapsedCatalogSections}
                       onToggleCategory={(key) =>
                         setCollapsedCatalogSections((prev) => {
@@ -3274,7 +3387,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
               {selectedService ? (
                 <div className="w-fit max-w-full truncate rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
-                  {selectedService!.name}
+                  {bookingServiceLabel || selectedService!.name}
+                  {selectedExtras.length > 0 ? ` · ${bookingTotalMinutes} min` : ""}
                 </div>
               ) : null}
             </div>
@@ -3729,8 +3843,13 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                             Servicio
                           </p>
                           <p className="mt-1 text-sm font-semibold text-slate-900">
-                            {selectedService.name}
+                            {bookingServiceLabel || selectedService.name}
                           </p>
+                          {selectedExtras.length > 0 ? (
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              Total {formatPrice(bookingTotalPrice)} · {bookingTotalMinutes} min
+                            </p>
+                          ) : null}
                         </div>
                       ) : null}
 
@@ -4212,12 +4331,24 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                   </p>
                 ) : null}
 
+                {selectedExtras.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                    {selectedExtras.map((extra) => (
+                      <li key={extra.id} className="flex justify-between gap-2">
+                        <span>+ {extra.name}</span>
+                        <span className="whitespace-nowrap">{formatPrice(extra.price)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
                 <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
                   <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                    {selectedService.duration_minutes || 0} min
+                    {bookingTotalMinutes} min
                   </span>
                   <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                    {formatPrice(selectedService.price)}
+                    {selectedExtras.length > 0 ? "Total " : ""}
+                    {formatPrice(bookingTotalPrice)}
                   </span>
                 </div>
               </div>

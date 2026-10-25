@@ -34,6 +34,10 @@ export async function POST(req: Request) {
       calendar_id: normalizeUuidLike(body.calendar_id),
       branch_id: normalizeUuidLike(body.branch_id),
       service_id: normalizeUuidLike(body.service_id),
+      // Extras elegidos (ids). El backend valida y calcula precio/minutos.
+      extra_ids: Array.isArray(body.extra_ids)
+        ? body.extra_ids.map(normalizeUuidLike).filter(Boolean).slice(0, 10)
+        : [],
       staff_id: normalizeUuidLike(body.staff_id),
       date: body.date,
       slot_start: body.slot_start,

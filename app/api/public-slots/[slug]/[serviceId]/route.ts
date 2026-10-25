@@ -48,6 +48,12 @@ export async function GET(
       backendQuery.set("origin", "dashboard");
     }
 
+    // Extras elegidos: el backend suma sus minutos y los valida.
+    const extraIds = searchParams.get("extra_ids");
+    if (extraIds) {
+      backendQuery.set("extra_ids", extraIds);
+    }
+
     const res = await fetch(
       `${BACKEND_URL}/public/slots/${encodeURIComponent(slug)}/${encodeURIComponent(serviceId)}?${backendQuery.toString()}`,
       {
