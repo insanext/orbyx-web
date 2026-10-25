@@ -1072,12 +1072,6 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
     return extraLinks.filter((l) => l.service_id === serviceId).map((l) => l.extra_id);
   }
 
-  const extrasUsage = useMemo(() => {
-    const usage: Record<string, number> = {};
-    for (const link of extraLinks) usage[link.extra_id] = (usage[link.extra_id] || 0) + 1;
-    return usage;
-  }, [extraLinks]);
-
   async function saveServiceExtras(serviceId: string, extraIds: string[]) {
     if (!extrasAvailable) return;
     const res = await apiFetch(`${BACKEND_URL}/service-extras/links`, {
@@ -2703,7 +2697,8 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 tenantId={tenantId}
                 branchId={selectedBranchId}
                 extras={extras}
-                usageByExtra={extrasUsage}
+                links={extraLinks}
+                services={services}
                 canEdit={canEditServicios}
                 onChanged={() => loadExtras(tenantId, selectedBranchId)}
               />
