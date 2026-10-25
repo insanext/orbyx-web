@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { compressImage } from "@/lib/imageCompression";
 
-const MAX_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_SIZE_BYTES = 3 * 1024 * 1024;
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 
     if (file.size > MAX_SIZE_BYTES) {
       return NextResponse.json(
-        { error: "El archivo supera los 2MB permitidos" },
+        { error: "El archivo supera los 3MB permitidos" },
         { status: 400 }
       );
     }
