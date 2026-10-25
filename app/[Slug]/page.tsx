@@ -969,15 +969,19 @@ function CatalogSidebar({
   categories,
   activeCategoryKey,
   onCategoryChange,
+  staff,
+  hasSelectedService,
 }: {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   categories: CatalogCategoryOption[];
   activeCategoryKey: string;
   onCategoryChange: (key: string) => void;
+  staff: StaffItem[];
+  hasSelectedService: boolean;
 }) {
   return (
-    <div className="space-y-4 rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+    <div className="min-w-0 space-y-3 rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:space-y-4 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
       <div className="relative">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -997,15 +1001,15 @@ function CatalogSidebar({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="¿Qué servicio buscas?"
-          className="h-11 w-full rounded-none border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
+          className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white lg:h-11"
         />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
+      <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         <button
           type="button"
           onClick={() => onCategoryChange("todos")}
-          className={`flex shrink-0 items-center gap-2 rounded-none px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-none ${
+          className={`flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
             activeCategoryKey === "todos"
               ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
               : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
@@ -1019,7 +1023,7 @@ function CatalogSidebar({
             key={category.key}
             type="button"
             onClick={() => onCategoryChange(category.key)}
-            className={`flex shrink-0 items-center gap-2 rounded-none px-3.5 py-2.5 text-left text-sm transition lg:w-full lg:rounded-l-none lg:rounded-r-none ${
+            className={`flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
               activeCategoryKey === category.key
                 ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
                 : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
@@ -1029,6 +1033,34 @@ function CatalogSidebar({
           </button>
         ))}
       </div>
+
+      {/* Equipo en móvil (en escritorio está el panel lateral). */}
+      {staff.length > 0 ? (
+        <div className="border-t border-slate-100 pt-3 lg:hidden">
+          <p className="mb-2 text-xs font-semibold text-slate-900">
+            {hasSelectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
+          </p>
+          <div className="-mx-3 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-3">
+              {staff.map((member) => (
+                <div key={member.id} className="flex w-16 shrink-0 flex-col items-center text-center">
+                  <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                    {member.photo_url ? (
+                      <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-base font-semibold text-slate-600">{getStaffInitial(member.name)}</span>
+                    )}
+                  </span>
+                  <span className="mt-1 w-full truncate text-[11px] font-semibold text-slate-900">{member.name}</span>
+                  {member.role?.trim() ? (
+                    <span className="w-full truncate text-[10px] text-slate-500">{member.role.trim()}</span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1441,7 +1473,7 @@ function ProfessionalsPanel({
           <div className="space-y-3">
             {staff.slice(0, 6).map((member) => (
               <div key={member.id} className="flex items-center gap-3">
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-none border border-slate-200 bg-slate-100">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
                   {member.photo_url ? (
                     <img
                       src={member.photo_url}
@@ -1520,7 +1552,7 @@ function StaffCarousel({
             className="group flex w-[72px] shrink-0 snap-start flex-col items-center text-center md:w-20"
           >
             <span
-              className={`flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition md:h-16 md:w-16 ${ring(
+              className={`flex h-14 w-14 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition md:h-16 md:w-16 ${ring(
                 selectedStaffId === ""
               )}`}
             >
@@ -1535,7 +1567,7 @@ function StaffCarousel({
           {loading && staff.length === 0
             ? [0, 1, 2].map((n) => (
                 <div key={n} className="flex w-[72px] shrink-0 flex-col items-center md:w-20" aria-hidden="true">
-                  <span className="h-14 w-14 animate-pulse rounded-full bg-slate-200 md:h-16 md:w-16" />
+                  <span className="h-14 w-14 animate-pulse rounded-lg bg-slate-200 md:h-16 md:w-16" />
                   <span className="mt-2 h-2.5 w-12 animate-pulse rounded bg-slate-200" />
                 </div>
               ))
@@ -1551,7 +1583,7 @@ function StaffCarousel({
                     className="group flex w-[72px] shrink-0 snap-start flex-col items-center text-center md:w-20"
                   >
                     <span
-                      className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-slate-100 transition md:h-16 md:w-16 ${ring(
+                      className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg bg-slate-100 transition md:h-16 md:w-16 ${ring(
                         selected
                       )}`}
                     >
@@ -3356,6 +3388,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                   }))}
                   activeCategoryKey={activeCategoryKey}
                   onCategoryChange={setActiveCategoryKey}
+                  staff={panelStaff}
+                  hasSelectedService={Boolean(selectedService)}
                 />
 
                 <div className="min-w-0 space-y-4">
@@ -3411,14 +3445,16 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 facebookUrl={business?.facebook_url}
               />
 
-              <ProfessionalsPanel
-                staff={panelStaff}
-                hasSelectedService={Boolean(selectedService)}
-                onSeeAll={() => {
-                  setStaffSearchQuery("");
-                  setShowStaffDrawer(true);
-                }}
-              />
+              <div className="hidden lg:block">
+                <ProfessionalsPanel
+                  staff={panelStaff}
+                  hasSelectedService={Boolean(selectedService)}
+                  onSeeAll={() => {
+                    setStaffSearchQuery("");
+                    setShowStaffDrawer(true);
+                  }}
+                />
+              </div>
             </div>
           </div>
         ) : null}
