@@ -29,6 +29,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { BACKEND_URL } from "@/lib/backend-url";
 import Select from "@/components/ui/Select";
+import ServiceExtrasManager, {
+  ServiceExtrasPicker,
+  type ServiceExtra,
+} from "@/components/services/ServiceExtrasManager";
 
 type BusinessResponse = {
   business: {
@@ -247,6 +251,7 @@ function SortableServiceRow({
   onMove,
   hasStaff,
   readOnly,
+  extrasCount = 0,
 }: {
   service: Service;
   onEdit: (s: Service) => void;
@@ -254,6 +259,7 @@ function SortableServiceRow({
   onMove: (s: Service) => void;
   hasStaff?: boolean;
   readOnly?: boolean;
+  extrasCount?: number;
 }) {
   const finePointer = useFinePointer();
   const {
@@ -333,6 +339,11 @@ function SortableServiceRow({
             {service.is_group && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
                 Grupal · cap {service.capacity}
+              </span>
+            )}
+            {extrasCount > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                {extrasCount} extra{extrasCount === 1 ? "" : "s"}
               </span>
             )}
             {!service.active && (
@@ -439,6 +450,14 @@ const [businessCategory, setBusinessCategory] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [moveTarget, setMoveTarget] = useState<Service | null>(null);
   const [movingGroupKey, setMovingGroupKey] = useState<string | null>(null);
+  // "Crear servicio" se abre con un botón (antes el formulario estaba
+  // siempre desplegado).
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  // Extras (2026-10-25). extrasAvailable=false si el backend todavía no
+  // tiene la migración: entonces no se muestra nada de extras.
+  const [extras, setExtras] = useState<ServiceExtra[]>([]);
+  const [extraLinks, setExtraLinks] = useState<{ service_id: string; extra_id: string }[]>([]);
+  const [extrasAvailable, setExtrasAvailable] = useState(false);
 
 const [form, setForm] = useState({
   name: "",
@@ -450,6 +469,7 @@ const [form, setForm] = useState({
   capacity: "1",
   customer_instructions: "",
   group_id: "",
+  extra_ids: [] as string[],
 });
 
 const [editForm, setEditForm] = useState({
@@ -463,6 +483,7 @@ const [editForm, setEditForm] = useState({
   capacity: "1",
   customer_instructions: "",
   group_id: "",
+  extra_ids: [] as string[],
 });
 
   const branchStorageKey = useMemo(() => {
@@ -876,6 +897,13 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
                 </p>
               </div>
             )}
+            {extrasAvailable && !editForm.is_group && (
+              <ServiceExtrasPicker
+                extras={extras}
+                selectedIds={editForm.extra_ids}
+                onToggle={(id) => toggleFormExtra(id, "edit")}
+              />
+            )}
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
@@ -924,6 +952,7 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
         onMove={(s) => setMoveTarget(s)}
         hasStaff={getSelectedStaffIdsForService(service.id).length > 0}
         readOnly={!canEditServicios}
+        extrasCount={extrasAvailable ? getExtraIdsForService(service.id).length : 0}
       />
     );
   }
@@ -1013,6 +1042,65 @@ const isGroupBookingBusiness = businessCategory === "group_booking";
       )
     );
     setGroups(Array.isArray(groupsData) ? groupsData : []);
+    await loadExtras(currentTenantId, currentBranchId);
+  }
+
+  // Nunca rompe la carga del panel: si falla o no hay migración, se ocultan los extras.
+  async function loadExtras(currentTenantId: string, currentBranchId: string) {
+    try {
+      const res = await apiFetch(
+        `${BACKEND_URL}/service-extras?tenant_id=${currentTenantId}&branch_id=${currentBranchId}`
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.available === false) {
+        setExtrasAvailable(false);
+        setExtras([]);
+        setExtraLinks([]);
+        return;
+      }
+      setExtrasAvailable(true);
+      setExtras(Array.isArray(data?.extras) ? data.extras : []);
+      setExtraLinks(Array.isArray(data?.links) ? data.links : []);
+    } catch {
+      setExtrasAvailable(false);
+      setExtras([]);
+      setExtraLinks([]);
+    }
+  }
+
+  function getExtraIdsForService(serviceId: string) {
+    return extraLinks.filter((l) => l.service_id === serviceId).map((l) => l.extra_id);
+  }
+
+  const extrasUsage = useMemo(() => {
+    const usage: Record<string, number> = {};
+    for (const link of extraLinks) usage[link.extra_id] = (usage[link.extra_id] || 0) + 1;
+    return usage;
+  }, [extraLinks]);
+
+  async function saveServiceExtras(serviceId: string, extraIds: string[]) {
+    if (!extrasAvailable) return;
+    const res = await apiFetch(`${BACKEND_URL}/service-extras/links`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tenant_id: tenantId,
+        branch_id: selectedBranchId,
+        service_id: serviceId,
+        extra_ids: extraIds,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || "No se pudieron guardar los extras");
+  }
+
+  function toggleFormExtra(extraId: string, mode: "create" | "edit") {
+    const update = (prev: { extra_ids: string[] }) =>
+      prev.extra_ids.includes(extraId)
+        ? prev.extra_ids.filter((id) => id !== extraId)
+        : [...prev.extra_ids, extraId];
+    if (mode === "create") setForm((prev) => ({ ...prev, extra_ids: update(prev) }));
+    else setEditForm((prev) => ({ ...prev, extra_ids: update(prev) }));
   }
 
   function formatPrice(price: number | null) {
@@ -1260,7 +1348,10 @@ setForm({
   capacity: "1",
   customer_instructions: "",
   group_id: "",
+  extra_ids: [],
 });
+      // Los extras son de cada sucursal: al cambiar de sucursal se cierra el formulario.
+      setShowCreateForm(false);
       setSaveError("");
       setSaveOk("");
     }
@@ -1281,7 +1372,10 @@ setForm({
   capacity: "1",
   customer_instructions: "",
   group_id: "",
+  extra_ids: [],
 });
+      // Los extras son de cada sucursal: al cambiar de sucursal se cierra el formulario.
+      setShowCreateForm(false);
       setSaveError("");
       setSaveOk("");
     }
@@ -1447,6 +1541,17 @@ customer_instructions: form.customer_instructions.trim() || null,
 
       await saveServiceStaffRelations(createdServiceId, form.staff_ids);
 
+      let extrasError = "";
+      const createExtraIds = form.is_group ? [] : form.extra_ids;
+      if (createExtraIds.length > 0) {
+        try {
+          await saveServiceExtras(createdServiceId, createExtraIds);
+        } catch (extrasErr: unknown) {
+          extrasError =
+            extrasErr instanceof Error ? extrasErr.message : "No se pudieron guardar los extras";
+        }
+      }
+
       // Categoría elegida en el formulario (mismo endpoint que el arrastre).
       let groupError = "";
       if (form.group_id) {
@@ -1472,12 +1577,16 @@ setForm({
   capacity: "1",
   customer_instructions: "",
   group_id: "",
+  extra_ids: [],
 });
+      setShowCreateForm(false);
 
       if (groupError) {
         setSaveError(
           `Servicio creado, pero no se pudo asignar la categoría: ${groupError}`
         );
+      } else if (extrasError) {
+        setSaveError(`Servicio creado, pero no se pudieron guardar los extras: ${extrasError}`);
       } else {
         setSaveOk("Servicio creado correctamente.");
       }
@@ -1505,6 +1614,7 @@ function startEditing(service: Service) {
     capacity: String(service.capacity || 1),
     customer_instructions: service.customer_instructions || "",
     group_id: service.group_id || "",
+    extra_ids: getExtraIdsForService(service.id),
   });
 }
 
@@ -1563,6 +1673,22 @@ customer_instructions: editForm.customer_instructions.trim() || null,
 
       await saveServiceStaffRelations(serviceId, editForm.staff_ids);
 
+      // Extras: solo si cambiaron (un servicio grupal no puede tener extras).
+      let extrasError = "";
+      const nextExtraIds = editForm.is_group ? [] : editForm.extra_ids;
+      const currentExtraIds = getExtraIdsForService(serviceId);
+      const extrasChanged =
+        nextExtraIds.length !== currentExtraIds.length ||
+        nextExtraIds.some((id) => !currentExtraIds.includes(id));
+      if (extrasChanged) {
+        try {
+          await saveServiceExtras(serviceId, nextExtraIds);
+        } catch (extrasErr: unknown) {
+          extrasError =
+            extrasErr instanceof Error ? extrasErr.message : "No se pudieron guardar los extras";
+        }
+      }
+
       // Categoría: solo se guarda si cambió, por el mismo endpoint que el arrastre.
       let groupError = "";
       const currentGroupId =
@@ -1584,6 +1710,8 @@ customer_instructions: editForm.customer_instructions.trim() || null,
         setSaveError(
           `Servicio actualizado, pero no se pudo cambiar la categoría: ${groupError}`
         );
+      } else if (extrasError) {
+        setSaveError(`Servicio actualizado, pero no se pudieron guardar los extras: ${extrasError}`);
       } else {
         setSaveOk("Servicio actualizado correctamente.");
       }
@@ -2260,11 +2388,48 @@ customer_instructions: editForm.customer_instructions.trim() || null,
             )}
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
-              Crear servicio
-            </h3>
-
-            <div className="space-y-4">
+            {!showCreateForm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSaveError("");
+                  setSaveOk("");
+                  setShowCreateForm(true);
+                }}
+                disabled={loading || !selectedBranchId || !canEditServicios}
+                className="orbyx-services-energy w-full rounded-md border py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "rgba(147,197,253,0.36)",
+                  background:
+                    "linear-gradient(135deg, rgb(37 99 235), rgb(59 130 246), rgb(14 165 233))",
+                  boxShadow: "0 14px 30px rgba(37,99,235,0.28)",
+                }}
+              >
+                + Crear servicio
+              </button>
+            ) : (
+            <div
+              className="space-y-4 rounded-md border p-4"
+              style={{
+                borderColor: "rgba(37,99,235,0.35)",
+                background:
+                  "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(14,165,233,0.04), var(--bg-soft))",
+              }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                  Nuevo servicio
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  disabled={saving}
+                  className="text-xs px-2.5 py-1 rounded-md border border-blue-900/30 hover:border-blue-500/40 transition-colors disabled:opacity-60"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Cerrar
+                </button>
+              </div>
               <input
                 placeholder="Nombre del servicio"
                 value={form.name}
@@ -2495,6 +2660,14 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                 </div>
               )}
 
+              {extrasAvailable && !form.is_group && (
+                <ServiceExtrasPicker
+                  extras={extras}
+                  selectedIds={form.extra_ids}
+                  onToggle={(id) => toggleFormExtra(id, "create")}
+                />
+              )}
+
               <button
                 type="button"
                 onClick={handleCreateService}
@@ -2507,9 +2680,34 @@ customer_instructions: editForm.customer_instructions.trim() || null,
                   boxShadow: "0 14px 30px rgba(37,99,235,0.28)",
                 }}
               >
-                {saving ? "Guardando..." : "Crear servicio"}
+                {saving ? "Guardando..." : "Guardar servicio"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                disabled={saving}
+                className="w-full rounded-md border py-2.5 text-sm font-medium transition disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Cancelar
               </button>
             </div>
+            )}
+
+            {extrasAvailable && selectedBranchId && tenantId && (
+              <ServiceExtrasManager
+                tenantId={tenantId}
+                branchId={selectedBranchId}
+                extras={extras}
+                usageByExtra={extrasUsage}
+                canEdit={canEditServicios}
+                onChanged={() => loadExtras(tenantId, selectedBranchId)}
+              />
+            )}
           </div>
         </div>
       </section>
