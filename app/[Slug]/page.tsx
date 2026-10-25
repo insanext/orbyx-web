@@ -33,6 +33,8 @@ type ServiceItem = {
   customer_instructions?: string | null;
   // Extras que ofrece el servicio (GET /public/services). Vacío si no tiene.
   extras?: ServiceExtraOption[];
+  // Profesionales activos que realizan el servicio (GET /public/services).
+  staff_ids?: string[];
 };
 
 type ServiceExtraOption = {
@@ -151,6 +153,8 @@ type PublicServicesResponse = {
   services?: ServiceItem[];
   service_groups?: ServiceGroupItem[];
   business_hours?: BusinessHourDay[];
+  // Profesionales activos de la sucursal (aditivo; puede faltar en backends viejos).
+  staff?: StaffItem[];
 };
 
 type ReviewReplyItem = {
@@ -544,11 +548,6 @@ function StaffPhotoPreview({
             <p className="mt-1 text-sm font-semibold text-indigo-600">
               {staff.role?.trim() || "Profesional"}
             </p>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              {staff.role?.trim()
-                ? `Especialista en ${staff.role.trim().toLowerCase()}.`
-                : "Profesional disponible para esta reserva."}
-            </p>
           </div>
         </div>
       </div>
@@ -625,32 +624,44 @@ function FacebookBrandIcon() {
   );
 }
 
-const DESCRIPTION_MAX_CHARS = 200;
-
+// Descripción del negocio: máximo 3 líneas (line-clamp). "Ver más" aparece
+// solo si el texto realmente se corta (se mide con el alto real del párrafo).
 function BusinessDescription({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
-  const isLong = text.length > DESCRIPTION_MAX_CHARS;
-  const shown =
-    isLong && !expanded
-      ? `${text.slice(0, DESCRIPTION_MAX_CHARS).replace(/\s+\S*$/, "")}…`
-      : text;
+  const [isTruncated, setIsTruncated] = useState(false);
+  const paragraphRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    const el = paragraphRef.current;
+    if (!el || expanded) return;
+    const measure = () => setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, expanded]);
 
   return (
-    <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-      {shown}
-      {isLong ? (
-        <>
-          {" "}
-          <button
-            type="button"
-            onClick={() => setExpanded((prev) => !prev)}
-            className="font-semibold text-indigo-600 hover:underline"
-          >
-            {expanded ? "Leer menos" : "Leer más"}
-          </button>
-        </>
+    <div className="mt-1.5 max-w-md">
+      <p
+        ref={paragraphRef}
+        className={`text-sm leading-snug text-slate-500 md:text-base md:leading-normal ${
+          expanded ? "" : "line-clamp-3"
+        }`}
+      >
+        {text}
+      </p>
+      {isTruncated || expanded ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mt-1 text-xs font-semibold text-indigo-600 hover:underline md:text-sm"
+        >
+          {expanded ? "Ver menos" : "Ver más"}
+        </button>
       ) : null}
-    </p>
+    </div>
   );
 }
 
@@ -1417,14 +1428,14 @@ function ProfessionalsPanel({
 }) {
   return (
     <div className="rounded-none border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] md:p-5">
-      <p className="mb-3 text-sm font-bold text-slate-950">Profesionales</p>
+      <p className="mb-3 text-sm font-bold text-slate-950">
+        {hasSelectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
+      </p>
 
-      {!hasSelectedService ? (
+      {staff.length === 0 ? (
         <p className="text-sm text-slate-500">
-          Selecciona un servicio para ver los profesionales disponibles.
+          {hasSelectedService ? "Cargando profesionales..." : "Pronto verás aquí al equipo."}
         </p>
-      ) : staff.length === 0 ? (
-        <p className="text-sm text-slate-500">Cargando profesionales...</p>
       ) : (
         <>
           <div className="space-y-3">
@@ -1468,6 +1479,103 @@ function ProfessionalsPanel({
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+// Carrusel horizontal de profesionales (estilo "stories"), justo arriba de los
+// días. Primer ítem "Cualquiera". Solo hace scroll dentro del carrusel.
+function StaffCarousel({
+  staff,
+  selectedStaffId,
+  onSelect,
+  loading,
+}: {
+  staff: StaffItem[];
+  selectedStaffId: string;
+  onSelect: (staffId: string) => void;
+  loading: boolean;
+}) {
+  const ring = (selected: boolean) =>
+    selected
+      ? "ring-2 ring-indigo-600 ring-offset-2 ring-offset-white"
+      : "ring-1 ring-slate-200 group-hover:ring-indigo-300";
+
+  return (
+    <div className="mb-3 md:mb-4">
+      <p className="mb-2 text-sm font-semibold text-slate-900">
+        Profesional <span className="font-normal text-slate-500">(opcional)</span>
+      </p>
+      <div
+        className="-mx-3 overflow-x-auto px-3 [scrollbar-width:none] md:-mx-4 md:px-4 [&::-webkit-scrollbar]:hidden"
+        role="radiogroup"
+        aria-label="Elige un profesional"
+      >
+        <div className="flex snap-x snap-mandatory gap-3 pb-1 pt-1">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={selectedStaffId === ""}
+            onClick={() => onSelect("")}
+            className="group flex w-[72px] shrink-0 snap-start flex-col items-center text-center md:w-20"
+          >
+            <span
+              className={`flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition md:h-16 md:w-16 ${ring(
+                selectedStaffId === ""
+              )}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1M10 11a4 4 0 100-8 4 4 0 000 8zM21 20v-1a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+              </svg>
+            </span>
+            <span className="mt-1.5 w-full truncate text-xs font-semibold text-slate-900">Cualquiera</span>
+            <span className="w-full truncate text-[11px] text-slate-500">Primero libre</span>
+          </button>
+
+          {loading && staff.length === 0
+            ? [0, 1, 2].map((n) => (
+                <div key={n} className="flex w-[72px] shrink-0 flex-col items-center md:w-20" aria-hidden="true">
+                  <span className="h-14 w-14 animate-pulse rounded-full bg-slate-200 md:h-16 md:w-16" />
+                  <span className="mt-2 h-2.5 w-12 animate-pulse rounded bg-slate-200" />
+                </div>
+              ))
+            : staff.map((member) => {
+                const selected = selectedStaffId === member.id;
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => onSelect(member.id)}
+                    className="group flex w-[72px] shrink-0 snap-start flex-col items-center text-center md:w-20"
+                  >
+                    <span
+                      className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-slate-100 transition md:h-16 md:w-16 ${ring(
+                        selected
+                      )}`}
+                    >
+                      {member.photo_url ? (
+                        <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-semibold text-slate-600">{getStaffInitial(member.name)}</span>
+                      )}
+                    </span>
+                    <span
+                      className={`mt-1.5 w-full truncate text-xs font-semibold ${
+                        selected ? "text-indigo-700" : "text-slate-900"
+                      }`}
+                    >
+                      {member.name}
+                    </span>
+                    <span className="w-full truncate text-[11px] text-slate-500">
+                      {member.role?.trim() || "Profesional"}
+                    </span>
+                  </button>
+                );
+              })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1572,6 +1680,8 @@ const isGroupBookingBusiness =
   const [showDatePopover, setShowDatePopover] = useState(false);
   const [showStaffDrawer, setShowStaffDrawer] = useState(false);
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
+  // Todos los profesionales activos de la sucursal (de GET /public/services).
+  const [allStaff, setAllStaff] = useState<StaffItem[]>([]);
   const [viewStep, setViewStep] = useState<"catalog" | "booking">("catalog");
   const [catalogSearchQuery, setCatalogSearchQuery] = useState("");
   const [activeCategoryKey, setActiveCategoryKey] = useState("todos");
@@ -1829,16 +1939,10 @@ const nextAvailableDays = useMemo(() => {
   const mobileSelectedDateSlots = mobileSelectedDate
     ? weekSlots[formatDate(mobileSelectedDate)] || []
     : [];
-  const selectedStaff =
-    staffOptions.find((staff) => staff.id === selectedStaffId) || null;
-  const compactStaffBase = staffOptions.slice(0, 3);
-  const visibleStaffOptions =
-    selectedStaff && !compactStaffBase.some((staff) => staff.id === selectedStaff.id)
-      ? compactStaffBase.length >= 3
-        ? [...compactStaffBase.slice(0, 2), selectedStaff]
-        : [...compactStaffBase, selectedStaff]
-      : compactStaffBase;
-  const filteredDrawerStaff = staffOptions.filter((staff) => {
+  // Sin servicio: todos los profesionales activos. Con servicio: solo los que
+  // lo realizan (staffOptions viene de /public/staff/:slug/:service_id).
+  const panelStaff = selectedService ? staffOptions : allStaff;
+  const filteredDrawerStaff = panelStaff.filter((staff) => {
     const term = staffSearchQuery.trim().toLowerCase();
     if (!term) return true;
 
@@ -1940,8 +2044,23 @@ const nextAvailableDays = useMemo(() => {
     if (selectedService?.id !== service.id) {
       setSelectedExtraIds([]);
     }
+    // El profesional elegido se mantiene si también hace el nuevo servicio;
+    // si no (o si no sabemos), vuelve a "Cualquiera".
+    const serviceStaffIds = Array.isArray(service.staff_ids) ? service.staff_ids : null;
+    const keepStaffId =
+      selectedStaffId && serviceStaffIds?.includes(selectedStaffId) ? selectedStaffId : "";
     resetAfterServiceChange();
+    if (serviceStaffIds) {
+      // Lista inmediata mientras llega /public/staff (que la confirma).
+      setStaffOptions(allStaff.filter((staff) => serviceStaffIds.includes(staff.id)));
+    }
+    setSelectedStaffId(keepStaffId);
     setSelectedService(service);
+  }
+
+  function selectStaff(staffId: string) {
+    setSelectedStaffId(staffId);
+    setSelectedSlot(null);
   }
 
   function handleBranchChange(nextBranchId: string) {
@@ -2052,6 +2171,7 @@ const nextAvailableDays = useMemo(() => {
         setBranches(normalizedBranches);
         setSelectedBranchId(initialBranchId);
         setServices(initialServices);
+        setAllStaff(Array.isArray(data.staff) ? data.staff : []);
         setServiceGroups(
           Array.isArray(data.service_groups) ? data.service_groups : []
         );
@@ -2227,6 +2347,7 @@ const nextAvailableDays = useMemo(() => {
           : [];
 
         setServices(rows);
+        setAllStaff(Array.isArray(data.staff) ? data.staff : []);
         setServiceGroups(
           Array.isArray(data.service_groups) ? data.service_groups : []
         );
@@ -3291,7 +3412,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               />
 
               <ProfessionalsPanel
-                staff={staffOptions}
+                staff={panelStaff}
                 hasSelectedService={Boolean(selectedService)}
                 onSeeAll={() => {
                   setStaffSearchQuery("");
@@ -3392,6 +3513,15 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 </div>
               ) : null}
             </div>
+
+            {selectedService ? (
+              <StaffCarousel
+                staff={staffOptions}
+                selectedStaffId={selectedStaffId}
+                onSelect={selectStaff}
+                loading={loadingStaff}
+              />
+            ) : null}
 
             {!selectedService ? (
               <div className="mb-6 rounded-none border border-amber-200 bg-amber-50 px-4 py-4 shadow-sm">
@@ -4351,123 +4481,6 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     {formatPrice(bookingTotalPrice)}
                   </span>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4 md:shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]">
-              <div className="space-y-2.5 md:space-y-4">
-                                {selectedService ? (
-                  <div>
-                    <div className="mb-2.5 md:mb-3">
-                      <p className="text-sm font-semibold text-slate-900">
-  Profesional preferente (opcional)
-</p>
-                      <p className="text-xs text-slate-500">
-  Puedes elegir uno específico o dejar que asignemos cualquiera disponible.
-</p>
-                    </div>
-
-                    {loadingStaff ? (
-                      <div className="rounded-none border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                        Cargando profesionales...
-                      </div>
-                    ) : (
-                      <div className="space-y-2 md:space-y-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedStaffId("");
-                            setSelectedSlot(null);
-                          }}
-                          className={`w-full rounded-none border p-2 text-left transition-all duration-200 cursor-pointer md:rounded-none md:p-2.5 ${
-  selectedStaffId === ""
-    ? "border-indigo-600 bg-indigo-50 shadow-md scale-[1.01]"
-    : "border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm hover:scale-[1.01]"
-}`}
-                        >
-                          <div className="flex items-center gap-2 md:gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-700 md:h-9 md:w-9 md:rounded-none md:text-base">
-                              *
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900">
-                                Cualquiera disponible
-                              </p>
-                              <p className="mt-0.5 text-xs leading-4 text-slate-500">
-                                Se asignará un profesional con horario disponible.
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-
-                        {visibleStaffOptions.map((staff) => (
-                          <button
-                            key={staff.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedStaffId(staff.id);
-                              setSelectedSlot(null);
-                            }}
-                            className={`w-full rounded-none border p-3 text-left transition md:rounded-none md:p-5 ${
-                              selectedStaffId === staff.id
-                                ? "border-indigo-500 bg-indigo-50 shadow-sm"
-                                : "border-slate-200 bg-white hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 md:gap-5">
-                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-none border border-slate-200 bg-slate-100 md:h-20 md:w-20 md:rounded-none">
-                                {staff.photo_url ? (
-                                  <img
-                                    src={staff.photo_url}
-                                    alt={staff.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-700 md:text-2xl">
-                                    {getStaffInitial(staff.name)}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-900 md:text-base">
-                                  {staff.name}
-                                </p>
-
-                                {staff.role?.trim() ? (
-                                  <p className="mt-1 truncate text-xs font-semibold text-indigo-600 md:text-sm">
-                                    {staff.role.trim()}
-                                  </p>
-                                ) : null}
-
-                                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 md:text-sm">
-                                  {staff.role?.trim()
-                                    ? `Especialista en ${staff.role.trim().toLowerCase()}.`
-                                    : "Profesional disponible para esta reserva."}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-
-                        {staffOptions.length > visibleStaffOptions.length ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStaffSearchQuery("");
-                              setShowStaffDrawer(true);
-                            }}
-                            className="flex h-11 w-full items-center justify-center rounded-none border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm md:h-12 md:rounded-none"
-                          >
-                            Ver todos los profesionales ({staffOptions.length})
-                          </button>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-
               </div>
             </div>
 
