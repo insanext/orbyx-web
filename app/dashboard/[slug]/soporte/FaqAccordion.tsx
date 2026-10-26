@@ -1,7 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
 import {
-  ArrowRight,
   Briefcase,
   Building2,
   CalendarDays,
@@ -95,7 +94,9 @@ export default function FaqAccordion({ onCreateTicket }: { onCreateTicket?: () =
   const normalizedQuery = normalize(query.trim())
 
   const visibleCategories: FaqCategory[] = useMemo(() => {
-    return FAQ_CATEGORIES.filter((cat) => activeCategory === 'all' || cat.id === activeCategory)
+    return [...FAQ_CATEGORIES]
+      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+      .filter((cat) => activeCategory === 'all' || cat.id === activeCategory)
       .map((cat) => ({
         ...cat,
         items: normalizedQuery
@@ -108,7 +109,6 @@ export default function FaqAccordion({ onCreateTicket }: { onCreateTicket?: () =
   }, [activeCategory, normalizedQuery])
 
   const resultCount = visibleCategories.reduce((sum, cat) => sum + cat.items.length, 0)
-  const featured = FAQ_CATEGORIES.filter((cat) => cat.featured)
 
   function selectCategory(id: string) {
     setActiveCategory(id)
@@ -166,55 +166,22 @@ export default function FaqAccordion({ onCreateTicket }: { onCreateTicket?: () =
         </div>
       </div>
 
-      {/* Temas importantes */}
-      {!normalizedQuery && activeCategory === 'all' ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {featured.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => selectCategory(cat.id)}
-              className="group flex items-start gap-3 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ borderColor: 'var(--border-color)', background: 'var(--bg-card)' }}
-            >
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: 'color-mix(in srgb, var(--accent-solid) 16%, transparent)',
-                  color: 'var(--accent-solid)',
-                }}
-                aria-hidden="true"
-              >
-                <FaqIcon name={cat.icon} size={20} />
-              </span>
-              <span className="min-w-0">
-                <span className="flex items-center gap-2">
-                  <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>
-                    {cat.title}
-                  </span>
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
-                    style={{ background: 'var(--accent-solid)' }}
-                  >
-                    Importante
-                  </span>
-                </span>
-                <span className="mt-0.5 block text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {cat.description}
-                </span>
-                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--accent-solid)' }}>
-                  Ver {cat.items.length} preguntas
-                  <ArrowRight size={13} className="transition group-hover:translate-x-0.5" aria-hidden="true" />
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-
       {/* Temas */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {[{ id: 'all', title: 'Todas', icon: 'all' as FaqIconKey | 'all', count: FAQ_CATEGORIES.reduce((s, c) => s + c.items.length, 0) }, ...FAQ_CATEGORIES.map((c) => ({ id: c.id, title: c.title, icon: c.icon, count: c.items.length }))].map((chip) => {
+      {/* Temas: en varias líneas (sin scroll lateral). Los importantes van
+          primero y marcados. */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          {
+            id: 'all',
+            title: 'Todas',
+            icon: 'all' as FaqIconKey | 'all',
+            count: FAQ_CATEGORIES.reduce((s, c) => s + c.items.length, 0),
+            featured: false,
+          },
+          ...[...FAQ_CATEGORIES]
+            .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+            .map((c) => ({ id: c.id, title: c.title, icon: c.icon as FaqIconKey | 'all', count: c.items.length, featured: Boolean(c.featured) })),
+        ].map((chip) => {
           const active = activeCategory === chip.id
           return (
             <button
@@ -222,16 +189,35 @@ export default function FaqAccordion({ onCreateTicket }: { onCreateTicket?: () =
               type="button"
               onClick={() => selectCategory(chip.id)}
               aria-pressed={active}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition"
+              title={chip.featured ? 'Tema importante' : undefined}
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition sm:px-3 sm:py-1.5 sm:text-xs"
               style={
                 active
                   ? { background: 'var(--accent-solid)', borderColor: 'var(--accent-solid)', color: '#fff' }
+                  : chip.featured
+                  ? {
+                      background: 'color-mix(in srgb, var(--accent-solid) 12%, var(--bg-card))',
+                      borderColor: 'color-mix(in srgb, var(--accent-solid) 55%, var(--border-color))',
+                      color: 'var(--text-main)',
+                    }
                   : { background: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-main)' }
               }
             >
               <FaqIcon name={chip.icon} size={14} />
               {chip.title}
               <span className="opacity-70">{chip.count}</span>
+              {chip.featured ? (
+                <span
+                  className="rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wide"
+                  style={
+                    active
+                      ? { background: 'rgba(255,255,255,0.25)', color: '#fff' }
+                      : { background: 'var(--accent-solid)', color: '#fff' }
+                  }
+                >
+                  Importante
+                </span>
+              ) : null}
             </button>
           )
         })}

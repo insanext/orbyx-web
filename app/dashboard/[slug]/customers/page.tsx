@@ -122,11 +122,25 @@ function getInitials(name?: string | null) {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function Avatar({ id, name }: { id: string; name: string }) {
+// "Ordenar por" de la lista (claves que entiende GET /customers/:slug?sort=).
+const CUSTOMER_SORT_OPTIONS = [
+  { value: "", label: "Ordenar: actividad reciente" },
+  { value: "recent", label: "Última atención: más reciente" },
+  { value: "oldest", label: "Última atención: más antigua" },
+  { value: "most_visits", label: "Más visitas" },
+  { value: "least_visits", label: "Menos visitas" },
+  { value: "next_appointment", label: "Próxima reserva" },
+  { value: "newest", label: "Clientes más nuevos" },
+  { value: "name", label: "Nombre (A–Z)" },
+];
+
+function Avatar({ id, name, small = false }: { id: string; name: string; small?: boolean }) {
   const color = AVATAR_PALETTE[hashString(id) % AVATAR_PALETTE.length];
   return (
     <span
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+      className={`flex shrink-0 items-center justify-center rounded-full font-bold ${
+        small ? "h-8 w-8 text-[11px]" : "h-9 w-9 text-xs"
+      }`}
       style={{ background: `var(--cust-avatar-${color}-bg)`, color: `var(--cust-avatar-${color}-text)` }}
     >
       {getInitials(name)}
@@ -138,7 +152,7 @@ function Avatar({ id, name }: { id: string; name: string }) {
 // página, sin tono de color.
 const PROSPECT_TONE = { solid: "var(--cust-muted)", tint: "var(--cust-soft-bg)", text: "var(--cust-ink)" };
 
-function SegmentBadge({ segment, label }: { segment?: string; label?: string }) {
+function SegmentBadge({ segment, label, compact = false }: { segment?: string; label?: string; compact?: boolean }) {
   const map: Record<string, SegmentTone | "neutral"> = {
     prospect: "neutral",
     new: "blue",
@@ -150,7 +164,9 @@ function SegmentBadge({ segment, label }: { segment?: string; label?: string }) 
   const t = tone === "neutral" ? PROSPECT_TONE : SEGMENT_TONE[tone];
   return (
     <span
-      className="inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold"
+      className={`inline-flex shrink-0 items-center rounded font-semibold ${
+        compact ? "px-1.5 py-px text-[10px]" : "px-2.5 py-0.5 text-xs"
+      }`}
       style={{ background: t.tint, color: t.text }}
     >
       {label || getCustomerCategorySingular(segment)}
@@ -212,6 +228,8 @@ export default function CustomersPage() {
   const [segment, setSegment] = useState("all");
   // Mínimo de días sin venir desde la última visita asistida ("" = sin filtro).
   const [daysWithoutVisit, setDaysWithoutVisit] = useState("");
+  // Orden de la lista (lo aplica el backend: GET /customers/:slug?sort=).
+  const [sortBy, setSortBy] = useState("");
   const [thresholds, setThresholds] = useState<CustomerCategoryThresholds | null>(null);
   const [totalMatching, setTotalMatching] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -325,6 +343,7 @@ export default function CustomersPage() {
       if (search) params.set("q", search);
       if (segment !== "all") params.set("segment", segment);
       if (daysWithoutVisit) params.set("days_without_visit", daysWithoutVisit);
+      if (sortBy) params.set("sort", sortBy);
       params.set("limit", "500");
       if (selectedBranchId) params.set("branch_id", selectedBranchId);
 
@@ -340,7 +359,7 @@ export default function CustomersPage() {
     }
 
     if (slug) load();
-  }, [slug, search, segment, daysWithoutVisit, selectedBranchId, reloadKey]);
+  }, [slug, search, segment, daysWithoutVisit, sortBy, selectedBranchId, reloadKey]);
 
   const activeSegmentLabel = useMemo(() => {
     return SEGMENT_OPTIONS.find((i) => i.key === segment)?.label || "Todos";
@@ -350,6 +369,7 @@ export default function CustomersPage() {
     searchInput.trim().length > 0,
     segment !== "all",
     daysWithoutVisit !== "",
+    sortBy !== "",
   ].filter(Boolean).length;
 
   return (
@@ -549,6 +569,20 @@ export default function CustomersPage() {
               ))}
             </Select>
 
+            <Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Ordenar por"
+              className="mb-3 w-full cursor-pointer rounded border px-2.5 py-1.5 text-xs font-medium outline-none"
+              style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
+            >
+              {CUSTOMER_SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+
             <p className="mb-4 text-xs" style={{ color: "var(--cust-muted)" }}>
               Viendo: <b style={{ color: "var(--cust-ink)" }}>{activeSegmentLabel}</b>
               {search && (
@@ -650,6 +684,20 @@ export default function CustomersPage() {
               </option>
             ))}
           </Select>
+
+          <Select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            aria-label="Ordenar por"
+            className="shrink-0 cursor-pointer rounded border px-2.5 py-1 text-xs font-medium outline-none"
+            style={{ borderColor: "var(--cust-border)", background: "var(--cust-soft-bg)", color: "var(--cust-ink)" }}
+          >
+            {CUSTOMER_SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
         </div>
 
         {segment !== "all" && CUSTOMER_CATEGORY_OPTIONS.some((o) => o.key === segment) ? (
@@ -726,150 +774,121 @@ export default function CustomersPage() {
           </div>
         )}
 
-        {/* Cards móvil */}
+        {/* Cards móvil: compactas (una fila por cliente) para ver varios en
+            pantalla. Tocar la tarjeta abre el detalle; las acciones quedan
+            como íconos a la derecha. */}
         {customers.length > 0 && (
-          <div className="space-y-3 md:hidden">
-            {customers.map((c) => (
-              <article
-                key={c.id}
-                className="rounded border p-4 shadow-sm"
-                style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar id={c.id} name={c.name} />
-                    <div className="min-w-0">
-                      <h3 className="break-words text-sm font-semibold" style={{ color: "var(--cust-ink)" }}>
-                        {c.name}
-                      </h3>
-                      {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 && (
-                        <p className="mt-0.5 break-words text-xs" style={{ color: SEGMENT_TONE.emerald.text }}>
-                          {c.pets.map((p) => p.name).join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <SegmentBadge segment={c.category} label={c.category_label} />
-                </div>
-                <CategoryReason customer={c} />
-
-                <div className="mt-3">
-                  <p className="text-xs" style={{ color: "var(--cust-muted)" }}>
-                    Contacto
-                  </p>
-                  <p className="mt-0.5 break-words text-xs" style={{ color: "var(--cust-ink)" }}>
-                    {c.email || c.phone || "Sin contacto"}
-                  </p>
-                  {c.email && c.phone && (
-                    <p className="break-words text-xs" style={{ color: "var(--cust-muted)" }}>
-                      {c.phone}
-                    </p>
-                  )}
-                </div>
-
-                {/* Visitas/Última visita se sacaron de la tarjeta — quedan
-                    solo en el detalle del cliente, la tarjeta muestra lo
-                    esencial (nombre + contacto). */}
-                <div className="mt-4 flex flex-col gap-2">
+          <div className="space-y-1.5 md:hidden">
+            {customers.map((c) => {
+              const noShows = Number(c.no_show_count || 0);
+              const reason = [c.category_reason, noShows > 0 ? `${noShows} inasistencia${noShows === 1 ? "" : "s"}` : ""]
+                .filter(Boolean)
+                .join(" · ");
+              const iconBtn =
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded border transition disabled:opacity-60";
+              return (
+                <article
+                  key={c.id}
+                  className="flex items-center gap-2 rounded border px-2.5 py-2"
+                  style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)" }}
+                >
                   <button
                     type="button"
                     onClick={() => router.push(`/dashboard/${slug}/customers/${c.id}`)}
-                    className="w-full rounded border px-4 py-2 text-sm font-medium transition"
-                    style={{
-                      background: "var(--cust-soft-bg)",
-                      borderColor: "var(--cust-border)",
-                      color: "var(--cust-ink)",
-                    }}
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                    aria-label={`Ver detalle de ${c.name}`}
                   >
-                    Ver detalle →
-                  </button>
-                  {(c.has_completed_visit && c.phone) || c.phone ? (
-                    <div className="flex gap-2">
-                      {c.has_completed_visit && c.phone ? (
-                        c.has_review ? (
-                          <span
-                            title="Ya dejó su reseña"
-                            aria-label="Ya dejó su reseña"
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold"
-                            style={{
-                              borderColor: "var(--cust-emerald-solid)",
-                              color: "var(--cust-emerald-text)",
-                              background: "var(--cust-emerald-tint)",
-                            }}
-                          >
-                            <Check className="h-3.5 w-3.5 shrink-0" />
-                            Ya reseñó
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleRequestReview(c)}
-                            disabled={requestingReviewFor === c.id}
-                            title="Pedir reseña por WhatsApp"
-                            aria-label="Pedir reseña por WhatsApp"
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold transition disabled:opacity-60"
-                            style={{
-                              borderColor: "var(--cust-emerald-solid)",
-                              color: "var(--cust-emerald-solid)",
-                            }}
-                          >
-                            <Star className="h-3.5 w-3.5 shrink-0" />
-                            Pedir reseña
-                          </button>
-                        )
+                    <Avatar id={c.id} name={c.name} small />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <h3 className="truncate text-[13px] font-semibold" style={{ color: "var(--cust-ink)" }}>
+                          {c.name}
+                        </h3>
+                        <SegmentBadge segment={c.category} label={c.category_label} compact />
+                      </div>
+                      {isVeterinaria && Array.isArray(c.pets) && c.pets.length > 0 ? (
+                        <p className="truncate text-[11px]" style={{ color: SEGMENT_TONE.emerald.text }}>
+                          {c.pets.map((p) => p.name).join(", ")}
+                        </p>
                       ) : null}
-                      {c.phone ? (
-                        whatsappInviteUnlocked ? (
-                          <button
-                            type="button"
-                            onClick={() => handleInviteWhatsApp(c)}
-                            title="Invitar por WhatsApp"
-                            aria-label="Invitar por WhatsApp"
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold transition"
-                            style={{
-                              borderColor: "var(--cust-blue-solid)",
-                              color: "var(--cust-blue-solid)",
-                            }}
-                          >
-                            <MessageCircle className="h-3.5 w-3.5 shrink-0" />
-                            Invitar
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled
-                            title="Invitar por WhatsApp — Desde Business"
-                            aria-label="Invitar por WhatsApp — Desde Business"
-                            className="flex flex-1 cursor-not-allowed items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold opacity-60"
-                            style={{
-                              borderColor: "var(--cust-border)",
-                              color: "var(--cust-muted)",
-                            }}
-                          >
-                            <Lock className="h-3.5 w-3.5 shrink-0" />
-                            Invitar
-                          </button>
-                        )
-                      ) : null}
+                      <p className="truncate text-[11px]" style={{ color: "var(--cust-muted)" }}>
+                        {c.phone || c.email || "Sin contacto"}
+                        {reason ? ` · ${reason}` : ""}
+                      </p>
                     </div>
-                  ) : null}
-                  {canBlockContacts && (c.phone || c.email) ? (
-                    <button
-                      type="button"
-                      onClick={() => handleBlockContact(c)}
-                      disabled={blockingFor === c.id}
-                      title="Bloquear: no podrá reservar desde la página pública"
-                      aria-label="Bloquear contacto"
-                      className="flex w-full items-center justify-center gap-1.5 rounded border px-3 py-2 text-xs font-semibold transition disabled:opacity-60"
-                      style={{ borderColor: "var(--cust-border)", color: "var(--cust-muted)" }}
-                    >
-                      <Ban className="h-3.5 w-3.5 shrink-0" />
-                      Bloquear
-                    </button>
-                  ) : null}
-                </div>
-              </article>
-            ))}
+                  </button>
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    {c.has_completed_visit && c.phone ? (
+                      c.has_review ? (
+                        <span
+                          title="Ya dejó su reseña"
+                          aria-label="Ya dejó su reseña"
+                          className={iconBtn}
+                          style={{
+                            borderColor: "var(--cust-emerald-solid)",
+                            color: "var(--cust-emerald-text)",
+                            background: "var(--cust-emerald-tint)",
+                          }}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRequestReview(c)}
+                          disabled={requestingReviewFor === c.id}
+                          title="Pedir reseña por WhatsApp"
+                          aria-label="Pedir reseña por WhatsApp"
+                          className={iconBtn}
+                          style={{ borderColor: "var(--cust-emerald-solid)", color: "var(--cust-emerald-solid)" }}
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                        </button>
+                      )
+                    ) : null}
+                    {c.phone ? (
+                      whatsappInviteUnlocked ? (
+                        <button
+                          type="button"
+                          onClick={() => handleInviteWhatsApp(c)}
+                          title="Invitar por WhatsApp"
+                          aria-label="Invitar por WhatsApp"
+                          className={iconBtn}
+                          style={{ borderColor: "var(--cust-blue-solid)", color: "var(--cust-blue-solid)" }}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          title="Invitar por WhatsApp — Desde Business"
+                          aria-label="Invitar por WhatsApp — Desde Business"
+                          className={`${iconBtn} cursor-not-allowed`}
+                          style={{ borderColor: "var(--cust-border)", color: "var(--cust-muted)" }}
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                        </button>
+                      )
+                    ) : null}
+                    {canBlockContacts && (c.phone || c.email) ? (
+                      <button
+                        type="button"
+                        onClick={() => handleBlockContact(c)}
+                        disabled={blockingFor === c.id}
+                        title="Bloquear: no podrá reservar desde la página pública"
+                        aria-label="Bloquear contacto"
+                        className={iconBtn}
+                        style={{ borderColor: "var(--cust-border)", color: "var(--cust-muted)" }}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
 
