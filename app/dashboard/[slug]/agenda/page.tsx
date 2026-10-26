@@ -1484,34 +1484,8 @@ next_control_custom_unit: "days",
     }
   }
 
-  function handleAppointmentMouseEnter(
-  event: React.MouseEvent<HTMLButtonElement>,
-  appt: Appointment
-) {
-  const rect = event.currentTarget.getBoundingClientRect();
-
-  const hoverCardWidth = 290;
-  const hoverCardHeight = 360;
-  const gap = 12;
-  const viewportPadding = 16;
-
-  const nextX = Math.min(
-    rect.right + gap,
-    window.innerWidth - hoverCardWidth - viewportPadding
-  );
-
-  const nextY = Math.min(
-    Math.max(viewportPadding, rect.top),
-    window.innerHeight - hoverCardHeight - viewportPadding
-  );
-
-  setHoverCard({
-    appointment: appt,
-    x: nextX,
-    y: nextY,
-  });
-}
-
+  // La tarjeta flotante al pasar el mouse se quitó (2026-10-26): el bloque ya
+  // muestra lo importante y el clic abre el detalle.
   function handleAppointmentMouseLeave() {
     setHoverCard(null);
   }
@@ -4177,9 +4151,8 @@ const hasActiveFilters =
               type="button"
               data-calendar-selectable="true"
               onClick={() => handleSelectAppointment(appt)}
-              onMouseEnter={(event) => {
+              onMouseEnter={() => {
                 setHoveredTimeKey(getTimeKey(appt.start_at));
-                handleAppointmentMouseEnter(event, appt);
               }}
               onMouseLeave={() => {
                 setHoveredTimeKey("");
@@ -6977,11 +6950,10 @@ const hasActiveFilters =
                                           onClick={() =>
                                             handleSelectAppointment(appt)
                                           }
-                                          onMouseEnter={(e) => {
+                                          onMouseEnter={() => {
                                             setHoveredTimeKey(
                                               getTimeKey(appt.start_at)
                                             );
-                                            handleAppointmentMouseEnter(e, appt);
                                           }}
                                           onMouseLeave={() => {
                                             setHoveredTimeKey("");
@@ -7302,9 +7274,8 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                                   type="button"
                                   data-calendar-selectable="true"
                                   onClick={() => handleSelectAppointment(appt)}
-                                  onMouseEnter={(e) => {
+                                  onMouseEnter={() => {
                                     setHoveredTimeKey(getTimeKey(appt.start_at));
-                                    handleAppointmentMouseEnter(e, appt);
                                   }}
                                   onMouseLeave={() => {
                                     setHoveredTimeKey("");
