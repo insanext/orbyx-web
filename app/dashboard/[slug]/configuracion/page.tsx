@@ -42,7 +42,10 @@ export default function ConfiguracionPage() {
   const params = useParams();
   const slug = params?.slug as string;
   const supabase = createClient();
-  const { isOwnerOrAdmin } = usePermissions();
+  const { isOwnerOrAdmin, role } = usePermissions();
+  // Solo el propietario crea, edita o elimina usuarios (el backend lo exige
+  // igual: /invitations y /members son "owner_only").
+  const isOwner = role === "owner";
 
   const [activeTab, setActiveTab] = useState<1 | 2>(1);
 
@@ -265,8 +268,17 @@ export default function ConfiguracionPage() {
     );
   };
 
+  // "Acceso por sucursal": con una sola sucursal se asigna esa; con varias hay
+  // que elegir al menos una (el usuario solo ve y trabaja en las que tenga).
+  const resolveBranchSelection = (ids: string[]) =>
+    branches.length === 1 ? [branches[0].id] : ids;
+
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
+    if (branches.length > 1 && selectedBranchIds.length === 0) {
+      setInviteMsg("Elige al menos una sucursal para este usuario.");
+      return;
+    }
     if (!inviteAuthPwd) {
       setInviteMsg("Debes ingresar tu contraseña para confirmar.");
       return;
@@ -303,7 +315,7 @@ export default function ConfiguracionPage() {
           email: inviteEmail,
           role: "custom",
           permissions,
-          branch_ids: selectedBranchIds,
+          branch_ids: resolveBranchSelection(selectedBranchIds),
           invited_by: currentUser?.id,
         }),
       });
@@ -704,7 +716,7 @@ export default function ConfiguracionPage() {
                       <span className="text-xs px-2 py-1 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20">
                         Propietario
                       </span>
-                    ) : (
+                    ) : !isOwner ? null : (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
@@ -758,6 +770,7 @@ export default function ConfiguracionPage() {
                         <p className="text-sm" style={{ color: "var(--text-main)" }}>{inv.email}</p>
                         <p className="text-xs" style={{ color: "var(--text-muted)" }}>{ROLE_LABEL[inv.role] ?? inv.role}</p>
                       </div>
+                      {isOwner ? (
                       <button
                         onClick={() => handleCancelInvite(inv.id)}
                         className="text-xs px-2 py-1 rounded-lg border border-transparent hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-colors"
@@ -765,14 +778,19 @@ export default function ConfiguracionPage() {
                       >
                         Cancelar invitación
                       </button>
+                      ) : null}
                     </div>
                   ))}
               </div>
             )}
           </div>
 
-          {/* Bloque 2: Invitar usuario */}
-          {!showInviteForm ? (
+          {/* Bloque 2: Invitar usuario (solo el propietario) */}
+          {!isOwner ? (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Solo el propietario del negocio puede crear o modificar usuarios.
+            </p>
+          ) : !showInviteForm ? (
             <button
               onClick={() => setShowInviteForm(true)}
               className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-600/30 active:scale-95 text-white text-sm font-medium transition-all flex items-center justify-center gap-2"
@@ -879,7 +897,8 @@ export default function ConfiguracionPage() {
                       </div>
                       <input
                         type="checkbox"
-                        checked={selectedBranchIds.includes(branch.id)}
+                        checked={branches.length === 1 || selectedBranchIds.includes(branch.id)}
+                        disabled={branches.length === 1}
                         onChange={() => toggleBranch(branch.id)}
                         className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
                       />
@@ -887,7 +906,9 @@ export default function ConfiguracionPage() {
                   ))}
                 </div>
                 <p className="text-xs mt-2" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
-                  Si no seleccionas ninguna, el usuario verá información de todas las sucursales activas.
+                  {branches.length === 1
+                    ? "El usuario tendrá acceso a tu sucursal. Si más adelante creas otra, edita sus permisos para darle acceso."
+                    : "Elige al menos una. El usuario solo verá y trabajará en las sucursales que marques."}
                 </p>
               </div>
             )}
@@ -1013,7 +1034,8 @@ export default function ConfiguracionPage() {
                       </div>
                       <input
                         type="checkbox"
-                        checked={editBranchIds.includes(branch.id)}
+                        checked={branches.length === 1 || editBranchIds.includes(branch.id)}
+                        disabled={branches.length === 1}
                         onChange={() => setEditBranchIds(prev => prev.includes(branch.id) ? prev.filter(id => id !== branch.id) : [...prev, branch.id])}
                         className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
                       />
@@ -1040,13 +1062,22 @@ export default function ConfiguracionPage() {
               <button
                 disabled={savingUserEdit}
                 onClick={async () => {
+                  if (branches.length > 1 && editBranchIds.length === 0) {
+                    setPermissionsSavedMsg("Elige al menos una sucursal para este usuario.");
+                    return;
+                  }
                   setSavingUserEdit(true);
                   try {
-                    await apiFetch(`${BACKEND_URL}/members/${editingUser.id}`, {
+                    const res = await apiFetch(`${BACKEND_URL}/members/${editingUser.id}`, {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ tenant_id: tenantId, permissions: editPermissions, branch_ids: editBranchIds }),
+                      body: JSON.stringify({ tenant_id: tenantId, permissions: editPermissions, branch_ids: resolveBranchSelection(editBranchIds) }),
                     });
+                    if (!res.ok) {
+                      const data = await res.json().catch(() => ({}));
+                      setPermissionsSavedMsg(data?.error || "No se pudieron guardar los cambios.");
+                      return;
+                    }
                     loadTeam(tenantId);
                     setPermissionsSavedMsg(
                       "Los cambios de permisos se aplicarán la próxima vez que el usuario inicie sesión."
