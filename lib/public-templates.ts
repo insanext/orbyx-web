@@ -100,6 +100,79 @@ const GRAPHITE_SECONDARY: ColorScale = {
   950: "#09090b",
 };
 
+
+// --- Plantillas agregadas 2026-10-26. Mismo criterio: `600` con contraste AA
+// para texto blanco (botones) y 700-950 legibles sobre blanco.
+const ROSE: ColorScale = {
+  50: "#fff1f5",
+  100: "#ffe4ec",
+  200: "#fecdd9",
+  300: "#fda4bc",
+  400: "#f472a0",
+  500: "#e1457f",
+  600: "#be185d",
+  700: "#9d174d",
+  800: "#831843",
+  900: "#6b1238",
+  950: "#4a0a26",
+};
+
+const OCEAN: ColorScale = {
+  50: "#eff8ff",
+  100: "#dbeefe",
+  200: "#bfe1fd",
+  300: "#93cdfb",
+  400: "#5aaef6",
+  500: "#2f8ce8",
+  600: "#1d6fcc",
+  700: "#1a59a6",
+  800: "#1b4b86",
+  900: "#1b3f6e",
+  950: "#132849",
+};
+
+const TERRACOTTA: ColorScale = {
+  50: "#fdf6f3",
+  100: "#fbe9e2",
+  200: "#f6d0c2",
+  300: "#eeae97",
+  400: "#e2826a",
+  500: "#d4623f",
+  600: "#b5482a",
+  700: "#963a23",
+  800: "#7a3221",
+  900: "#642c1f",
+  950: "#36140c",
+};
+
+const GOLD: ColorScale = {
+  50: "#fbf8f1",
+  100: "#f5eedb",
+  200: "#ebdcb4",
+  300: "#dec386",
+  400: "#d0a85d",
+  500: "#b98d3f",
+  600: "#8f6a28",
+  700: "#745522",
+  800: "#5f4621",
+  900: "#4f3b1f",
+  950: "#2d200f",
+};
+
+const FOREST: ColorScale = {
+  50: "#f3f8f3",
+  100: "#e2eee2",
+  200: "#c6dcc7",
+  300: "#9dc29f",
+  400: "#6fa173",
+  500: "#4e8453",
+  600: "#3b6a40",
+  700: "#315536",
+  800: "#29452d",
+  900: "#233a27",
+  950: "#102013",
+};
+
 export const PUBLIC_TEMPLATES: PublicTemplate[] = [
   {
     id: "clasica",
@@ -127,6 +200,58 @@ export const PUBLIC_TEMPLATES: PublicTemplate[] = [
     surface: { pageFrom: "#FAFAFA", pageTo: "#ECECEE", soft: "#E8E8EB", selected: "#E4E4E7" },
     radius: { lg: "0.75rem", xl: "1rem", "2xl": "1.5rem", "3xl": "2rem" },
     fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
+  },
+  {
+    id: "rosa",
+    name: "Rosa",
+    description: "Rosado suave y femenino. Ideal para estética, uñas y belleza.",
+    swatch: ["#FFF1F5", "#BE185D", "#4A0A26"],
+    primary: ROSE,
+    secondary: ROSE,
+    surface: { pageFrom: "#FFF8FA", pageTo: "#FCE7EF", soft: "#FCE4EC", selected: "#FBD5E3" },
+    radius: { lg: "0.75rem", xl: "1rem", "2xl": "1.5rem", "3xl": "2rem" },
+    fontFamily: "var(--font-dm-sans), Arial, Helvetica, sans-serif",
+  },
+  {
+    id: "oceano",
+    name: "Océano",
+    description: "Azul profundo y confiable. Para salud, clínicas y servicios.",
+    swatch: ["#EFF8FF", "#1D6FCC", "#132849"],
+    primary: OCEAN,
+    secondary: OCEAN,
+    surface: { pageFrom: "#F7FBFF", pageTo: "#E3F0FC", soft: "#DDEDFC", selected: "#D3E7FB" },
+    fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
+  },
+  {
+    id: "terracota",
+    name: "Terracota",
+    description: "Tierra cálida y cercana. Para spa, masajes y bienestar.",
+    swatch: ["#FDF6F3", "#B5482A", "#36140C"],
+    primary: TERRACOTTA,
+    secondary: TERRACOTTA,
+    surface: { pageFrom: "#FFFAF7", pageTo: "#F8E9E1", soft: "#F7E4DA", selected: "#F3D8CB" },
+    radius: { lg: "0.75rem", xl: "1rem", "2xl": "1.5rem", "3xl": "2rem" },
+    fontFamily: "var(--font-dm-sans), Arial, Helvetica, sans-serif",
+  },
+  {
+    id: "dorado",
+    name: "Dorado",
+    description: "Arena y dorado. Elegante y premium.",
+    swatch: ["#FBF8F1", "#8F6A28", "#2D200F"],
+    primary: GOLD,
+    secondary: GOLD,
+    surface: { pageFrom: "#FDFBF6", pageTo: "#F3ECDD", soft: "#F2EADA", selected: "#ECE0C6" },
+    fontFamily: "var(--font-geist-sans), Arial, Helvetica, sans-serif",
+  },
+  {
+    id: "bosque",
+    name: "Bosque",
+    description: "Verde natural y sereno. Para terapias, yoga y naturaleza.",
+    swatch: ["#F3F8F3", "#3B6A40", "#102013"],
+    primary: FOREST,
+    secondary: FOREST,
+    surface: { pageFrom: "#F8FBF8", pageTo: "#E6EFE6", soft: "#E2EDE2", selected: "#D6E6D7" },
+    fontFamily: "var(--font-dm-sans), Arial, Helvetica, sans-serif",
   },
 ];
 

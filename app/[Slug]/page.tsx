@@ -1735,6 +1735,8 @@ export default function Page() {
   // "clasica". Se aplica sobre <html>, así también la toman los portales.
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [cachedTemplateId, setCachedTemplateId] = useState<string | null>(null);
+  // ?embed=1: la página está dentro de la vista previa de "Mi Negocio → Diseño".
+  const [isEmbeddedPreview, setIsEmbeddedPreview] = useState(false);
   const templateStorageKey = slug ? `orbyx_public_template_${slug}` : "";
   const loadedTemplateId = business
     ? business.public_template || "clasica"
@@ -1744,8 +1746,10 @@ export default function Page() {
 
   useIsomorphicLayoutEffect(() => {
     try {
-      const requested = new URLSearchParams(window.location.search).get("template");
+      const params = new URLSearchParams(window.location.search);
+      const requested = params.get("template");
       setPreviewTemplateId(isKnownPublicTemplate(requested) ? requested : null);
+      setIsEmbeddedPreview(params.get("embed") === "1" && window.parent !== window);
       const cached = templateStorageKey ? window.localStorage.getItem(templateStorageKey) : null;
       setCachedTemplateId(isKnownPublicTemplate(cached) ? cached : null);
     } catch {
@@ -1754,6 +1758,26 @@ export default function Page() {
   }, [templateStorageKey]);
 
   useIsomorphicLayoutEffect(() => applyPublicTemplate(activeTemplate.id), [activeTemplate.id]);
+
+  // Vista previa en vivo desde el dashboard: el selector de diseños (mismo
+  // origen) manda la plantilla a mostrar sin recargar la página. Solo cambia
+  // lo que se ve aquí; no guarda nada.
+  useEffect(() => {
+    if (!isEmbeddedPreview) return;
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as { type?: string; template?: unknown } | null;
+      if (data?.type !== "orbyx-template-preview") return;
+      if (isKnownPublicTemplate(data.template)) setPreviewTemplateId(data.template);
+    }
+    window.addEventListener("message", onMessage);
+    try {
+      window.parent.postMessage({ type: "orbyx-template-preview-ready" }, window.location.origin);
+    } catch {
+      // sin acceso al padre: queda la plantilla de la URL
+    }
+    return () => window.removeEventListener("message", onMessage);
+  }, [isEmbeddedPreview]);
 
   useEffect(() => {
     if (!loadedTemplateId || !templateStorageKey) return;
@@ -3456,7 +3480,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[color:var(--pt-bg-from,#FBFAFF)] to-[color:var(--pt-bg-to,#F1EFFC)]">
-      {previewTemplateId ? (
+      {previewTemplateId && !isEmbeddedPreview ? (
         <div className="pointer-events-none fixed bottom-3 left-3 z-[130] rounded-full bg-slate-900/90 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg">
           Vista previa: {activeTemplate.name} (no guardada)
         </div>
@@ -3546,6 +3570,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
 
         {viewStep === "booking" && selectedService ? (
         <>
+        <div className="mx-auto w-full max-w-[1080px]">
         <button
           type="button"
           onClick={backToCatalog}
@@ -3553,7 +3578,10 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
         >
           <span aria-hidden="true">←</span> Volver al catálogo
         </button>
-        <div className="grid gap-4 md:gap-6 lg:grid-cols-[1fr_290px] lg:items-start xl:grid-cols-[1fr_300px]">
+        </div>
+        {/* Una sola columna, como el catálogo: el servicio, duración y precio
+            van en la franja "Tu servicio" (antes repetidos en una columna derecha). */}
+        <div className="mx-auto grid w-full max-w-[1080px] gap-4 md:gap-6">
           <div className="min-w-0 space-y-4 md:space-y-6">
             <BusinessBannerCard
               business={business}
@@ -3574,12 +3602,28 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 </span>
                 <span className="min-w-0 truncate text-sm font-semibold text-indigo-900">
                   {bookingServiceLabel || selectedService!.name}
-                  <span className="font-normal text-indigo-600"> · {bookingTotalMinutes} min</span>
+                  <span className="font-normal text-indigo-600">
+                    {" "}· {bookingTotalMinutes} min · {formatPrice(bookingTotalPrice)}
+                  </span>
                 </span>
               </div>
             ) : null}
 
-            <BookingStepHeader step={1} title="Elige la semana" />
+            {selectedService ? (
+              <div className="mb-3 md:mb-4">
+                <BookingStepHeader step={1} title="Profesional" hint="(opcional)" />
+                <StaffCarousel
+                  staff={staffOptions}
+                  selectedStaffId={selectedStaffId}
+                  onSelect={selectStaff}
+                  loading={loadingStaff}
+                />
+              </div>
+            ) : null}
+
+            <div className={selectedService ? "border-t border-slate-200 pt-3 md:pt-4" : ""}>
+              <BookingStepHeader step={selectedService ? 2 : 1} title="Elige la semana" />
+            </div>
             <div className="mb-3 md:mb-4">
               <div className="relative flex flex-wrap items-center gap-2">
                 <button
@@ -3655,18 +3699,6 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 ) : null}
               </div>
             </div>
-
-            {selectedService ? (
-              <div className="mb-3 border-t border-slate-200 pt-3 md:mb-4 md:pt-4">
-                <BookingStepHeader step={2} title="Profesional" hint="(opcional)" />
-                <StaffCarousel
-                  staff={staffOptions}
-                  selectedStaffId={selectedStaffId}
-                  onSelect={selectStaff}
-                  loading={loadingStaff}
-                />
-              </div>
-            ) : null}
 
             <div className="border-t border-slate-200 pt-3 md:pt-4">
               <BookingStepHeader step={selectedService ? 3 : 2} title="Elige día y hora" />
@@ -3748,9 +3780,9 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     Selecciona un servicio.
   </p>
 ) : slots.length === 0 ? (
-  <div className="flex min-h-[360px] items-center justify-center rounded-none border border-rose-100 bg-white/35 px-3 text-center">
+  <div className="flex items-center justify-center rounded-none border border-rose-100 bg-white/35 px-2 py-4 text-center">
     <div>
-      <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-500">
+      <div className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-500">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -3766,7 +3798,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           />
         </svg>
       </div>
-      <p className="text-sm font-bold text-rose-700">Sin horario disponible</p>
+      <p className="text-xs font-bold leading-tight text-rose-700">Sin horario disponible</p>
     </div>
   </div>
 ) : (
@@ -4592,44 +4624,6 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
               </div>
             </div>
           </div>
-          </div>
-
-          <div className="space-y-3 md:space-y-4">
-            <div className="rounded-none border border-slate-200 bg-white p-3.5 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.45)] md:rounded-none md:p-4">
-              <div className="rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-sky-50 p-3 md:rounded-none md:p-4">
-                <p className="text-sm font-semibold text-slate-900">
-                  {selectedService.name}
-                </p>
-
-                {selectedService.description?.trim() ? (
-                  <p className="mt-1.5 text-xs leading-5 text-slate-600 md:text-sm">
-                    {selectedService.description.trim()}
-                  </p>
-                ) : null}
-
-                {selectedExtras.length > 0 ? (
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                    {selectedExtras.map((extra) => (
-                      <li key={extra.id} className="flex justify-between gap-2">
-                        <span>+ {extra.name}</span>
-                        <span className="whitespace-nowrap">{formatPrice(extra.price)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                <div className="mt-2 flex flex-wrap gap-2 text-xs md:mt-3">
-                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                    {bookingTotalMinutes} min
-                  </span>
-                  <span className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-slate-700 shadow-sm">
-                    {selectedExtras.length > 0 ? "Total " : ""}
-                    {formatPrice(bookingTotalPrice)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
         </>
