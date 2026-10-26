@@ -3834,12 +3834,12 @@ const hasActiveFilters =
       isToday,
       isClosedScheduleDay,
       dayPendingCount,
-      dayCanceledCount,
     }: {
       isToday: boolean;
       isClosedScheduleDay: boolean;
       dayPendingCount: number;
-      dayCanceledCount: number;
+      // Ya no se muestra (era el "N c" de canceladas); se sigue recibiendo.
+      dayCanceledCount?: number;
     }
   ) {
     return (
@@ -3893,12 +3893,6 @@ const hasActiveFilters =
   </div>
 
                           <div className="flex items-center gap-1.5">
-                            {dayCanceledCount > 0 ? (
-                              <span className="rounded-full bg-slate-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                {dayCanceledCount} c
-                              </span>
-                            ) : null}
-
                             {dayPendingCount > 0 ? (
                               <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                                 {dayPendingCount}

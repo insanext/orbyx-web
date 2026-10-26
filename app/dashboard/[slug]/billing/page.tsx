@@ -6,7 +6,7 @@ import { apiFetchConfirmingFutureAppointments } from "@/lib/future-appointments-
 import Link from "next/link";
 import { markFlowReturn, clearFlowReturn } from "@/lib/flow-return";
 import { useParams, useSearchParams } from "next/navigation";
-import { ChevronRight, CreditCard, Info, X } from "lucide-react";
+import { ChevronRight, CreditCard, FileText, Info, X } from "lucide-react";
 import { Panel } from "../../../../components/dashboard/panel";
 import { PageHeader } from "../../../../components/dashboard/page-header";
 import { AddonManager } from "../../../../components/addons/AddonManager";
@@ -105,6 +105,22 @@ type PaymentHistoryCharge = {
   flowOrder: string | number | null;
   subject: string | null;
 };
+
+// Boleta/factura que Orbyx sube desde /admin; cubre uno o más cobros (flow_orders).
+type BillingDocument = {
+  id: string;
+  doc_type: string;
+  folio: string | null;
+  issued_at: string | null;
+  total: number | null;
+  flow_orders: string[];
+};
+
+function describeChargeSubject(subject: string | null) {
+  return subject && subject.startsWith("Add-on")
+    ? describeAddonChargeSubject(subject)
+    : describeSubscriptionChargeSubject(subject);
+}
 
 function compareChargeDateDesc(a: PaymentHistoryCharge, b: PaymentHistoryCharge) {
   const aTime = a.date ? new Date(a.date).getTime() : 0;
@@ -334,10 +350,16 @@ function GroupedChargeList({
   charges,
   emptyMessage,
   describeCharge,
+  documents = [],
+  onDownloadDocument,
+  downloadingDocId = "",
 }: {
   charges: PaymentHistoryCharge[];
   emptyMessage: string;
   describeCharge: (charge: PaymentHistoryCharge) => string;
+  documents?: BillingDocument[];
+  onDownloadDocument?: (doc: BillingDocument) => void;
+  downloadingDocId?: string;
 }) {
   const groups = useMemo(() => groupChargesByDate(charges), [charges]);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
@@ -374,6 +396,21 @@ function GroupedChargeList({
     <div className="space-y-3">
       {visibleGroups.map((group) => {
         const isExpanded = expandedKeys.has(group.dateKey);
+        // Estado de la boleta del día: solo cuenta los cobros pagados. Un
+        // mismo documento puede cubrir plan + add-on cobrados juntos.
+        const orderOf = (charge: PaymentHistoryCharge) =>
+          charge.flowOrder != null ? String(charge.flowOrder) : "";
+        const paidCharges = group.charges.filter((charge) => charge.status === "Pagado");
+        const groupDocs = documents.filter((doc) =>
+          group.charges.some((charge) => orderOf(charge) && doc.flow_orders.includes(orderOf(charge)))
+        );
+        const allCovered =
+          paidCharges.length > 0 &&
+          paidCharges.every(
+            (charge) => orderOf(charge) && documents.some((doc) => doc.flow_orders.includes(orderOf(charge)))
+          );
+        const docLabel = (doc: BillingDocument) =>
+          `${doc.doc_type === "factura" ? "Factura" : "Boleta"}${doc.folio ? ` N° ${doc.folio}` : ""}`;
 
         return (
           <div
@@ -402,7 +439,20 @@ function GroupedChargeList({
                   </span>
                 ) : null}
               </span>
-              <span className="font-semibold">{formatCLP(group.total)}</span>
+              <span className="flex items-center gap-2">
+                {paidCharges.length > 0 ? (
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                      allCovered
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                        : "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                    }`}
+                  >
+                    {allCovered ? "Boleta disponible" : "Boleta en proceso"}
+                  </span>
+                ) : null}
+                <span className="font-semibold">{formatCLP(group.total)}</span>
+              </span>
             </button>
 
             {isExpanded ? (
@@ -416,13 +466,51 @@ function GroupedChargeList({
                     className="flex flex-wrap items-center justify-between gap-3 text-xs"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    <span>{describeCharge(charge)}</span>
+                    <span>
+                      <span
+                        className="mr-2 rounded border px-1.5 py-px text-[10px] font-semibold"
+                        style={{ borderColor: "var(--border-color)", color: "var(--text-main)" }}
+                      >
+                        {charge.subject && charge.subject.startsWith("Add-on") ? "Add-on" : "Plan"}
+                      </span>
+                      {describeCharge(charge)}
+                    </span>
                     <span className="flex items-center gap-2">
                       <span>{charge.amount != null ? formatCLP(charge.amount) : "—"}</span>
                       <span>{charge.status}</span>
                     </span>
                   </div>
                 ))}
+
+                {paidCharges.length > 0 ? (
+                  <div
+                    className="mt-2 flex flex-wrap items-center gap-2 border-t pt-3 text-xs"
+                    style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                  >
+                    {groupDocs.length > 0
+                      ? groupDocs.map((doc) => (
+                          <button
+                            key={doc.id}
+                            type="button"
+                            onClick={() => onDownloadDocument?.(doc)}
+                            disabled={downloadingDocId === doc.id}
+                            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 font-semibold transition hover:opacity-90 disabled:opacity-60"
+                            style={{ borderColor: "var(--border-color)", color: "var(--text-main)", background: "var(--bg-card)" }}
+                          >
+                            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                            {downloadingDocId === doc.id ? "Abriendo..." : `Descargar ${docLabel(doc)}`}
+                          </button>
+                        ))
+                      : null}
+                    {!allCovered ? (
+                      <span>
+                        {groupDocs.length > 0
+                          ? "Parte de este pago aún tiene su boleta en proceso."
+                          : "Tu boleta está en proceso de emisión y aparecerá aquí cuando esté lista."}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1040,6 +1128,8 @@ function BillingPageInner() {
   }, [cardStatusParam, subscriptionStatus]);
 
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryCharge[]>([]);
+  const [billingDocuments, setBillingDocuments] = useState<BillingDocument[]>([]);
+  const [downloadingDocId, setDownloadingDocId] = useState("");
   const [loadingPaymentHistory, setLoadingPaymentHistory] = useState(true);
   const [paymentHistoryError, setPaymentHistoryError] = useState("");
 
@@ -1058,6 +1148,7 @@ function BillingPageInner() {
       }
 
       setPaymentHistory(Array.isArray(data?.charges) ? data.charges : []);
+      setBillingDocuments(Array.isArray(data?.documents) ? data.documents : []);
     } catch (error: unknown) {
       setPaymentHistoryError(
         error instanceof Error ? error.message : "No se pudo cargar el historial de pagos"
@@ -1072,24 +1163,33 @@ function BillingPageInner() {
     loadPaymentHistory(tenantId);
   }, [tenantId]);
 
-  // "Add-on" sin ":" a proposito: cubre tanto los cargos de activacion/
-  // cambio de cantidad ("Add-on: x...") como los del cron de renovacion
-  // automatica ("Add-on recurrente: x...").
-  const subscriptionCharges = useMemo(
-    () =>
-      paymentHistory
-        .filter((charge) => !charge.subject || !charge.subject.startsWith("Add-on"))
-        .sort(compareChargeDateDesc),
+  // Plan y add-ons van juntos, agrupados por día: si se cobraron el mismo día
+  // pueden ir en una sola boleta. El detalle (Plan / Add-on) se ve al abrir.
+  const allCharges = useMemo(
+    () => [...paymentHistory].sort(compareChargeDateDesc),
     [paymentHistory]
   );
 
-  const addonCharges = useMemo(
-    () =>
-      paymentHistory
-        .filter((charge) => charge.subject && charge.subject.startsWith("Add-on"))
-        .sort(compareChargeDateDesc),
-    [paymentHistory]
-  );
+  async function downloadBillingDocument(doc: BillingDocument) {
+    if (!tenantId || downloadingDocId) return;
+    // La pestaña se abre antes del fetch para que el navegador no la bloquee.
+    const win = window.open("", "_blank");
+    try {
+      setDownloadingDocId(doc.id);
+      const res = await apiFetch(
+        `${BACKEND_URL}/billing/documents/${doc.id}/download?tenant_id=${tenantId}`
+      );
+      const data = await res.json();
+      if (!res.ok || !data?.url) throw new Error(data?.error || "No se pudo abrir la boleta");
+      if (win) win.location.href = data.url;
+      else window.location.href = data.url;
+    } catch (error: unknown) {
+      win?.close();
+      setPaymentHistoryError(error instanceof Error ? error.message : "No se pudo abrir la boleta");
+    } finally {
+      setDownloadingDocId("");
+    }
+  }
 
   async function handleChangeCard() {
     try {
@@ -1910,8 +2010,8 @@ function BillingPageInner() {
 
         <Panel
           className="!rounded"
-          title="Cargos de tu suscripción"
-          description="Cada cobro automático de Cargo Automático quedará listado aquí."
+          title="Pagos y boletas"
+          description="Cada cobro de tu plan y de tus add-ons, agrupado por día. Abre un día para ver el detalle y descargar su boleta."
         >
           {loadingPaymentHistory ? (
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -1921,29 +2021,12 @@ function BillingPageInner() {
             <Notice tone="danger" title={paymentHistoryError} />
           ) : (
             <GroupedChargeList
-              charges={subscriptionCharges}
+              charges={allCharges}
               emptyMessage="Aún no tienes pagos registrados."
-              describeCharge={(charge) => describeSubscriptionChargeSubject(charge.subject)}
-            />
-          )}
-        </Panel>
-
-        <Panel
-          className="!rounded"
-          title="Cargos de add-ons"
-          description="Cada cobro de un add-on contratado quedará listado aquí."
-        >
-          {loadingPaymentHistory ? (
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Cargando...
-            </p>
-          ) : paymentHistoryError ? (
-            <Notice tone="danger" title={paymentHistoryError} />
-          ) : (
-            <GroupedChargeList
-              charges={addonCharges}
-              emptyMessage="Aún no tienes add-ons activos."
-              describeCharge={(charge) => describeAddonChargeSubject(charge.subject)}
+              describeCharge={(charge) => describeChargeSubject(charge.subject)}
+              documents={billingDocuments}
+              onDownloadDocument={downloadBillingDocument}
+              downloadingDocId={downloadingDocId}
             />
           )}
         </Panel>
