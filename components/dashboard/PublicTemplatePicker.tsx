@@ -16,6 +16,10 @@ import { PUBLIC_TEMPLATES, getPublicTemplate, isKnownPublicTemplate } from "@/li
 const PREVIEW_HEIGHT = 640;
 const DEVICE_WIDTH = { desktop: 1280, mobile: 390 } as const;
 type Device = keyof typeof DEVICE_WIDTH;
+const TEMPLATE_GROUPS = [
+  { key: "suave", label: "Suaves · cambia el color de marca" },
+  { key: "llamativo", label: "Llamativos · cambia toda la página" },
+] as const;
 
 export default function PublicTemplatePicker({
   tenantId,
@@ -195,7 +199,15 @@ export default function PublicTemplatePicker({
           aria-label="Diseño de tu página"
           className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:max-h-[700px] lg:grid-cols-1 lg:overflow-y-auto lg:pr-1"
         >
-          {PUBLIC_TEMPLATES.map((template) => {
+          {TEMPLATE_GROUPS.flatMap((group) => [
+            <p
+              key={`group-${group.key}`}
+              className="col-span-full mt-1 text-[11px] font-semibold uppercase tracking-wide first:mt-0"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {group.label}
+            </p>,
+            ...PUBLIC_TEMPLATES.filter((t) => (t.group || "suave") === group.key).map((template) => {
             const isPreview = template.id === preview;
             const isSaved = template.id === saved;
             return (
@@ -244,7 +256,8 @@ export default function PublicTemplatePicker({
                 </div>
               </button>
             );
-          })}
+          }),
+          ])}
         </div>
 
         {/* Vista previa en vivo */}

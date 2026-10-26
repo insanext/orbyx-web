@@ -943,7 +943,7 @@ function BusinessBannerCard({
   );
 }
 
-const CATEGORY_HEADER_GRADIENT = "linear-gradient(90deg, var(--pt-cat-from, #EEF0FF) 0%, var(--pt-cat-mid, #F6F5FF) 55%, #FFFFFF 100%)";
+const CATEGORY_HEADER_GRADIENT = "linear-gradient(90deg, var(--pt-cat-from, #EEF0FF) 0%, var(--pt-cat-mid, #F6F5FF) 55%, var(--color-white, #FFFFFF) 100%)";
 
 type CatalogCategoryOption = {
   key: string;
@@ -1693,7 +1693,7 @@ function PublicPageSkeleton() {
 
 function OrbyxPromoFooter() {
   return (
-    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-none bg-[#F0EEFC] px-5 py-4 text-center shadow-sm sm:flex-row sm:justify-center sm:text-left md:mt-10">
+    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-none bg-[color:var(--pt-footer-bg,#F0EEFC)] px-5 py-4 text-center shadow-sm sm:flex-row sm:justify-center sm:text-left md:mt-10">
       <img src="/orbyx-mark.png" alt="Orbyx" className="h-6 w-6 shrink-0" />
       <p className="text-xs text-slate-600 sm:text-sm">
         Gestiona tu negocio y reservas con{" "}
@@ -3485,6 +3485,28 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           Vista previa: {activeTemplate.name} (no guardada)
         </div>
       ) : null}
+      {activeTemplate.dark ? (
+        // Plantillas oscuras: lo poco que no sale de variables CSS (calendario
+        // de react-calendar y las rayas de "día cerrado"). Solo aplica con
+        // <html data-public-dark>, así las plantillas claras no cambian.
+        <style>{`
+          html[data-public-dark] .orbyx-week-calendar .react-calendar { background: transparent; color: var(--color-slate-900); }
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__tile,
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__month-view__days__day--weekend:enabled { color: var(--color-slate-900); }
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__month-view__weekdays { color: var(--color-slate-500); }
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__tile:disabled,
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__navigation button:disabled { color: var(--color-slate-400); background: transparent; }
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__tile:enabled:focus,
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__navigation button:enabled:focus { background: var(--pt-cal-hover-bg); }
+          html[data-public-dark] .orbyx-week-calendar .react-calendar__tile--active { color: var(--color-white) !important; }
+          html[data-public-dark] { color-scheme: dark; }
+          html[data-public-dark] input:not([type="checkbox"]):not([type="radio"]),
+          html[data-public-dark] textarea { color: var(--color-slate-900); }
+          html[data-public-dark] input::placeholder,
+          html[data-public-dark] textarea::placeholder { color: var(--color-slate-500); opacity: 1; }
+          html[data-public-dark] .orbyx-closed-day { background: repeating-linear-gradient(135deg, rgba(244,63,94,0.10) 0px, rgba(244,63,94,0.10) 9px, rgba(244,63,94,0.04) 9px, rgba(244,63,94,0.04) 18px) !important; }
+        `}</style>
+      ) : null}
       <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
         {viewStep === "catalog" ? (
           <div className="mx-auto grid w-full max-w-[1080px] gap-4 lg:gap-6">
@@ -3732,7 +3754,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       isToday
   ? "border-sky-500 bg-sky-100 shadow-md"
                         : isClosedDay
-                        ? "border-rose-100 bg-[repeating-linear-gradient(135deg,rgba(254,226,226,0.9)_0px,rgba(254,226,226,0.9)_9px,rgba(255,241,242,0.75)_9px,rgba(255,241,242,0.75)_18px)]"
+                        ? "orbyx-closed-day border-rose-100 bg-[repeating-linear-gradient(135deg,rgba(254,226,226,0.9)_0px,rgba(254,226,226,0.9)_9px,rgba(255,241,242,0.75)_9px,rgba(255,241,242,0.75)_18px)]"
                         : "border-slate-200 bg-slate-50/60"
                     }`}
                   >
