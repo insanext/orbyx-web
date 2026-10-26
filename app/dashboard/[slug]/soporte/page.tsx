@@ -275,7 +275,7 @@ export default function SoportePage() {
   const canReply = selectedTicket && !['closed'].includes(selectedTicket.status)
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6">
 
       {/* TABS */}
       {(view === 'faq' || view === 'list') && (
@@ -302,7 +302,7 @@ export default function SoportePage() {
       )}
 
       {/* PREGUNTAS FRECUENTES */}
-      {view === 'faq' && <FaqAccordion />}
+      {view === 'faq' && <FaqAccordion onCreateTicket={() => setView('new')} />}
 
       {/* LISTA DE TICKETS */}
       {view === 'list' && (

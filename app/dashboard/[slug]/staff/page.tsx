@@ -2235,30 +2235,6 @@ function validateStaffHours() {
                   />
                 </div>
 
-                <div>
-                  <label
-                    className="mb-2 block text-sm font-medium"
-                    style={{ color: "var(--text-main)" }}
-                  >
-                    Orden
-                  </label>
-                  <input
-                    type="number"
-                    value={form.sort_order}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        sort_order: Number(e.target.value || 0),
-                      }))
-                    }
-                    className={inputClass}
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-card)",
-                      color: "var(--text-main)",
-                    }}
-                  />
-                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
