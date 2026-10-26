@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, usePathname } from "next/navigation";
 import Calendar from "react-calendar";
@@ -9,6 +9,11 @@ import { PhoneCountryInput } from "../../components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "../../components/auth/countries";
 import { BACKEND_URL } from "@/lib/backend-url";
 import Select from "@/components/ui/Select";
+import {
+  applyPublicTemplate,
+  getPublicTemplate,
+  isKnownPublicTemplate,
+} from "@/lib/public-templates";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 type StaffItem = {
@@ -136,6 +141,7 @@ type BusinessItem = {
   business_subtype_config?: Record<string, unknown> | null;
   logo_url?: string | null;
   banner_url?: string | null;
+  public_template?: string | null;
   deposit_required?: boolean;
   deposit_bank_name?: string | null;
   deposit_account_type?: string | null;
@@ -937,7 +943,7 @@ function BusinessBannerCard({
   );
 }
 
-const CATEGORY_HEADER_GRADIENT = "linear-gradient(90deg, #EEF0FF 0%, #F6F5FF 55%, #FFFFFF 100%)";
+const CATEGORY_HEADER_GRADIENT = "linear-gradient(90deg, var(--pt-cat-from, #EEF0FF) 0%, var(--pt-cat-mid, #F6F5FF) 55%, #FFFFFF 100%)";
 
 type CatalogCategoryOption = {
   key: string;
@@ -993,7 +999,7 @@ function CatalogSidebar({
           onClick={() => onCategoryChange("todos")}
           className={`flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
             activeCategoryKey === "todos"
-              ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
+              ? "border-l-[3px] border-indigo-600 bg-[color:var(--pt-selected-bg,#EDEBFB)] font-semibold text-indigo-700"
               : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
           }`}
         >
@@ -1007,7 +1013,7 @@ function CatalogSidebar({
             onClick={() => onCategoryChange(category.key)}
             className={`flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
               activeCategoryKey === category.key
-                ? "border-l-[3px] border-indigo-600 bg-[#EDEBFB] font-semibold text-indigo-700"
+                ? "border-l-[3px] border-indigo-600 bg-[color:var(--pt-selected-bg,#EDEBFB)] font-semibold text-indigo-700"
                 : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -1162,7 +1168,7 @@ function ServiceCatalogAccordion({
                         onClick={() => onSelect(service)}
                         className={`flex w-full items-center justify-between gap-2 border-l-4 px-3 py-3.5 text-left transition sm:gap-3 md:px-5 ${
                           isSelected
-                            ? "border-indigo-600 bg-indigo-50 shadow-[inset_0_0_0_1px_rgba(79,70,229,0.35)]"
+                            ? "border-indigo-600 bg-indigo-50 shadow-[inset_0_0_0_1px_rgb(var(--pt-glow-rgb,79_70_229)/0.35)]"
                             : "border-transparent hover:border-slate-300 hover:bg-slate-50"
                         }`}
                       >
@@ -1652,7 +1658,7 @@ function StaffCarousel({
 
 function PublicPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FBFAFF] to-[#F1EFFC]" aria-busy="true">
+    <div className="min-h-screen bg-gradient-to-b from-[color:var(--pt-bg-from,#FBFAFF)] to-[color:var(--pt-bg-to,#F1EFFC)]" aria-busy="true">
       <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
         <div className="grid animate-pulse gap-4 lg:grid-cols-[1fr_290px] lg:items-start lg:gap-6 xl:grid-cols-[1fr_300px]">
           <div className="min-w-0 space-y-4 md:space-y-6">
@@ -1704,6 +1710,10 @@ function OrbyxPromoFooter() {
   );
 }
 
+// useLayoutEffect en el navegador (aplica la plantilla antes del primer pintado);
+// useEffect en el servidor para no emitir el aviso de SSR.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 export default function Page() {
   const params = useParams();
   const pathname = usePathname();
@@ -1718,6 +1728,41 @@ export default function Page() {
   const slug = slugFromParams || slugFromPathname;
 
   const [business, setBusiness] = useState<BusinessItem | null>(null);
+
+  // Plantilla visual (lib/public-templates.ts). Prioridad: ?template=xxx (solo
+  // para mirar, no guarda nada) > la del negocio > la última vista en este
+  // navegador (evita el destello "clásica -> plantilla" mientras carga) >
+  // "clasica". Se aplica sobre <html>, así también la toman los portales.
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [cachedTemplateId, setCachedTemplateId] = useState<string | null>(null);
+  const templateStorageKey = slug ? `orbyx_public_template_${slug}` : "";
+  const loadedTemplateId = business
+    ? business.public_template || "clasica"
+    : null;
+  const templateId = previewTemplateId ?? loadedTemplateId ?? cachedTemplateId ?? "clasica";
+  const activeTemplate = getPublicTemplate(templateId);
+
+  useIsomorphicLayoutEffect(() => {
+    try {
+      const requested = new URLSearchParams(window.location.search).get("template");
+      setPreviewTemplateId(isKnownPublicTemplate(requested) ? requested : null);
+      const cached = templateStorageKey ? window.localStorage.getItem(templateStorageKey) : null;
+      setCachedTemplateId(isKnownPublicTemplate(cached) ? cached : null);
+    } catch {
+      // sin acceso a la URL/localStorage: queda la plantilla del negocio
+    }
+  }, [templateStorageKey]);
+
+  useIsomorphicLayoutEffect(() => applyPublicTemplate(activeTemplate.id), [activeTemplate.id]);
+
+  useEffect(() => {
+    if (!loadedTemplateId || !templateStorageKey) return;
+    try {
+      window.localStorage.setItem(templateStorageKey, loadedTemplateId);
+    } catch {
+      // navegador sin localStorage: solo se pierde el cache anti-destello
+    }
+  }, [loadedTemplateId, templateStorageKey]);
   const [reviewSummary, setReviewSummary] = useState<ReviewsSummary | null>(null);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const isVeterinaria =
@@ -3410,7 +3455,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FBFAFF] to-[#F1EFFC]">
+    <div className="min-h-screen bg-gradient-to-b from-[color:var(--pt-bg-from,#FBFAFF)] to-[color:var(--pt-bg-to,#F1EFFC)]">
+      {previewTemplateId ? (
+        <div className="pointer-events-none fixed bottom-3 left-3 z-[130] rounded-full bg-slate-900/90 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg">
+          Vista previa: {activeTemplate.name} (no guardada)
+        </div>
+      ) : null}
       <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
         {viewStep === "catalog" ? (
           <div className="mx-auto grid w-full max-w-[1080px] gap-4 lg:gap-6">
@@ -3535,7 +3585,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(-7)}
-                  className="flex h-10 w-10 items-center justify-center rounded-none border border-indigo-600 bg-indigo-600 text-lg font-bold text-white shadow-[0_8px_18px_-10px_rgba(79,70,229,0.9)] transition hover:bg-indigo-700 md:h-11 md:w-11"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-indigo-600 bg-indigo-600 text-lg font-bold text-white shadow-[0_8px_18px_-10px_rgb(var(--pt-glow-rgb,79_70_229)/0.9)] transition hover:bg-indigo-700 md:h-11 md:w-11"
                   aria-label="Semana anterior"
                 >
                   ‹
@@ -3566,7 +3616,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 <button
                   type="button"
                   onClick={() => moveSelectedWeek(7)}
-                  className="flex h-10 w-10 items-center justify-center rounded-none border border-indigo-600 bg-indigo-600 text-lg font-bold text-white shadow-[0_8px_18px_-10px_rgba(79,70,229,0.9)] transition hover:bg-indigo-700 md:h-11 md:w-11"
+                  className="flex h-10 w-10 items-center justify-center rounded-none border border-indigo-600 bg-indigo-600 text-lg font-bold text-white shadow-[0_8px_18px_-10px_rgb(var(--pt-glow-rgb,79_70_229)/0.9)] transition hover:bg-indigo-700 md:h-11 md:w-11"
                   aria-label="Semana siguiente"
                 >
                   ›
@@ -3579,12 +3629,12 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       .orbyx-week-calendar .react-calendar { border: 0; padding: 4px; }
                       .orbyx-week-calendar .react-calendar__tile:disabled { background: transparent; color: #cbd5e1; }
                       .orbyx-week-calendar .react-calendar__month-view__days__day--weekend:enabled { color: #0f172a; }
-                      .orbyx-week-calendar .react-calendar__navigation button { color: #4338ca; font-weight: 700; }
-                      .orbyx-week-calendar .react-calendar__navigation button:enabled:hover { background: #eef2ff; }
+                      .orbyx-week-calendar .react-calendar__navigation button { color: var(--pt-cal-nav, #4338ca); font-weight: 700; }
+                      .orbyx-week-calendar .react-calendar__navigation button:enabled:hover { background: var(--pt-cal-hover-bg, #eef2ff); }
                       .orbyx-week-calendar .react-calendar__navigation button:disabled { background: transparent; color: #cbd5e1; }
-                      .orbyx-week-calendar .react-calendar__tile:enabled:hover { background: #eef2ff; color: #3730a3; }
-                      .orbyx-week-calendar .react-calendar__tile--now { background: #e0e7ff; color: #3730a3; font-weight: 700; }
-                      .orbyx-week-calendar .react-calendar__tile--active { background: #4f46e5 !important; color: #fff !important; font-weight: 700; }
+                      .orbyx-week-calendar .react-calendar__tile:enabled:hover { background: var(--pt-cal-hover-bg, #eef2ff); color: var(--pt-cal-hover-text, #3730a3); }
+                      .orbyx-week-calendar .react-calendar__tile--now { background: var(--pt-cal-now-bg, #e0e7ff); color: var(--pt-cal-hover-text, #3730a3); font-weight: 700; }
+                      .orbyx-week-calendar .react-calendar__tile--active { background: var(--pt-cal-active, #4f46e5) !important; color: #fff !important; font-weight: 700; }
                     `}</style>
                     <Calendar
                       locale="es-CL"
@@ -3817,7 +3867,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       aria-pressed={isActiveMobileDay}
                       className={`relative min-w-0 rounded-md border px-0.5 py-1.5 text-center transition ${
                         isActiveMobileDay
-                          ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_10px_20px_-14px_rgba(79,70,229,0.9)]"
+                          ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_10px_20px_-14px_rgb(var(--pt-glow-rgb,79_70_229)/0.9)]"
                           : isClosedDay
                           ? "border-rose-100 bg-rose-50 text-rose-700"
                           : isToday
@@ -3924,7 +3974,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         }}
                         className={`min-h-[54px] rounded-none border px-3 py-2.5 text-center transition ${
                           selectedSlot?.slot_start === slot.slot_start
-                            ? "border-indigo-700 bg-indigo-700 text-white shadow-[0_16px_28px_-20px_rgba(79,70,229,0.9)]"
+                            ? "border-indigo-700 bg-indigo-700 text-white shadow-[0_16px_28px_-20px_rgb(var(--pt-glow-rgb,79_70_229)/0.9)]"
                             : slot.is_group && (slot.available_spots || 0) === 0
                             ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                             : "border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-300 hover:bg-sky-50"
@@ -4037,7 +4087,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             {selectedSlot ? (
               <div
                 ref={formRef}
-                className="mt-4 overflow-hidden rounded-none border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_24px_65px_-45px_rgba(79,70,229,0.55)] md:mt-6 md:rounded-none md:shadow-[0_30px_80px_-45px_rgba(79,70,229,0.5)]"
+                className="mt-4 overflow-hidden rounded-none border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 shadow-[0_24px_65px_-45px_rgb(var(--pt-glow-rgb,79_70_229)/0.55)] md:mt-6 md:rounded-none md:shadow-[0_30px_80px_-45px_rgb(var(--pt-glow-rgb,79_70_229)/0.5)]"
               >
                 <div className="h-1.5 bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500" />
 

@@ -14,6 +14,7 @@ import { RegionCommuneSelect } from "../../../../components/dashboard/RegionComm
 import { isValidRegionCommune } from "../../../../lib/chile-regions";
 import { buildFullAddress } from "../../../../lib/address";
 import Select from "@/components/ui/Select";
+import PublicTemplatePicker from "@/components/dashboard/PublicTemplatePicker";
 
 // Debe coincidir con el límite de validateText("description", { maxLen: 1000 }) en server.js (PATCH /tenants/:id)
 const BUSINESS_DESCRIPTION_MAX_LENGTH = 1000;
@@ -114,7 +115,7 @@ type BranchItem = {
   is_active?: boolean;
 };
 
-type BusinessSectionId = "general" | "reservas" | "horarios" | "fechas";
+type BusinessSectionId = "general" | "reservas" | "horarios" | "fechas" | "diseno";
 
 function normalizeSpecialTime(value?: string | null) {
   if (!value) return "";
@@ -492,7 +493,7 @@ export default function BusinessPage() {
     return focusMissingFields(ids);
   }, [focusParam]);
 
-  const { canEdit } = usePermissions();
+  const { canEdit, isOwnerOrAdmin } = usePermissions();
   const canEditNegocio = canEdit("negocio");
   const params = useParams();
   const slug =
@@ -597,6 +598,7 @@ const [maxDaysMode, setMaxDaysMode] = useState<"preset" | "custom">("preset");
     { id: "reservas", label: "Campos" },
     { id: "horarios", label: "Horarios" },
     { id: "fechas", label: "Fechas especiales" },
+    { id: "diseno", label: "Diseño" },
   ];
 
   const softCardClass = "rounded-2xl border p-4";
@@ -3389,6 +3391,10 @@ function updateHourByIndex(
 
   </div>
 </section>
+) : null}
+
+{activeSection === "diseno" ? (
+  <PublicTemplatePicker tenantId={tenantId} slug={slug} canEdit={canEditNegocio && isOwnerOrAdmin} />
 ) : null}
 
 {activeSection === "horarios" ? (
