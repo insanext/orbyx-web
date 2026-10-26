@@ -46,6 +46,7 @@ import { DateInputDMY } from "@/components/ui/date-input-dmy";
 import { PhoneCountryInput } from "@/components/auth/PhoneCountryInput";
 import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
 import { BACKEND_URL } from "@/lib/backend-url";
+import { layoutWeekAppointments } from "@/lib/agenda-week-layout";
 import Select from "@/components/ui/Select";
 
 type Appointment = {
@@ -208,13 +209,6 @@ type WeekGroupedAppointmentsPopover = {
   lineWidth: number;
   lineAngle: number;
 } | null;
-
-type WeekSlotDisplayGroup = {
-  key: string;
-  appointmentGroups: Appointment[][];
-  appointments: Appointment[];
-  isWeekSummary: boolean;
-};
 
 type NoticeTone =
   | "info"
@@ -1154,50 +1148,6 @@ function generateSlotsFromWindows(
         (a, b) =>
           new Date(a[0]?.start_at || 0).getTime() -
           new Date(b[0]?.start_at || 0).getTime()
-      );
-  }
-
-  function getWeekSlotDisplayGroups(items: Appointment[]): WeekSlotDisplayGroup[] {
-    const blockGroups = groupAppointmentsByBlock(items);
-    const rangeMap = new Map<string, Appointment[][]>();
-
-    for (const blockGroup of blockGroups) {
-      const first = blockGroup[0];
-      if (!first) continue;
-      const key = `${new Date(first.start_at).toISOString()}|${new Date(
-        first.end_at
-      ).toISOString()}`;
-      const current = rangeMap.get(key) || [];
-      current.push(blockGroup);
-      rangeMap.set(key, current);
-    }
-
-    return Array.from(rangeMap.entries())
-      .map(([key, appointmentGroups]) => {
-        const firstGroup = appointmentGroups[0] || [];
-        const first = firstGroup[0];
-        const isSingleGroupBlock =
-          appointmentGroups.length === 1 && Boolean(first?.service_is_group);
-        const appointments =
-          appointmentGroups.length > 1
-            ? appointmentGroups.flatMap((group) => {
-                const appointment = group[0];
-                return appointment ? [appointment] : [];
-              })
-            : firstGroup;
-
-        return {
-          key,
-          appointmentGroups,
-          appointments,
-          isWeekSummary: appointmentGroups.length > 1 || isSingleGroupBlock,
-        };
-      })
-      .filter((group) => group.appointments.length > 0)
-      .sort(
-        (a, b) =>
-          new Date(a.appointments[0]?.start_at || 0).getTime() -
-          new Date(b.appointments[0]?.start_at || 0).getTime()
       );
   }
 
@@ -4087,8 +4037,24 @@ const hasActiveFilters =
           </span>
           <span className="block truncate text-[10px] leading-snug" style={{ color: "var(--text-muted)" }}>
             {subtitle}
-            {staffLine ? ` · ${staffLine}` : ""}
           </span>
+          {/* Profesional en su propia línea (con su color) para que no se corte. */}
+          {staffLine ? (
+            <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[10px] leading-snug" style={{ color: "var(--text-main)", opacity: 0.85 }}>
+              {!options?.hideStaff && first.staff_id ? (
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: getStaffItem(first.staff_id)?.color || "#60a5fa" }}
+                  aria-hidden="true"
+                />
+              ) : null}
+              <span className="truncate">
+                {options?.hideStaff
+                  ? staffLine
+                  : `${first.staff_id ? getStaffName(first.staff_id) : "Sin profesional asignado"}${branchName ? ` · ${branchName}` : ""}`}
+              </span>
+            </span>
+          ) : null}
         </button>
       );
     }
@@ -4125,6 +4091,147 @@ const hasActiveFilters =
           {badgeLabel}
         </span>
       </button>
+    );
+  }
+
+  // Capa de citas de la grilla semanal. Cada cita se ubica por su hora real
+  // (una de 45 min ocupa 1,5 filas) y las que coinciden en horario se reparten
+  // en carriles lado a lado (como Google Calendar / AgendaPro). Con más de
+  // WEEK_MAX_LANES carriles, las que no caben se muestran como "+N" y abren el
+  // popover de citas agrupadas. Alto de fila = --agenda-slot-h (38px / 54px md+).
+  function renderWeekAppointmentsLayer(
+    dayAppointments: Appointment[],
+    slots: string[],
+    options?: { maxLanes?: number; hideStaff?: boolean }
+  ) {
+    if (slots.length === 0 || dayAppointments.length === 0) return null;
+    const WEEK_MAX_LANES = options?.maxLanes ?? (selectedStaffId ? 4 : 3);
+    const hideStaffName = Boolean(options?.hideStaff || selectedStaffId);
+    const rowPx = typeof window !== "undefined" && window.innerWidth < 768 ? 38 : 54;
+    const blocks = groupAppointmentsByBlock(dayAppointments)
+      .filter((group) => group[0])
+      .map((group) => ({
+        group,
+        start: new Date(group[0].start_at).getTime(),
+        end: new Date(group[0].end_at).getTime(),
+      }));
+    const layout = layoutWeekAppointments(
+      blocks,
+      slots.map((slot) => new Date(slot).getTime()),
+      WEEK_MAX_LANES
+    );
+
+    const selectedKey = selectedAppointment ? getAppointmentGroupKey(selectedAppointment) : "";
+    const rowsToCss = (rows: number) => `calc(var(--agenda-slot-h) * ${rows.toFixed(4)})`;
+
+    return (
+      <div className="pointer-events-none absolute inset-0 z-10">
+        {layout.map((entry) => {
+          const { top, bottom, lane, shownLanes } = entry;
+          const heightPx = (bottom - top) * rowPx;
+          const laneStyle = {
+            top: `calc(${rowsToCss(top)} + 1px)`,
+            height: `calc(${rowsToCss(bottom - top)} - 2px)`,
+            left: `calc(${(lane * 100) / shownLanes}% + 1px)`,
+            width: `calc(${100 / shownLanes}% - 2px)`,
+          };
+
+          if (entry.overflow) {
+            // Solo el primero de cada tramo desbordado dibuja el "+N".
+            const hidden = entry.overflowGroup;
+            if (!hidden) return null;
+            return (
+              <button
+                key={`more-${getAppointmentGroupKey(entry.item.group[0])}`}
+                type="button"
+                data-calendar-selectable="true"
+                onClick={(event) => openWeekGroupedAppointments(event, hidden.map((h) => h.group))}
+                className="pointer-events-auto absolute flex items-start justify-center rounded-md border border-blue-300/70 bg-[linear-gradient(135deg,rgba(30,64,175,0.92),rgba(37,99,235,0.66))] px-1 pt-1 text-[11px] font-bold text-white shadow-sm transition hover:z-20 hover:border-blue-200"
+                style={laneStyle}
+                title={`${hidden.length} reservas más en este horario`}
+              >
+                +{hidden.length}
+              </button>
+            );
+          }
+
+          const group = entry.item.group;
+          const appt = group[0];
+          const isGroupSlot = isGroupAppointment(appt);
+          const isSelected = Boolean(selectedKey && selectedKey === getAppointmentGroupKey(appt));
+          const groupVisualState = isGroupSlot ? getGroupBookingVisualState(group) : null;
+          const groupStyles = groupVisualState ? getGroupBookingStyles(groupVisualState.key, isSelected) : null;
+          const activeGroupCount = group.filter((attendee) => attendee.status !== "canceled").length;
+          const groupCapacity = Number(appt.service_capacity || 0) || activeGroupCount || group.length;
+          const staff = getStaffItem(appt.staff_id);
+          const staffColor = staff?.color || "#60a5fa";
+          const narrow = shownLanes > 1;
+          const timeLabel = `${formatHour(appt.start_at)}–${formatHour(appt.end_at)}`;
+
+          return (
+            <button
+              key={getAppointmentGroupKey(appt)}
+              type="button"
+              data-calendar-selectable="true"
+              onClick={() => handleSelectAppointment(appt)}
+              onMouseEnter={(event) => {
+                setHoveredTimeKey(getTimeKey(appt.start_at));
+                handleAppointmentMouseEnter(event, appt);
+              }}
+              onMouseLeave={() => {
+                setHoveredTimeKey("");
+                handleAppointmentMouseLeave();
+              }}
+              className={`pointer-events-auto absolute overflow-hidden rounded-md border text-left transition duration-200 ease-out ${getAppointmentInteractionClass(
+                isSelected
+              )} ${isGroupSlot && groupStyles ? groupStyles.card : getCardClass(appt, isSelected)}`}
+              style={{ ...laneStyle, borderLeftWidth: 4, borderLeftColor: isGroupSlot ? undefined : staffColor }}
+              title={`${timeLabel} · ${isGroupSlot ? appt.service_name_snapshot || "Clase" : appt.customer_name}${
+                appt.service_name_snapshot && !isGroupSlot ? ` · ${appt.service_name_snapshot}` : ""
+              }${staff ? ` · ${staff.name}` : ""}`}
+            >
+              {newAppointmentIds.has(appt.id) ? (
+                <span className="absolute right-0.5 top-0.5 z-20 rounded-full bg-rose-500 px-1 py-px text-[7px] font-bold leading-none text-white">
+                  Nueva
+                </span>
+              ) : null}
+              {isGroupSlot && groupStyles ? (
+                <div className="flex h-full min-w-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1 leading-none">
+                  <div className="flex min-w-0 items-center gap-1">
+                    <UsersRound className={`h-3 w-3 shrink-0 ${groupStyles.icon}`} />
+                    <p className="min-w-0 flex-1 truncate text-[10px] font-semibold text-white">
+                      {appt.service_name_snapshot || "Clase"}
+                    </p>
+                  </div>
+                  {heightPx >= 34 ? (
+                    <span className={`inline-flex w-fit max-w-full truncate rounded-full border px-1.5 py-0.5 text-[8px] font-semibold ${groupStyles.countBadge}`}>
+                      {activeGroupCount}/{groupCapacity} inscritos
+                    </span>
+                  ) : null}
+                </div>
+              ) : heightPx < 30 ? (
+                <p className="truncate px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-white">
+                  <span className="font-normal text-white/75">{formatHour(appt.start_at)} </span>
+                  {appt.customer_name}
+                </p>
+              ) : (
+                <div className="flex h-full min-w-0 flex-col gap-0.5 overflow-hidden px-1.5 py-1 leading-tight">
+                  <p className="truncate text-[10px] font-semibold text-white">{appt.customer_name}</p>
+                  <p className="truncate text-[9px] text-white/75">{timeLabel}</p>
+                  {heightPx >= 52 && !narrow ? (
+                    <p className="truncate text-[9px] text-white/80">{appt.service_name_snapshot || "Reserva"}</p>
+                  ) : null}
+                  {heightPx >= 68 && staff && !hideStaffName ? (
+                    <p className="truncate text-[9px] font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>
+                      {staff.name.split(" ").slice(0, 2).join(" ")}
+                    </p>
+                  ) : null}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
     );
   }
 
@@ -6649,21 +6756,16 @@ const hasActiveFilters =
                             className="w-[260px] border-r last:border-r-0"
                             style={{ borderColor: "var(--border-color)" }}
                           >
-                            <div className="space-y-0">
+                            <div className="relative space-y-0 [--agenda-slot-h:38px] md:[--agenda-slot-h:54px]">
+                              {renderWeekAppointmentsLayer(staffAppointments, dayViewSlots, { maxLanes: 4, hideStaff: true })}
                               {dayViewSlots.map((slot, index) => {
                                 const slotTime = new Date(slot).getTime();
                                 const isPastSlot = slotTime < Date.now();
                                 const slotTimeKey = getTimeKey(slot);
-                                const slotAppointments = staffAppointments.filter(
-                                  (a) =>
-                                    new Date(a.start_at).getTime() === slotTime
-                                );
-                                const isCoveredByLongAppointment =
-                                  staffAppointments.some((a) => {
-                                    const start = new Date(a.start_at).getTime();
-                                    const end = new Date(a.end_at).getTime();
-                                    return start < slotTime && end > slotTime;
-                                  });
+                                // Las citas se dibujan aparte (renderWeekAppointmentsLayer,
+                                // por hora real); estas filas quedan solo como fondo.
+                                const slotAppointments: Appointment[] = [];
+                                const isCoveredByLongAppointment = false;
                                 const slotGroups =
                                   groupAppointmentsByBlock(slotAppointments);
                                 const isHourStart = index % 2 === 0;
@@ -7064,7 +7166,7 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                     >
                       {renderWeekDayHeader(day, { isToday, isClosedScheduleDay, dayPendingCount, dayCanceledCount })}
 
-                      <div className="space-y-0">
+                      <div className="relative space-y-0 [--agenda-slot-h:38px] md:[--agenda-slot-h:54px]">
                         {showClosedBySchedule ? (
                           <button
                             type="button"
@@ -7339,31 +7441,13 @@ if (!showClosedBySchedule && !hasNoWorkingWindow) {
                           </button>
                         ) : (
                           renderSlots.map((slot, index) => {
-const slotAppointments = dayAppointments.filter(
-  (a) =>
-    new Date(a.start_at).getTime() ===
-    new Date(slot).getTime()
-);
+// Las citas se dibujan aparte (renderWeekAppointmentsLayer, por hora real y
+// en carriles); cada fila de la semana es solo el fondo clicable.
 const slotTime = new Date(slot).getTime();
 const isPastSlot = slotTime < Date.now();
 const slotTimeKey = getTimeKey(slot);
 const isEmptySlotSelected =
   selectedEmptySlotKey === getEmptySlotKey(slot, selectedStaffId);
-const isCoveredByLongAppointment = dayAppointments.some((a) => {
-  const start = new Date(a.start_at).getTime();
-  const end = new Date(a.end_at).getTime();
-  return start < slotTime && end > slotTime;
-});
-
-const slotDisplayGroups = selectedStaffId
-  ? groupAppointmentsByBlock(slotAppointments).map((group) => ({
-      key: getAppointmentGroupKey(group[0]),
-      appointmentGroups: [group],
-      appointments: group,
-      isWeekSummary: false,
-    }))
-  : getWeekSlotDisplayGroups(slotAppointments);
-const appt = slotDisplayGroups[0]?.appointments[0];
 
                             const isHourStart = index % 2 === 0;
                             const isEvenBand = Math.floor(index / 2) % 2 === 0;
@@ -7372,29 +7456,7 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               !availableSlotKeys.has(slotTimeKey);
 
                                 const weekSlotKey = slotTimeKey + '|' + dayKey;
-                            if (isCoveredByLongAppointment) {
-                              return (
-                                <div
-                                  key={slot}
-                                  className="h-[38px] md:h-[54px] border-t"
-                                  onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
-                                  onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                  style={{
-                                    borderColor: isHourStart
-                                      ? "rgba(148,163,184,0.22)"
-                                      : "rgba(148,163,184,0.14)",
-                                    background:
-                                      hoveredSlotKey === weekSlotKey
-                                        ? "rgba(59,130,246,0.14)"
-                                        : hoveredTimeKey === slotTimeKey
-                                        ? "rgba(59,130,246,0.04)"
-                                        : "transparent",
-                                  }}
-                                />
-                              );
-                            }
-
-                            if (!appt || slotDisplayGroups.length === 0) {
+                            {
                               // Bloqueo rápido solo "manda" si el bloque no
                               // está ya cerrado por configuración de horario.
                               const quickBlock =
@@ -7502,262 +7564,11 @@ const appt = slotDisplayGroups[0]?.appointments[0];
                               );
                             }
 
-                            return (
-                              <div
-                                key={slot}
-                                onMouseEnter={() => { setHoveredTimeKey(slotTimeKey); setHoveredSlotKey(weekSlotKey); }}
-                                onMouseLeave={() => { setHoveredTimeKey(""); setHoveredSlotKey(""); }}
-                                className="relative h-[38px] md:h-[54px] border-t"
-                                style={{
-                                  borderColor: isHourStart
-                                    ? "rgba(148,163,184,0.22)"
-                                    : "rgba(148,163,184,0.14)",
-                                  background:
-                                    hoveredSlotKey === weekSlotKey
-                                      ? "rgba(59,130,246,0.14)"
-                                      : hoveredTimeKey === slotTimeKey
-                                      ? "rgba(59,130,246,0.04)"
-                                      : "transparent",
-                                }}
-                              >
-                                {slotDisplayGroups.map((displayGroup) => {
-                                  const group = displayGroup.appointments;
-                                  const appt = group[0];
-                                  const isWeekAggregate =
-                                    !selectedStaffId &&
-                                    displayGroup.isWeekSummary;
-                                  const isGroupSlot = isGroupAppointment(appt);
-                                  const selectedKey = selectedAppointment
-                                    ? getAppointmentGroupKey(selectedAppointment)
-                                    : "";
-                                  const isSelected = Boolean(
-                                    selectedKey &&
-                                      selectedKey === getAppointmentGroupKey(appt)
-                                  );
-                                  const groupVisualState = isGroupSlot
-                                    ? getGroupBookingVisualState(group)
-                                    : null;
-                                  const groupStyles = groupVisualState
-                                    ? getGroupBookingStyles(
-                                        groupVisualState.key,
-                                        isSelected
-                                      )
-                                    : null;
-                                  const activeGroupCount = group.filter(
-                                    (attendee) => attendee.status !== "canceled"
-                                  ).length;
-                                  const groupCapacity =
-                                    Number(appt.service_capacity || 0) ||
-                                    activeGroupCount ||
-                                    group.length;
-                                  const appointmentBlockHeight =
-                                    getAppointmentBlockMinHeight(appt);
-                                  const appointmentDensity =
-                                    getAppointmentBlockDensity(
-                                      appointmentBlockHeight
-                                    );
-
-                                  if (isWeekAggregate) {
-                                    const aggregateCount =
-                                      displayGroup.appointmentGroups.length;
-                                    const aggregateKey = `${displayGroup.key}|${aggregateCount}`;
-                                    const isAggregateSelected =
-                                      selectedWeekGroup?.key ===
-                                      displayGroup.key;
-
-                                    return (
-                                      <button
-                                        key={aggregateKey}
-                                        type="button"
-                                        data-calendar-selectable="true"
-                                        onClick={(event) =>
-                                          openWeekGroupedAppointments(
-                                            event,
-                                            displayGroup.appointmentGroups
-                                          )
-                                        }
-                                        onMouseEnter={() =>
-                                          setHoveredTimeKey(
-                                            getTimeKey(appt.start_at)
-                                          )
-                                        }
-                                        onMouseLeave={() =>
-                                          setHoveredTimeKey("")
-                                        }
-                                        className={`absolute inset-x-0 top-0 overflow-hidden rounded-sm border px-1.5 py-0.5 text-left text-white transition duration-200 ease-out ${
-                                          isAggregateSelected
-                                            ? "z-20 cursor-pointer border-blue-200/90 bg-[linear-gradient(135deg,rgba(29,78,216,0.94),rgba(14,165,233,0.62))] shadow-[0_0_28px_-9px_rgba(56,189,248,0.92)]"
-                                            : "z-10 cursor-pointer border-blue-300/75 bg-[linear-gradient(135deg,rgba(30,64,175,0.90),rgba(37,99,235,0.58))] shadow-[0_0_18px_-10px_rgba(96,165,250,0.85)] hover:z-20 hover:border-blue-200 hover:shadow-[0_0_24px_-9px_rgba(96,165,250,0.95)]"
-                                        }`}
-                                        style={{
-                                          height: appointmentBlockHeight,
-                                        }}
-                                      >
-                                        <div className="flex h-full min-w-0 flex-col justify-center gap-1 overflow-hidden leading-none">
-                                          <div className="flex min-w-0 items-center gap-1.5">
-                                            <UsersRound className="h-3 w-3 shrink-0 text-cyan-100" />
-                                            <p className="min-w-0 flex-1 truncate text-[10px] font-semibold leading-none text-white">
-                                              {aggregateCount} Agendamiento{aggregateCount === 1 ? "" : "s"}
-                                            </p>
-                                          </div>
-                                          <p className="truncate text-[9px] font-medium leading-none text-blue-100">
-                                            {formatHour(appt.start_at)} -{" "}
-                                            {formatHour(appt.end_at)}
-                                          </p>
-                                        </div>
-                                      </button>
-                                    );
-                                  }
-
-                                  return (
-                              <button
-                                key={getAppointmentGroupKey(appt)}
-                                type="button"
-                                data-calendar-selectable="true"
-                                onClick={() => handleSelectAppointment(appt)}
-                                onMouseEnter={(e) => {
-                                  setHoveredTimeKey(getTimeKey(appt.start_at));
-                                  if (selectedStaffId) {
-                                    handleAppointmentMouseEnter(e, appt);
-                                  }
-                                }}
-                                onMouseLeave={() => {
-                                  setHoveredTimeKey("");
-                                  handleAppointmentMouseLeave();
-                                }}
-                                className={`absolute inset-x-0 top-0 z-10 overflow-hidden rounded-sm border py-0.5 text-left transition duration-200 ease-out ${
-                                  isGroupSlot ? "px-1" : "px-1.5"
-                                } ${getAppointmentInteractionClass(
-                                  isSelected
-                                )} ${
-                                  isGroupSlot && groupStyles
-                                    ? groupStyles.card
-                                    : getCardClass(appt, isSelected)
-                                }`}
-                                style={{
-                                  height: appointmentBlockHeight,
-                                }}
-                              >
-                                {(() => {
-                                  if (newAppointmentIds.size > 0) {
-                                    console.log(
-                                      "[DEBUG grid block] appt.id:",
-                                      appt.id,
-                                      "typeof:",
-                                      typeof appt.id,
-                                      "newAppointmentIds:",
-                                      Array.from(newAppointmentIds),
-                                      "has:",
-                                      newAppointmentIds.has(appt.id)
-                                    );
-                                  }
-                                  return null;
-                                })()}
-                                {newAppointmentIds.has(appt.id) ? (
-                                  <span className="absolute -right-1 -top-1 z-20 rounded-full bg-rose-500 px-1.5 py-0.5 text-[8px] font-bold leading-none text-white shadow-sm">
-                                    Nueva
-                                  </span>
-                                ) : null}
-                                <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
-                                  {false && !isGroupSlot ? (
-                                  <div
-                                    className={`text-[10px] font-semibold ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-600"
-                                    }`}
-                                  >
-                                    {formatHour(appt.start_at)} -{" "}
-                                    {formatHour(appt.end_at)}
-                                  </div>
-                                  ) : null}
-
-                                  {false && !isGroupSlot ? (
-                                  <div>
-                                    <span
-                                      className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                                        isSelected
-                                          ? "border-white/20 bg-white/10 text-white"
-                                          : getStatusBadgeClass(appt)
-                                      }`}
-                                    >
-                                      {getCalendarBadgeLabel(appt)}
-                                    </span>
-                                  </div>
-                                  ) : null}
-
-                                  {isGroupSlot && groupVisualState && groupStyles ? (
-  <div className="flex h-full min-w-0 flex-col justify-between gap-px overflow-hidden leading-none">
-    <div className="flex min-w-0 items-center gap-1.5">
-      <UsersRound className={`h-3 w-3 shrink-0 ${groupStyles.icon}`} />
-      <p className="min-w-0 flex-1 truncate text-[10px] font-semibold leading-none text-white">
-        {appt.service_name_snapshot || "Clase"}
-      </p>
-    </div>
-
-    <div className="flex min-w-0 overflow-hidden">
-      <span
-        className={`inline-flex min-w-0 max-w-full truncate rounded-full border px-1.5 py-0.5 text-[8px] font-semibold leading-none ${groupStyles.countBadge}`}
-      >
-        {activeGroupCount}/{groupCapacity} inscritos
-      </span>
-    </div>
-  </div>
-) : (
-  <p className="truncate text-[10px] font-semibold leading-none text-white">
-    {appt.customer_name}
-  </p>
-)}
-
-                                  {!isGroupSlot && appointmentDensity.showPhone ? (
-                                  <p className="truncate text-[9px] leading-none text-slate-200">
-                                    {appt.customer_phone || "Teléfono no disponible"}
-                                  </p>
-                                  ) : null}
-
-                                  {false && !isGroupSlot && appt.customer_data?.pet_name ? (
-                                    <p
-                                      className={`truncate text-[10px] ${
-                                        isSelected
-                                          ? "text-slate-200"
-                                          : "text-emerald-600"
-                                      }`}
-                                    >
-                                      🐶 {appt.customer_data?.pet_name}
-                                      {appt.customer_data?.pet_species
-                                        ? ` (${appt.customer_data?.pet_species})`
-                                        : ""}
-                                    </p>
-                                  ) : null}
-
-                                  {!isGroupSlot && appointmentDensity.showService ? (
-                                  <p className="truncate text-[9px] leading-none text-slate-300">
-  {isGroupSlot
-    ? getStaffName(appt.staff_id)
-    : appt.service_name_snapshot || "Reserva"}
-</p>
-                                  ) : null}
-
-                                  {false && !isGroupSlot ? (
-                                  <p
-                                    className={`truncate text-[11px] ${
-                                      isSelected
-                                        ? "text-slate-200"
-                                        : "text-slate-500"
-                                    }`}
-                                  >
-                                    {getStaffName(appt.staff_id)}
-                                  </p>
-                                  ) : null}
-
-                                </div>
-                              </button>
-                                  );
-                                })}
-                              </div>
-                            );
                           })
                         )}
+                        {!showClosedBySchedule && !hasNoWorkingWindow && renderSlots.length > 0
+                          ? renderWeekAppointmentsLayer(dayAppointments, renderSlots)
+                          : null}
                       </div>
                     </div>
                   );
