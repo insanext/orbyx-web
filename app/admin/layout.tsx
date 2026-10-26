@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/admin/planes', label: 'Planes' },
   { href: '/admin/estadisticas', label: 'Estadísticas' },
   { href: '/admin/tenants', label: 'Tenants' },
+  { href: '/admin/migraciones', label: 'Migraciones' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const [checked, setChecked] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
+  // Migraciones de datos sin terminar: contador rojo en el menú.
+  const [migrationsPending, setMigrationsPending] = useState(0)
 
   const [changePwdOpen, setChangePwdOpen] = useState(false)
   const [currentPwd, setCurrentPwd] = useState('')
@@ -65,6 +68,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkAuth()
     return () => { cancelled = true }
   }, [isLoginPage, getToken, router])
+
+  useEffect(() => {
+    if (isLoginPage || !checked) return
+    let cancelled = false
+    async function loadMigrationsPending() {
+      try {
+        const token = await getToken()
+        if (!token) return
+        const res = await fetch(`${BACKEND_URL}/admin/migration-requests/pending-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const data = await res.json().catch(() => ({}))
+        if (!cancelled) setMigrationsPending(Number(data?.pending_count) || 0)
+      } catch {
+        // El contador es un extra: si falla, el menú sigue igual.
+      }
+    }
+    loadMigrationsPending()
+    const interval = window.setInterval(loadMigrationsPending, 2 * 60 * 1000)
+    window.addEventListener('orbyx-admin-migrations-changed', loadMigrationsPending)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('orbyx-admin-migrations-changed', loadMigrationsPending)
+    }
+  }, [isLoginPage, checked, pathname, getToken])
 
   // Mismo mecanismo de sesion que el dashboard de tenants (misma sesion de
   // Supabase Auth para ambos, ver requireAdminAuth en server.js): cerrar
@@ -156,13 +186,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <a
                 key={item.href}
                 href={item.href}
-                className={`block px-3 py-2 rounded-xl text-sm transition-colors ${
+                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${
                   active
                     ? 'bg-blue-600/20 text-blue-300'
                     : 'text-blue-300/50 hover:text-blue-200 hover:bg-blue-900/20'
                 }`}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.href === '/admin/migraciones' && migrationsPending > 0 ? (
+                  <span
+                    className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white"
+                    title={`${migrationsPending} migración(es) por procesar`}
+                  >
+                    {migrationsPending}
+                  </span>
+                ) : null}
               </a>
             )
           })}

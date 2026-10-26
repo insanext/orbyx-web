@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { Ban, Check, Lock, MessageCircle, Search, ShieldOff, SlidersHorizontal, Star, Upload, UsersRound, X } from "lucide-react";
+import { Ban, Check, Database, Lock, MessageCircle, Search, ShieldOff, SlidersHorizontal, Star, Upload, UsersRound, X } from "lucide-react";
 import { usePermissions } from "../../../../lib/permissions-context";
 import { requestReviewViaWhatsapp, buildWhatsAppLink } from "@/lib/reviewRequest";
 import { isPlanAtLeast } from "@/lib/plans";
 import { BACKEND_URL } from "@/lib/backend-url";
 import ImportCustomersModal from "@/components/customers/ImportCustomersModal";
 import BlockedContactsModal from "@/components/customers/BlockedContactsModal";
+import MigrationRequestModal from "@/components/customers/MigrationRequestModal";
 import { blockContactWithConfirm } from "@/lib/blocked-contacts";
 import CategoryFilterButtons from "@/components/customers/CategoryFilterButtons";
 import {
@@ -180,6 +181,8 @@ export default function CustomersPage() {
   // Importar clientes: solo dueño/admin (el backend lo exige igual).
   const canImportCustomers = isOwnerOrAdmin;
   const [importOpen, setImportOpen] = useState(false);
+  // Migración de datos (una vez): mismo permiso que importar.
+  const [migrationOpen, setMigrationOpen] = useState(false);
   // Bloquear contactos de la reserva pública: solo dueño/admin (el backend lo exige igual).
   const canBlockContacts = isOwnerOrAdmin;
   const [blockedListOpen, setBlockedListOpen] = useState(false);
@@ -454,6 +457,18 @@ export default function CustomersPage() {
             Importar
           </button>
         ) : null}
+        {canImportCustomers ? (
+          <button
+            type="button"
+            onClick={() => setMigrationOpen(true)}
+            aria-label="Migrar mis datos"
+            className="flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold"
+            style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)", color: "var(--cust-ink)" }}
+          >
+            <Database className="h-4 w-4" />
+            Migrar
+          </button>
+        ) : null}
         {(isVeterinaria || isClinica) && canEditClientes ? (
           <button
             type="button"
@@ -576,6 +591,17 @@ export default function CustomersPage() {
                 Importar clientes
               </button>
             ) : null}
+            {canImportCustomers ? (
+              <button
+                type="button"
+                onClick={() => setMigrationOpen(true)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
+                style={{ borderColor: "var(--cust-border)", background: "var(--cust-card-bg)", color: "var(--cust-ink)" }}
+              >
+                <Database className="h-3.5 w-3.5" />
+                Migrar mis datos
+              </button>
+            ) : null}
             {(isVeterinaria || isClinica) && canEditClientes ? (
               <button
                 type="button"
@@ -689,12 +715,12 @@ export default function CustomersPage() {
             {!search && canImportCustomers ? (
               <button
                 type="button"
-                onClick={() => setImportOpen(true)}
+                onClick={() => setMigrationOpen(true)}
                 className="mt-4 inline-flex items-center gap-1.5 rounded border px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
                 style={{ borderColor: "var(--cust-blue-solid)", color: "var(--cust-blue-solid)" }}
               >
-                <Upload className="h-3.5 w-3.5" />
-                ¿Vienes de otro sistema? Importa tus clientes
+                <Database className="h-3.5 w-3.5" />
+                ¿Vienes de otro sistema? Migra tus clientes y reservas
               </button>
             ) : null}
           </div>
@@ -1029,6 +1055,10 @@ export default function CustomersPage() {
 
       {blockedListOpen ? (
         <BlockedContactsModal slug={String(slug || "")} onClose={() => setBlockedListOpen(false)} />
+      ) : null}
+
+      {migrationOpen ? (
+        <MigrationRequestModal slug={String(slug || "")} onClose={() => setMigrationOpen(false)} />
       ) : null}
 
       {importOpen ? (
