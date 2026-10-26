@@ -1016,31 +1016,13 @@ function CatalogSidebar({
         ))}
       </div>
 
-      {/* Equipo en móvil (en escritorio está el panel lateral). */}
+      {/* Equipo en móvil (en escritorio va en una tarjeta arriba del catálogo). */}
       {staff.length > 0 ? (
         <div className="border-t border-slate-100 pt-3 lg:hidden">
           <p className="mb-2 text-xs font-semibold text-slate-900">
             {hasSelectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
           </p>
-          <div className="-mx-3 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex gap-3">
-              {staff.map((member) => (
-                <div key={member.id} className="flex w-16 shrink-0 flex-col items-center text-center">
-                  <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                    {member.photo_url ? (
-                      <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="text-base font-semibold text-slate-600">{getStaffInitial(member.name)}</span>
-                    )}
-                  </span>
-                  <span className="mt-1 w-full truncate text-[11px] font-semibold text-slate-900">{member.name}</span>
-                  {member.role?.trim() ? (
-                    <span className="w-full truncate text-[10px] text-slate-500">{member.role.trim()}</span>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
+          <TeamStrip staff={staff} size="sm" />
         </div>
       ) : null}
     </div>
@@ -1444,69 +1426,110 @@ function BusinessLocationPanel({
   );
 }
 
-function ProfessionalsPanel({
-  staff,
-  hasSelectedService,
-  onSeeAll,
-}: {
-  staff: StaffItem[];
-  hasSelectedService: boolean;
-  onSeeAll: () => void;
-}) {
+// Foto grande de un profesional (portal). Se cierra con la X, tocando fuera o con Escape.
+function StaffPhotoDialog({ member, onClose }: { member: StaffItem; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 px-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={member.name}
+        className="relative w-full max-w-sm overflow-hidden rounded-xl bg-white shadow-[0_30px_80px_-30px_rgba(15,23,42,0.7)]"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar foto"
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-md transition hover:bg-white hover:text-slate-950"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <div className="aspect-square w-full bg-slate-100">
+          {member.photo_url ? (
+            <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-7xl font-semibold text-slate-300">
+              {getStaffInitial(member.name)}
+            </div>
+          )}
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-lg font-bold text-slate-950">{member.name}</p>
+          <p className="mt-0.5 text-sm font-medium text-indigo-600">{member.role?.trim() || "Profesional"}</p>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// Fila horizontal del equipo (catálogo). Tocar una foto la abre en grande.
+function TeamStrip({ staff, size }: { staff: StaffItem[]; size: "sm" | "lg" }) {
+  const [openMember, setOpenMember] = useState<StaffItem | null>(null);
+  const large = size === "lg";
+
   return (
-    <div className="rounded-none border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] md:p-5">
-      <p className="mb-3 text-sm font-bold text-slate-950">
-        {hasSelectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
-      </p>
-
-      {staff.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          {hasSelectedService ? "Cargando profesionales..." : "Pronto verás aquí al equipo."}
-        </p>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {staff.slice(0, 6).map((member) => (
-              <div key={member.id} className="flex items-center gap-3">
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                  {member.photo_url ? (
-                    <img
-                      src={member.photo_url}
-                      alt={member.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-600">
-                      {getStaffInitial(member.name)}
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {member.name}
-                  </p>
-                  {member.role?.trim() ? (
-                    <p className="truncate text-xs text-slate-500">
-                      {member.role.trim()}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {staff.length > 6 ? (
+    <>
+      <div
+        className={`overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          large ? "-mx-4 px-4" : "-mx-3 px-3"
+        }`}
+      >
+        <div className={`flex ${large ? "gap-4 pb-1" : "gap-3"}`}>
+          {staff.map((member) => (
             <button
+              key={member.id}
               type="button"
-              onClick={onSeeAll}
-              className="mt-3 text-xs font-semibold text-indigo-600 hover:underline"
+              onClick={() => setOpenMember(member)}
+              aria-label={`Ver foto de ${member.name}`}
+              className={`group flex shrink-0 flex-col items-center text-center ${large ? "w-24" : "w-16"}`}
             >
-              Ver todos los profesionales →
+              <span
+                className={`flex items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 transition group-hover:border-indigo-300 group-hover:shadow-md ${
+                  large ? "h-20 w-20" : "h-14 w-14"
+                }`}
+              >
+                {member.photo_url ? (
+                  <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className={`font-semibold text-slate-600 ${large ? "text-xl" : "text-base"}`}>
+                    {getStaffInitial(member.name)}
+                  </span>
+                )}
+              </span>
+              <span
+                className={`mt-1 w-full truncate font-semibold text-slate-900 ${large ? "text-xs" : "text-[11px]"}`}
+              >
+                {member.name}
+              </span>
+              {member.role?.trim() ? (
+                <span className={`w-full truncate text-slate-500 ${large ? "text-[11px]" : "text-[10px]"}`}>
+                  {member.role.trim()}
+                </span>
+              ) : null}
             </button>
-          ) : null}
-        </>
-      )}
-    </div>
+          ))}
+        </div>
+      </div>
+      {openMember ? <StaffPhotoDialog member={openMember} onClose={() => setOpenMember(null)} /> : null}
+    </>
   );
 }
 
@@ -3390,7 +3413,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
     <div className="min-h-screen bg-gradient-to-b from-[#FBFAFF] to-[#F1EFFC]">
       <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
         {viewStep === "catalog" ? (
-          <div className="grid gap-4 lg:grid-cols-[1fr_290px] lg:items-start lg:gap-6 xl:grid-cols-[1fr_300px]">
+          <div className="mx-auto grid w-full max-w-[1080px] gap-4 lg:gap-6">
             <div className="min-w-0 space-y-4 md:space-y-6">
               <BusinessBannerCard
                 business={business}
@@ -3402,6 +3425,15 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 onOpenReviews={() => setShowReviewsModal(true)}
                 contact={businessContact}
               />
+
+              {panelStaff.length > 0 ? (
+                <div className="hidden min-w-0 rounded-none border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:block">
+                  <p className="mb-3 text-sm font-bold text-slate-950">
+                    {selectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
+                  </p>
+                  <TeamStrip staff={panelStaff} size="lg" />
+                </div>
+              ) : null}
 
               <div className="grid gap-4 lg:grid-cols-[230px_1fr] lg:gap-5 xl:gap-6">
                 <CatalogSidebar
@@ -3459,18 +3491,6 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               </div>
             </div>
 
-            <div className="hidden space-y-4 lg:sticky lg:top-4 lg:block lg:self-start">
-              <div>
-                <ProfessionalsPanel
-                  staff={panelStaff}
-                  hasSelectedService={Boolean(selectedService)}
-                  onSeeAll={() => {
-                    setStaffSearchQuery("");
-                    setShowStaffDrawer(true);
-                  }}
-                />
-              </div>
-            </div>
           </div>
         ) : null}
 
