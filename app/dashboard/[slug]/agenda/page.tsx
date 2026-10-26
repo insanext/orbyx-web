@@ -2838,7 +2838,12 @@ next_control_custom_value:
     if (!isValidPhoneForCountry("CL", draft.customer_phone)) {
       return "Ingresa un celular chileno válido (9 dígitos, empieza con 9).";
     }
-    if (!draft.customer_email.trim()) return "Ingresa el correo del cliente.";
+    // El correo es opcional en reservas hechas por el negocio (clientes
+    // migrados sin email). Si se escribe, debe tener formato válido.
+    const draftEmail = draft.customer_email.trim();
+    if (draftEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(draftEmail)) {
+      return "El correo ingresado no es válido. Corrígelo o déjalo vacío.";
+    }
     if (isVeterinaria && !draft.pet_name.trim()) {
       return "Ingresa el nombre de la mascota.";
     }
@@ -8814,7 +8819,7 @@ const isEmptySlotSelected =
                               className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Email
+                              Email (opcional)
                             </label>
                             <input
                               type="email"
@@ -10152,7 +10157,7 @@ const isEmptySlotSelected =
                       className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em]"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Correo *
+                      Correo (opcional)
                     </label>
                     <input
                       type="email"
@@ -10173,6 +10178,12 @@ const isEmptySlotSelected =
                         color: "var(--text-main)",
                       }}
                     />
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Sin correo no se envían confirmaciones ni recordatorios por email.
+                    </p>
                   </div>
                 </div>
 
