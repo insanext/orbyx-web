@@ -37,6 +37,7 @@ import {
   Star,
   QrCode,
   Download,
+  ExternalLink,
 } from "lucide-react";
 import QRCode from "qrcode";
 import clsx from "clsx";
@@ -2078,6 +2079,20 @@ export default function DashboardLayout({
                       }}
                     >
                       {slug ? (
+                        <a
+                          href={`/${slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          role="menuitem"
+                          onClick={() => setMoreMenuOpen(false)}
+                          className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-semibold transition hover:bg-black/5"
+                          style={{ color: "var(--accent-solid, #2563eb)" }}
+                        >
+                          <ExternalLink size={16} />
+                          Ver mi página pública
+                        </a>
+                      ) : null}
+                      {slug ? (
                         <button
                           type="button"
                           role="menuitem"
@@ -2085,8 +2100,8 @@ export default function DashboardLayout({
                             void copyPublicUrl();
                             setMoreMenuOpen(false);
                           }}
-                          className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium transition hover:bg-black/5"
-                          style={{ color: textMain }}
+                          className="flex w-full items-center gap-2.5 border-t px-4 py-3 text-left text-sm font-medium transition hover:bg-black/5"
+                          style={{ color: textMain, borderColor: sidebarBorder }}
                         >
                           <Link2 size={16} />
                           Copiar URL pública
@@ -2123,6 +2138,25 @@ export default function DashboardLayout({
                     </div>
                   ) : null}
                 </div>
+
+                {slug ? (
+                  <a
+                    href={`/${slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Ver mi página pública"
+                    title="Ver mi página pública"
+                    className="hidden h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl border px-2.5 text-xs font-semibold transition hover:brightness-110 sm:inline-flex sm:h-11 sm:px-3 sm:text-sm"
+                    style={{
+                      background: "var(--accent-solid, #2563eb)",
+                      borderColor: "var(--accent-solid, #2563eb)",
+                      color: "#ffffff",
+                    }}
+                  >
+                    <ExternalLink size={16} />
+                    <span className="hidden lg:inline">Ver mi página</span>
+                  </a>
+                ) : null}
 
                 {slug ? (
                   <button
