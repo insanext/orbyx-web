@@ -4161,10 +4161,19 @@ const hasActiveFilters =
           const staffColor = staff?.color || "#60a5fa";
           const narrow = shownLanes > 1;
           const timeLabel = `${formatHour(appt.start_at)}–${formatHour(appt.end_at)}`;
+          // Ya terminó: se ve un poco apagada (sobre la base opaca, así no
+          // se transparenta el "Horario pasado" de las filas de atrás).
+          const isPastBlock = new Date(appt.end_at).getTime() < Date.now();
 
           return (
+            <Fragment key={getAppointmentGroupKey(appt)}>
+            {/* Base opaca: los colores de estado son semitransparentes. */}
+            <div
+              aria-hidden="true"
+              className="absolute rounded-md"
+              style={{ ...laneStyle, background: "var(--bg-card)" }}
+            />
             <button
-              key={getAppointmentGroupKey(appt)}
               type="button"
               data-calendar-selectable="true"
               onClick={() => handleSelectAppointment(appt)}
@@ -4178,7 +4187,9 @@ const hasActiveFilters =
               }}
               className={`pointer-events-auto absolute overflow-hidden rounded-md border text-left transition duration-200 ease-out ${getAppointmentInteractionClass(
                 isSelected
-              )} ${isGroupSlot && groupStyles ? groupStyles.card : getCardClass(appt, isSelected)}`}
+              )} ${isGroupSlot && groupStyles ? groupStyles.card : getCardClass(appt, isSelected)} ${
+                isPastBlock && !isSelected ? "opacity-70 hover:opacity-100" : ""
+              }`}
               style={{ ...laneStyle, borderLeftWidth: 4, borderLeftColor: isGroupSlot ? undefined : staffColor }}
               title={`${timeLabel} · ${isGroupSlot ? appt.service_name_snapshot || "Clase" : appt.customer_name}${
                 appt.service_name_snapshot && !isGroupSlot ? ` · ${appt.service_name_snapshot}` : ""
@@ -4223,6 +4234,7 @@ const hasActiveFilters =
                 </div>
               )}
             </button>
+            </Fragment>
           );
         })}
       </div>
