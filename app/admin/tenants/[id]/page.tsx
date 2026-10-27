@@ -6,7 +6,6 @@ import { getPlanLabel } from '@/lib/plans'
 import { DateInputDMY } from '@/components/ui/date-input-dmy'
 import { BACKEND_URL } from "@/lib/backend-url";
 import Select from "@/components/ui/Select";
-import TenantBillingDocuments from "@/components/admin/TenantBillingDocuments";
 
 type TenantDetail = {
   ok: boolean
@@ -885,8 +884,13 @@ export default function AdminTenantDetailPage() {
         )}
       </Section>
 
-      <Section title="Pagos y boletas">
-        <TenantBillingDocuments tenantId={tenant.id} authFetch={authFetch} />
+      <Section title="Pagos y documentos tributarios">
+        <a
+          href={`/admin/documentos-tributarios?q=${encodeURIComponent(tenant.slug || tenant.name || '')}`}
+          className="text-sm text-blue-300 underline hover:text-blue-200"
+        >
+          Ver boletas y facturas de este negocio
+        </a>
       </Section>
 
       <Section title="Historial de cambios de plan">

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, KeyRound, X } from 'lucide-react'
@@ -12,6 +13,7 @@ const NAV_ITEMS = [
   { href: '/admin/estadisticas', label: 'Estadísticas' },
   { href: '/admin/tenants', label: 'Tenants' },
   { href: '/admin/migraciones', label: 'Migraciones' },
+  { href: '/admin/documentos-tributarios', label: 'Documentos tributarios' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,6 +23,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [adminEmail, setAdminEmail] = useState('')
   // Migraciones de datos sin terminar: contador rojo en el menú.
   const [migrationsPending, setMigrationsPending] = useState(0)
+  // Boletas/facturas por emitir: badge rojo en el menú + banner en todo el panel.
+  const [docsPending, setDocsPending] = useState(0)
 
   const [changePwdOpen, setChangePwdOpen] = useState(false)
   const [currentPwd, setCurrentPwd] = useState('')
@@ -93,6 +97,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       cancelled = true
       window.clearInterval(interval)
       window.removeEventListener('orbyx-admin-migrations-changed', loadMigrationsPending)
+    }
+  }, [isLoginPage, checked, pathname, getToken])
+
+  useEffect(() => {
+    if (isLoginPage || !checked) return
+    let cancelled = false
+    async function loadDocsPending() {
+      try {
+        const token = await getToken()
+        if (!token) return
+        const res = await fetch(`${BACKEND_URL}/admin/documentos-tributarios/pending-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const data = await res.json().catch(() => ({}))
+        if (!cancelled) setDocsPending(Number(data?.pending_count) || 0)
+      } catch {
+        // El contador es un extra: si falla, el menú sigue igual.
+      }
+    }
+    loadDocsPending()
+    const interval = window.setInterval(loadDocsPending, 2 * 60 * 1000)
+    window.addEventListener('orbyx-admin-docs-changed', loadDocsPending)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('orbyx-admin-docs-changed', loadDocsPending)
     }
   }, [isLoginPage, checked, pathname, getToken])
 
@@ -201,6 +232,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {migrationsPending}
                   </span>
                 ) : null}
+                {item.href === '/admin/documentos-tributarios' && docsPending > 0 ? (
+                  <span
+                    className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white"
+                    title={`${docsPending} documento(s) por emitir`}
+                  >
+                    {docsPending}
+                  </span>
+                ) : null}
               </a>
             )
           })}
@@ -230,7 +269,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0">{children}</main>
+      <main className="flex-1 min-w-0">
+        {docsPending > 0 ? (
+          <Link
+            href="/admin/documentos-tributarios?estado=pendiente"
+            className="block bg-red-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-red-500"
+          >
+            Tienes {docsPending} {docsPending === 1 ? 'documento' : 'documentos'} por emitir →
+          </Link>
+        ) : null}
+        {children}
+      </main>
 
       {changePwdOpen ? (
         <div
