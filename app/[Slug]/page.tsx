@@ -633,44 +633,107 @@ function FacebookBrandIcon() {
   );
 }
 
-// Descripción del negocio: máximo 3 líneas (line-clamp). "Ver más" aparece
-// solo si el texto realmente se corta (se mide con el alto real del párrafo).
-function BusinessDescription({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
+// Descripción del negocio: texto compacto con un máximo de líneas (line-clamp).
+// "Ver más" aparece solo si el texto realmente se corta (se mide con el alto
+// real del párrafo) y abre el texto completo en un cuadro aparte, así la
+// tarjeta no crece ni empuja el resto de la página hacia abajo.
+function BusinessDescription({ text, name }: { text: string; name: string }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
   const paragraphRef = useRef<HTMLParagraphElement | null>(null);
 
   useEffect(() => {
     const el = paragraphRef.current;
-    if (!el || expanded) return;
+    if (!el) return;
     const measure = () => setIsTruncated(el.scrollHeight > el.clientHeight + 1);
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [text, expanded]);
+  }, [text]);
 
   return (
     <div className="mt-1.5 max-w-md">
       <p
         ref={paragraphRef}
-        className={`text-[13px] leading-snug text-slate-500 sm:text-sm md:text-base md:leading-normal ${
-          expanded ? "" : "line-clamp-6 sm:line-clamp-4"
-        }`}
+        className="line-clamp-7 text-xs leading-snug text-slate-500 sm:line-clamp-5 sm:text-[13px] md:text-sm"
       >
         {text}
       </p>
-      {isTruncated || expanded ? (
+      {isTruncated ? (
         <button
           type="button"
-          onClick={() => setExpanded((prev) => !prev)}
+          onClick={() => setIsOpen(true)}
+          aria-haspopup="dialog"
           className="mt-1 text-xs font-semibold text-indigo-600 hover:underline md:text-sm"
         >
-          {expanded ? "Ver menos" : "Ver más"}
+          Ver más
         </button>
       ) : null}
+      {isOpen ? (
+        <DescriptionDialog name={name} text={text} onClose={() => setIsOpen(false)} />
+      ) : null}
     </div>
+  );
+}
+
+// Descripción completa en un cuadro aparte (portal sobre la página), mismo
+// patrón que HoursDialog: se cierra con la X, tocando fuera o con Escape. Si el
+// texto es largo, hace scroll dentro del cuadro.
+function DescriptionDialog({
+  name,
+  text,
+  onClose,
+}: {
+  name: string;
+  text: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/40 px-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="orbyx-description-title"
+        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-[0_30px_80px_-30px_rgba(15,23,42,0.6)]"
+      >
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
+          <p id="orbyx-description-title" className="text-sm font-bold text-slate-950">
+            {name || "Sobre nosotros"}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar descripción"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <p className="min-h-0 flex-1 overflow-y-auto whitespace-pre-line break-words text-sm leading-relaxed text-slate-600">
+          {text}
+        </p>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -897,7 +960,10 @@ function BusinessBannerCard({
           </h1>
 
           {business?.description?.trim() ? (
-            <BusinessDescription text={business.description.trim()} />
+            <BusinessDescription
+              text={business.description.trim()}
+              name={business?.name || slug || ""}
+            />
           ) : null}
 
           {reviewSummary && reviewSummary.count > 0 ? (
