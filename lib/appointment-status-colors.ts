@@ -103,3 +103,51 @@ export function statusRgba(key: AppointmentStatusKey, alpha: number): string {
 export function statusGlow(key: AppointmentStatusKey, alpha = 0.85): string {
   return `0 0 18px -10px ${statusRgba(key, alpha)}`;
 }
+
+// ---------------------------------------------------------------------------
+// Calendario semanal móvil: cada celda es un "tile" con degradado.
+// Estos helpers solo producen valores de `background`/`box-shadow` inline (no
+// clases Tailwind dinámicas, ver nota del inicio del archivo).
+// ---------------------------------------------------------------------------
+
+/** Aclara (factor > 0) u oscurece (factor < 0) un "R,G,B" mezclándolo con blanco/negro. */
+function shadeRgb(rgb: string, factor: number): string {
+  const [r, g, b] = rgb.split(",").map(Number);
+  const target = factor >= 0 ? 255 : 0;
+  const amount = Math.abs(factor);
+  const mix = (v: number) => Math.round(v + (target - v) * amount);
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+}
+
+/** Degradado de un tile con un solo estado: más claro arriba a la izquierda, más profundo abajo. */
+export function statusTileGradient(key: AppointmentStatusKey): string {
+  const { rgb } = APPOINTMENT_STATUS_COLORS[key];
+  return `linear-gradient(145deg, ${shadeRgb(rgb, 0.22)} 0%, rgb(${rgb}) 55%, ${shadeRgb(rgb, -0.2)} 100%)`;
+}
+
+/**
+ * Tile con varias citas de estados distintos en la misma hora: franjas
+ * diagonales, una por estado, con una transición corta entre ellas. Con un
+ * solo estado devuelve el degradado normal. Máximo 4 franjas (si hay más
+ * estados distintos, el número de la celda ya indica que hay más citas).
+ */
+export function statusSplitGradient(keys: AppointmentStatusKey[]): string {
+  const unique = Array.from(new Set(keys)).slice(0, 4);
+  if (unique.length === 0) return statusTileGradient("booked");
+  if (unique.length === 1) return statusTileGradient(unique[0]);
+
+  const count = unique.length;
+  const soft = 7;
+  const stops = unique.map((key, index) => {
+    const { rgb } = APPOINTMENT_STATUS_COLORS[key];
+    const from = index === 0 ? 0 : (index * 100) / count + soft;
+    const to = index === count - 1 ? 100 : ((index + 1) * 100) / count - soft;
+    return `rgb(${rgb}) ${from.toFixed(1)}%, rgb(${rgb}) ${to.toFixed(1)}%`;
+  });
+  return `linear-gradient(135deg, ${stops.join(", ")})`;
+}
+
+/** Brillo superior + halo suave del color del primer estado de la celda. */
+export function statusTileShadow(key: AppointmentStatusKey): string {
+  return `inset 0 1px 0 rgba(255,255,255,0.28), 0 0 10px -4px ${statusRgba(key, 0.8)}`;
+}

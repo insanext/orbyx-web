@@ -19,6 +19,7 @@ import {
   Lock,
   Mail,
   MessageCircle,
+  Palette,
   Phone,
   Plus,
   RotateCcw,
@@ -40,6 +41,9 @@ import {
   APPOINTMENT_STATUS_COLORS,
   STATUS_STYLESHEET,
   statusGlow,
+  statusSplitGradient,
+  statusTileGradient,
+  statusTileShadow,
   type AppointmentStatusKey,
 } from "../../../../lib/appointment-status-colors";
 import { DateInputDMY } from "@/components/ui/date-input-dmy";
@@ -589,6 +593,30 @@ const [slotMinutes, setSlotMinutes] = useState(30);
     return () => document.removeEventListener("mousedown", handleClickOutsideLegend);
   }, [showStatusLegend]);
 
+  // Leyenda de colores del calendario semanal móvil (botón de paleta junto a
+  // "Lista"). Mismo patrón de click-afuera que showStatusLegend, con su propio
+  // ref: el de escritorio vive en un bloque oculto en pantallas chicas.
+  const [showMobileLegend, setShowMobileLegend] = useState(false);
+  const mobileLegendRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showMobileLegend) return;
+    function handleClickOutsideMobileLegend(event: Event) {
+      if (
+        mobileLegendRef.current &&
+        !mobileLegendRef.current.contains(event.target as Node)
+      ) {
+        setShowMobileLegend(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutsideMobileLegend);
+    document.addEventListener("touchstart", handleClickOutsideMobileLegend);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideMobileLegend);
+      document.removeEventListener("touchstart", handleClickOutsideMobileLegend);
+    };
+  }, [showMobileLegend]);
+
   // Dropdown de filtros (Buscar/Profesional/Servicio/Estado) junto al título
   // "Calendario semanal" — antes era una fila fija siempre visible arriba
   // del calendario, ahora se abre bajo demanda. Mismo patrón de
@@ -891,6 +919,50 @@ function getWeekdayLabel(date: Date) {
 
 function getWeekdaySoftBg(date: Date) {
   return `var(--agenda-day-${date.getDay()})`;
+}
+
+// Estados que muestra la leyenda del calendario (escritorio: botón "!",
+// móvil: botón de paleta). Misma lista y mismos colores en ambos.
+const STATUS_LEGEND_ITEMS: [string, AppointmentStatusKey][] = [
+  ["Asistió", "confirmed"],
+  ["Agendado", "booked"],
+  ["No asistió", "no_show"],
+  ["Reagendado", "rescheduled"],
+  ["Falta cierre", "pending_close"],
+  ["Depósito pendiente", "deposit_pending"],
+  ["Actividad grupal", "group_activity"],
+];
+
+// Calendario semanal móvil: alto de cada fila/tile y color del día de hoy
+// (cian, distinto del azul de "Agendado" para que la columna de hoy resalte;
+// más oscuro en el tema claro, definido en el <style> de esta página).
+const MOBILE_WEEK_ROW_H = 32;
+const MOBILE_TODAY_ACCENT = "var(--agenda-today-accent, #22D3EE)";
+const MOBILE_TODAY_ACCENT_RGB = "var(--agenda-today-accent-rgb, 34,211,238)";
+
+// Estilo de cada celda de una columna del calendario semanal móvil. Todas las
+// columnas llevan el mismo borde (transparente salvo la de hoy), así los tiles
+// miden lo mismo en todas; la de hoy lo pinta cian y tiñe el fondo, con las
+// esquinas redondeadas en la cabecera ("top") y en la última fila ("bottom").
+function mobileWeekColumnStyle(isToday: boolean, edge: "top" | "mid" | "bottom"): CSSProperties {
+  const line = isToday ? MOBILE_TODAY_ACCENT : "transparent";
+  const radius = 10;
+  return {
+    borderLeft: `1px solid ${line}`,
+    borderRight: `1px solid ${line}`,
+    ...(edge === "top"
+      ? { borderTop: `1px solid ${line}`, borderTopLeftRadius: radius, borderTopRightRadius: radius }
+      : {}),
+    ...(edge === "bottom"
+      ? { borderBottom: `1px solid ${line}`, borderBottomLeftRadius: radius, borderBottomRightRadius: radius }
+      : {}),
+    ...(isToday
+      ? {
+          background: `rgba(${MOBILE_TODAY_ACCENT_RGB},${edge === "top" ? 0.16 : 0.07})`,
+          boxShadow: `inset 0 0 14px -8px rgba(${MOBILE_TODAY_ACCENT_RGB},0.6)`,
+        }
+      : {}),
+  };
 }
 
 function formatMobileShortWeekday(date: Date) {
@@ -4620,6 +4692,8 @@ const hasActiveFilters =
           --agenda-closed-line: rgba(100,116,139,0.18);
           --agenda-closed-line-soft: rgba(100,116,139,0.10);
           --agenda-closed-text: #64748B;
+          --agenda-today-accent: #0891B2;
+          --agenda-today-accent-rgb: 8,145,178;
           --agenda-closed-muted: rgba(100,116,139,0.75);
           --agenda-day-0: #F2F5F9;
           --agenda-day-1: #F0EDFF;
@@ -4708,6 +4782,8 @@ const hasActiveFilters =
           --agenda-closed-line: rgba(107,114,128,0.22);
           --agenda-closed-line-soft: rgba(107,114,128,0.12);
           --agenda-closed-text: #6B7280;
+          --agenda-today-accent: #22D3EE;
+          --agenda-today-accent-rgb: 34,211,238;
           --agenda-closed-muted: rgba(148,163,184,0.75);
         }
       `}</style>
@@ -5411,17 +5487,7 @@ const hasActiveFilters =
                         Estados de la agenda
                       </p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                        {(
-                          [
-                            ["Asistió", "confirmed"],
-                            ["Agendado", "booked"],
-                            ["No asistió", "no_show"],
-                            ["Reagendado", "rescheduled"],
-                            ["Falta cierre", "pending_close"],
-                            ["Depósito pendiente", "deposit_pending"],
-                            ["Actividad grupal", "group_activity"],
-                          ] as [string, keyof typeof APPOINTMENT_STATUS_COLORS][]
-                        ).map(([label, colorKey]) => (
+                        {STATUS_LEGEND_ITEMS.map(([label, colorKey]) => (
                           <span
                             key={label}
                             className="inline-flex items-center gap-2 text-xs font-medium leading-none"
@@ -5948,6 +6014,71 @@ const hasActiveFilters =
                   <List className="h-4 w-4" />
                   Lista
                 </button>
+
+                {/* Leyenda de colores: qué significa cada color del calendario */}
+                <div ref={mobileLegendRef} className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileLegend((prev) => !prev)}
+                    aria-label="Ver significado de los colores"
+                    aria-expanded={showMobileLegend}
+                    aria-haspopup="dialog"
+                    className="flex h-11 items-center justify-center gap-0.5 rounded-lg border px-2.5"
+                    style={{
+                      borderColor: MOBILE_TODAY_ACCENT,
+                      background: "var(--bg-card)",
+                      color: MOBILE_TODAY_ACCENT,
+                      boxShadow: showMobileLegend ? `0 0 14px -4px rgba(${MOBILE_TODAY_ACCENT_RGB},0.65)` : "none",
+                    }}
+                  >
+                    <Palette className="h-4 w-4" />
+                    <ChevronDown
+                      className="h-3 w-3 transition-transform"
+                      style={{ transform: showMobileLegend ? "rotate(180deg)" : "none" }}
+                    />
+                  </button>
+
+                  {showMobileLegend ? (
+                    <div
+                      role="dialog"
+                      aria-label="Estados de la agenda"
+                      className="absolute right-0 top-full z-40 mt-2 w-[min(280px,calc(100vw-32px))] rounded-xl border p-4 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.55)]"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
+                    >
+                      <p
+                        className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Estados de la agenda
+                      </p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                        {STATUS_LEGEND_ITEMS.map(([label, colorKey]) => (
+                          <span
+                            key={colorKey}
+                            className="inline-flex items-center gap-2 text-xs font-medium leading-tight"
+                            style={{ color: "var(--text-main)" }}
+                          >
+                            <span
+                              className="h-3.5 w-3.5 shrink-0 rounded-[4px]"
+                              style={{
+                                background: statusTileGradient(colorKey),
+                                boxShadow: statusTileShadow(colorKey),
+                              }}
+                            />
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                      <p
+                        className="mt-3 border-t pt-3 text-[11px] leading-snug"
+                        style={{ borderColor: "var(--border-color)", color: "var(--text-muted)" }}
+                      >
+                        Si una celda tiene más de un color, hay varias citas a esa hora con
+                        estados distintos. El número indica cuántas son.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               {mobileTab === "day" ? (
@@ -6060,23 +6191,25 @@ const hasActiveFilters =
                     Cargando agenda...
                   </div>
                 ) : (
-                  // Grid mobile real (NO el de escritorio) — 32px de columna de
+                  // Grid mobile real (NO el de escritorio) — 36px de columna de
                   // horas + 7 columnas de día a partes iguales (`1fr` c/u), así
                   // los 7 días siempre caben en el ancho de pantalla sin scroll
-                  // horizontal. Cada celda es un botón: vacía y tocable (abre
+                  // horizontal. Cada celda es un botón con un "tile" redondeado
+                  // adentro: la separación entre tiles es el padding del botón,
+                  // así la columna de HOY lleva un borde cian continuo (ver
+                  // mobileWeekColumnStyle). El tile está vacío y tocable (abre
                   // "Nueva reserva" con esa fecha/hora exacta), con 1 reserva
-                  // (color sólido según estado, sin texto — no entra legible a
-                  // este ancho), o con 2+ reservas simultáneas (mismo color +
-                  // badge numérico, abre la mini-lista ya existente).
+                  // (degradado del color del estado, sin texto — no entra
+                  // legible a este ancho), o con 2+ reservas simultáneas
+                  // (franjas diagonales, una por estado distinto + badge
+                  // numérico, abre la mini-lista ya existente). Qué significa
+                  // cada color se ve en el botón de paleta junto a "Lista".
                   <div
-                    className="overflow-hidden rounded-xl border"
-                    style={{ borderColor: "var(--border-color)" }}
+                    className="overflow-hidden rounded-xl border p-1"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
                   >
-                    <div style={{ display: "grid", gridTemplateColumns: "32px repeat(7, 1fr)" }}>
-                      <div
-                        className="border-b border-r"
-                        style={{ borderColor: "var(--border-color)", background: "var(--agenda-calendar-header-bg)" }}
-                      />
+                    <div style={{ display: "grid", gridTemplateColumns: "36px repeat(7, 1fr)" }}>
+                      <div />
                       {weekDays.map((day) => {
                         const dayKey = formatDateYYYYMMDD(day);
                         const hasActive = (appointmentsByDay[dayKey] || []).some(
@@ -6087,60 +6220,58 @@ const hasActiveFilters =
                         return (
                           <div
                             key={dayKey}
-                            className="flex flex-col items-center justify-center gap-0.5 border-b border-r py-1.5 last:border-r-0"
-                            style={{
-                              borderColor: "var(--border-color)",
-                              background: isTodayDay ? "rgba(37,99,235,0.10)" : "var(--agenda-calendar-header-bg)",
-                            }}
+                            className="flex flex-col items-center justify-center gap-0.5 py-1.5"
+                            style={mobileWeekColumnStyle(isTodayDay, "top")}
                           >
                             <span
                               className="text-[9px] font-semibold uppercase leading-none"
-                              style={{ color: isTodayDay ? "#3B82F6" : "var(--text-muted)" }}
+                              style={{ color: isTodayDay ? MOBILE_TODAY_ACCENT : "var(--text-muted)" }}
                             >
                               {formatMobileShortWeekday(day)}
                             </span>
                             <span
                               className="text-xs font-bold leading-none"
-                              style={{ color: isTodayDay ? "#3B82F6" : "var(--text-main)" }}
+                              style={{ color: isTodayDay ? MOBILE_TODAY_ACCENT : "var(--text-main)" }}
                             >
                               {day.getDate()}
                             </span>
                             <span
                               className="h-1 w-1 rounded-full"
-                              style={{ background: hasActive ? "#3B82F6" : "transparent" }}
+                              style={{
+                                background: hasActive
+                                  ? isTodayDay
+                                    ? MOBILE_TODAY_ACCENT
+                                    : "#3B82F6"
+                                  : "transparent",
+                              }}
                             />
                           </div>
                         );
                       })}
 
-                      {calendarTimeSlots.map((time) => {
-                        // Anclas visuales: la línea/etiqueta de cada hora en
-                        // punto se refuerza (borde más grueso, texto en
-                        // negrita) para poder "bajar contando" de hora en
-                        // hora en vez de fila por fila. El tinte zebra
-                        // alterna por HORA COMPLETA (no por cada fila de 30
-                        // min) — mismo par de filas (":00" y ":30") comparte
-                        // tinte.
+                      {calendarTimeSlots.map((time, timeIndex) => {
+                        // Anclas visuales: la etiqueta de cada hora en punto se
+                        // refuerza (negrita, color principal) para poder "bajar
+                        // contando" de hora en hora. El tinte zebra alterna por
+                        // HORA COMPLETA (no por cada fila de 30 min) — el par
+                        // de filas ":00" y ":30" comparte tinte.
                         const hourNum = parseInt(time.slice(0, 2), 10) || 0;
                         const isHourMark = time.endsWith(":00");
                         const isZebraHour = hourNum % 2 === 1;
-                        const topBorderWidth = isHourMark ? 2 : 1;
-                        const zebraBg = isZebraHour ? "rgba(148,163,184,0.10)" : "transparent";
+                        const freeTileBg = isZebraHour
+                          ? "rgba(148,163,184,0.14)"
+                          : "rgba(148,163,184,0.07)";
+                        const columnEdge = timeIndex === calendarTimeSlots.length - 1 ? "bottom" : "mid";
 
                         return (
                         <Fragment key={time}>
                           <div
-                            className="flex items-start justify-end border-r px-0.5 pt-0.5 leading-none"
+                            className="flex items-center justify-end pr-1 leading-none"
                             style={{
-                              height: 30,
-                              borderRightColor: "var(--border-color)",
-                              borderTopWidth: topBorderWidth,
-                              borderTopStyle: "solid",
-                              borderTopColor: "var(--border-color)",
+                              height: MOBILE_WEEK_ROW_H,
                               color: isHourMark ? "var(--text-main)" : "var(--text-muted)",
                               fontWeight: isHourMark ? 700 : 500,
-                              fontSize: 7,
-                              background: "var(--agenda-calendar-time-bg)",
+                              fontSize: isHourMark ? 9 : 8,
                             }}
                           >
                             {time}
@@ -6153,22 +6284,12 @@ const hasActiveFilters =
                             const slotDate = new Date(`${dayKey}T${time}:00`);
                             const isPast = slotDate.getTime() < Date.now();
                             const isFlashing = flashCellKey === cellKey;
-                            // Columna de "hoy": borde izq/der reforzado en cada
-                            // celda de la columna para que la línea se vea
-                            // continua de arriba a abajo — nunca toca el
-                            // `background` (que sigue siendo el color de
-                            // estado de la reserva, o el zebra/isPast normal).
                             const isTodayDay = dayKey === todayKey;
-                            const todayColumnBorder: CSSProperties = isTodayDay
-                              ? {
-                                  borderLeftWidth: 2,
-                                  borderLeftStyle: "solid",
-                                  borderLeftColor: "#3B82F6",
-                                  borderRightWidth: 2,
-                                  borderRightStyle: "solid",
-                                  borderRightColor: "#3B82F6",
-                                }
-                              : {};
+                            const cellStyle: CSSProperties = {
+                              height: MOBILE_WEEK_ROW_H,
+                              padding: "1.5px 1px",
+                              ...mobileWeekColumnStyle(isTodayDay, columnEdge),
+                            };
 
                             if (cellAppointments.length === 0) {
                               // Sin espacio para el texto de escritorio
@@ -6215,31 +6336,30 @@ const hasActiveFilters =
                                     }, 130);
                                   }}
                                   aria-label={`${formatMobileShortWeekday(day)} ${day.getDate()} · ${time}${cellStateLabel ? ` · ${cellStateLabel}` : ""}`}
-                                  className="flex items-center justify-center border-r last:border-r-0 disabled:cursor-default"
-                                  style={{
-                                    height: 30,
-                                    borderRightColor: "var(--border-color)",
-                                    borderTopWidth: topBorderWidth,
-                                    borderTopStyle: "solid",
-                                    borderTopColor: "var(--border-color)",
-                                    background: isFlashing
-                                      ? "rgba(59,130,246,0.35)"
-                                      : isPast
-                                      ? "var(--bg-soft)"
-                                      : isLocked
-                                      ? "var(--agenda-closed-bg)"
-                                      : zebraBg,
-                                    transition: "background 120ms ease-out",
-                                    ...todayColumnBorder,
-                                  }}
+                                  className="block disabled:cursor-default"
+                                  style={cellStyle}
                                 >
-                                  {isLocked ? (
-                                    <Lock
-                                      aria-hidden="true"
-                                      className="h-2.5 w-2.5"
-                                      style={{ color: "var(--agenda-closed-text)", opacity: isPast ? 0.55 : 0.9 }}
-                                    />
-                                  ) : null}
+                                  <span
+                                    className="flex h-full w-full items-center justify-center rounded-[6px]"
+                                    style={{
+                                      background: isFlashing
+                                        ? "rgba(59,130,246,0.35)"
+                                        : isPast
+                                        ? "var(--bg-soft)"
+                                        : isLocked
+                                        ? "var(--agenda-closed-bg)"
+                                        : freeTileBg,
+                                      transition: "background 120ms ease-out",
+                                    }}
+                                  >
+                                    {isLocked ? (
+                                      <Lock
+                                        aria-hidden="true"
+                                        className="h-2.5 w-2.5"
+                                        style={{ color: "var(--agenda-closed-text)", opacity: isPast ? 0.55 : 0.9 }}
+                                      />
+                                    ) : null}
+                                  </span>
                                 </button>
                               );
                             }
@@ -6248,23 +6368,17 @@ const hasActiveFilters =
                             const first = blockGroups[0]?.[0];
 
                             if (!first) {
-                              return (
-                                <div
-                                  key={dayKey}
-                                  className="border-r last:border-r-0"
-                                  style={{
-                                    height: 30,
-                                    borderRightColor: "var(--border-color)",
-                                    borderTopWidth: topBorderWidth,
-                                    borderTopStyle: "solid",
-                                    borderTopColor: "var(--border-color)",
-                                    ...todayColumnBorder,
-                                  }}
-                                />
-                              );
+                              return <div key={dayKey} style={cellStyle} />;
                             }
 
-                            const cellColor = APPOINTMENT_STATUS_COLORS[getStatusColorKey(first)].hex;
+                            // Un color por estado distinto entre las citas de la celda
+                            // (en el orden en que empiezan): 1 → degradado liso,
+                            // 2+ → franjas diagonales.
+                            const statusKeys = blockGroups.map((group) => getStatusColorKey(group[0]));
+                            const tileStyle: CSSProperties = {
+                              background: statusSplitGradient(statusKeys),
+                              boxShadow: statusTileShadow(statusKeys[0]),
+                            };
 
                             if (blockGroups.length > 1) {
                               return (
@@ -6274,19 +6388,14 @@ const hasActiveFilters =
                                   data-calendar-selectable="true"
                                   onClick={(event) => openWeekGroupedAppointments(event, blockGroups)}
                                   aria-label={`${blockGroups.length} citas a las ${time}`}
-                                  className="relative border-r last:border-r-0"
-                                  style={{
-                                    height: 30,
-                                    borderRightColor: "var(--border-color)",
-                                    borderTopWidth: topBorderWidth,
-                                    borderTopStyle: "solid",
-                                    borderTopColor: "var(--border-color)",
-                                    background: cellColor,
-                                    ...todayColumnBorder,
-                                  }}
+                                  className="block"
+                                  style={cellStyle}
                                 >
-                                  <span className="absolute inset-0 flex items-center justify-center">
-                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black/45 text-[9px] font-bold leading-none text-white">
+                                  <span
+                                    className="relative flex h-full w-full items-center justify-center rounded-[6px]"
+                                    style={tileStyle}
+                                  >
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black/50 text-[9px] font-bold leading-none text-white ring-1 ring-white/30">
                                       {blockGroups.length}
                                     </span>
                                   </span>
@@ -6301,17 +6410,11 @@ const hasActiveFilters =
                                 data-calendar-selectable="true"
                                 onClick={() => handleSelectAppointment(first)}
                                 aria-label={`${isGroupAppointment(first) ? first.service_name_snapshot || "Actividad grupal" : first.customer_name} · ${time}`}
-                                className="border-r last:border-r-0"
-                                style={{
-                                  height: 30,
-                                  borderRightColor: "var(--border-color)",
-                                  borderTopWidth: topBorderWidth,
-                                  borderTopStyle: "solid",
-                                  borderTopColor: "var(--border-color)",
-                                  background: cellColor,
-                                  ...todayColumnBorder,
-                                }}
-                              />
+                                className="block"
+                                style={cellStyle}
+                              >
+                                <span className="block h-full w-full rounded-[6px]" style={tileStyle} />
+                              </button>
                             );
                           })}
                         </Fragment>
