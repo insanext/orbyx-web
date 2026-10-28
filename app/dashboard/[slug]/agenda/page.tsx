@@ -305,6 +305,27 @@ type ManualBookingWarnings = {
   reason: string | null;
 };
 
+// Respuesta de GET /dashboard/booking-check (aviso inmediato bajo "Otra hora").
+type ManualBookingCheck = {
+  key: string;
+  status: "loading" | "done" | "error";
+  data?: {
+    conflicts: ManualBookingWarnings["conflicts"];
+    out_of_hours: boolean;
+    out_of_hours_reason: string | null;
+    slot_start: string;
+    slot_end: string;
+    in_past?: boolean;
+  };
+};
+
+const OUT_OF_HOURS_SHORT_LABEL: Record<string, string> = {
+  antes_apertura: "antes de la apertura",
+  despues_cierre: "después del cierre",
+  dia_cerrado: "día cerrado",
+  bloqueo: "bloqueo",
+};
+
 const OUT_OF_HOURS_REASON_LABEL: Record<string, string> = {
   antes_apertura: "Es antes de la hora de apertura.",
   despues_cierre: "Termina después de la hora de cierre.",
@@ -749,6 +770,10 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   // draft.manual_time solo llega una hora completa y válida.
   const [manualTimeInput, setManualTimeInput] = useState("");
   const [manualTimeError, setManualTimeError] = useState("");
+  // Chip "Otra hora" seleccionado (muestra el campo de hora escrita).
+  const [manualTimeOpen, setManualTimeOpen] = useState(false);
+  const manualTimeInputRef = useRef<HTMLInputElement | null>(null);
+  const [manualCheck, setManualCheck] = useState<ManualBookingCheck | null>(null);
   const [freeSlotActionDraft, setFreeSlotActionDraft] =
     useState<FreeSlotActionDraft | null>(null);
   const [quickBlockDraft, setQuickBlockDraft] =
@@ -2669,6 +2694,20 @@ next_control_custom_value:
   function resetManualTimeInput() {
     setManualTimeInput("");
     setManualTimeError("");
+    setManualTimeOpen(false);
+    setManualCheck(null);
+  }
+
+  // Chip "Otra hora": queda seleccionado, deselecciona el horario elegido y
+  // muestra el campo de hora (con foco para abrir el teclado numérico).
+  function openManualTimeChip() {
+    setManualTimeOpen(true);
+    setManualBookingDraft((prev) =>
+      prev
+        ? { ...prev, slot_start: "", requested_time_unavailable: "", time_locked: false }
+        : prev
+    );
+    requestAnimationFrame(() => manualTimeInputRef.current?.focus());
   }
 
   // Máscara 24 h: solo dígitos, ":" automático tras el 2º dígito. Borrar el ":"
@@ -2763,7 +2802,7 @@ next_control_custom_value:
   // se vuelve a probar la fecha/hora original del bloque (fijas otra vez).
   function restoreManualOriginSlot(draft: ManualBookingDraft): Partial<ManualBookingDraft> {
     // Con hora manual escrita no se vuelve a la hora del bloque original.
-    if (draft.manual_time) return { requested_time_unavailable: "" };
+    if (draft.manual_time || manualTimeOpen) return { requested_time_unavailable: "" };
     if (!draft.origin_slot_start) {
       return { slot_start: "", requested_time_unavailable: "" };
     }
@@ -3286,6 +3325,115 @@ next_control_custom_value:
       cancelled = true;
     };
   }, [manualDraftOpen, manualDraftStaffId, manualDraftServiceId, manualWeekStartKey, selectedBranchId, slug]);
+
+  // Aviso inmediato de la hora manual (GET /dashboard/booking-check, solo
+  // lectura): misma lógica que el POST. Se consulta con debounce cada vez que
+  // cambia una hora válida, el profesional, el servicio o la fecha. Si falla,
+  // no se muestra nada (el 409 del POST sigue siendo la verdad final).
+  const manualCheckTime = manualBookingDraft?.manual_time || "";
+  const manualCheckDate = manualBookingDraft?.date || "";
+  const manualCheckKey = manualCheckTime
+    ? [slug, selectedBranchId, manualDraftStaffId, manualDraftServiceId, manualCheckDate, manualCheckTime].join("|")
+    : "";
+  useEffect(() => {
+    if (
+      !manualDraftOpen ||
+      !manualCheckKey ||
+      !manualDraftStaffId ||
+      !manualDraftServiceId ||
+      !manualCheckDate ||
+      !slug
+    ) {
+      setManualCheck(null);
+      return;
+    }
+    setManualCheck({ key: manualCheckKey, status: "loading" });
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const q = new URLSearchParams({
+          slug,
+          staff_id: manualDraftStaffId,
+          service_id: manualDraftServiceId,
+          date: manualCheckDate,
+          time: manualCheckTime,
+        });
+        if (selectedBranchId) q.set("branch_id", selectedBranchId);
+        const res = await apiFetch(`${BACKEND_URL}/dashboard/booking-check?${q.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await res.json().catch(() => null);
+        if (controller.signal.aborted) return;
+        if (!res.ok || !data?.ok) {
+          setManualCheck({ key: manualCheckKey, status: "error" });
+          return;
+        }
+        setManualCheck({
+          key: manualCheckKey,
+          status: "done",
+          data: {
+            conflicts: Array.isArray(data.conflicts) ? data.conflicts : [],
+            out_of_hours: Boolean(data.out_of_hours),
+            out_of_hours_reason: data.out_of_hours_reason ?? null,
+            slot_start: data.slot_start,
+            slot_end: data.slot_end,
+            in_past: Boolean(data.in_past),
+          },
+        });
+      } catch {
+        if (!controller.signal.aborted) setManualCheck({ key: manualCheckKey, status: "error" });
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+    // manualCheckKey ya resume slug, sucursal, profesional, servicio, fecha y hora.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualDraftOpen, manualCheckKey]);
+
+  // Líneas de aviso bajo el campo (y, solo advertencias, en el resumen).
+  function renderManualCheckLines(onlyWarnings: boolean) {
+    if (!manualCheckKey) return null;
+    const current = manualCheck && manualCheck.key === manualCheckKey ? manualCheck : null;
+    if (!current || current.status === "loading") {
+      return onlyWarnings ? null : (
+        <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }} aria-live="polite">
+          Revisando…
+        </p>
+      );
+    }
+    if (current.status === "error" || !current.data) return null;
+    const check = current.data;
+    const hasWarning = check.conflicts.length > 0 || check.out_of_hours || Boolean(check.in_past);
+    if (!hasWarning) {
+      return onlyWarnings ? null : (
+        <p className="mt-2 text-xs font-medium text-emerald-600" aria-live="polite">
+          ✓ Horario libre ({formatHour(check.slot_start)} – {formatHour(check.slot_end)})
+        </p>
+      );
+    }
+    return (
+      <div className="mt-2 space-y-1" aria-live="polite">
+        {check.in_past ? (
+          <p className="text-xs font-medium text-amber-600">⚠ Esa hora ya pasó</p>
+        ) : null}
+        {check.conflicts.map((conflict) => (
+          <p key={conflict.id} className="text-xs font-medium text-amber-600">
+            ⚠ Se cruza con {conflict.customer_name || "otra reserva"} ({formatHour(conflict.start_at)}–{formatHour(conflict.end_at)})
+          </p>
+        ))}
+        {check.out_of_hours ? (
+          <p className="text-xs font-medium text-amber-600">
+            ⚠ Fuera de horario:{" "}
+            {(check.out_of_hours_reason && OUT_OF_HOURS_SHORT_LABEL[check.out_of_hours_reason]) ||
+              "fuera de tu horario de atención"}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!agendaStateStorageKey || typeof window === "undefined") return;
@@ -10061,6 +10209,8 @@ const isEmptySlotSelected =
                     </p>
                   </div>
                 ))}
+                {/* Si el aviso inmediato encontró cruces o fuera de horario, también aquí. */}
+                {manualBookingDraft.manual_time ? renderManualCheckLines(true) : null}
               </div>
             ) : manualBookingStep === "form" ? (
               <div className="space-y-3">
@@ -10117,6 +10267,28 @@ const isEmptySlotSelected =
                   const selectedDayInWeek = weekDates.some(
                     (day) => formatDateYYYYMMDD(day) === draft.date
                   );
+                  // Chip "Otra hora": mismo estilo que los botones de horario;
+                  // seleccionado (azul) muestra la hora escrita cuando es válida.
+                  const otherTimeChip = (
+                    <button
+                      key="other-time-chip"
+                      type="button"
+                      aria-pressed={manualTimeOpen}
+                      onClick={openManualTimeChip}
+                      className="flex h-9 items-center justify-center whitespace-nowrap rounded-xl border px-1 text-sm font-semibold transition"
+                      style={{
+                        borderColor: manualTimeOpen ? "var(--accent-solid, #2563eb)" : "var(--border-color)",
+                        background: manualTimeOpen ? "var(--accent-solid, #2563eb)" : "var(--bg-soft)",
+                        color: manualTimeOpen ? "#fff" : "var(--text-main)",
+                      }}
+                    >
+                      {draft.manual_time || "Otra hora"}
+                    </button>
+                  );
+                  const showStandaloneChip =
+                    readyForSlots &&
+                    (draft.time_locked ||
+                      (!manualSlotsLoading && selectedDayInWeek && daySlots.length === 0));
 
                   return (
                     <>
@@ -10419,8 +10591,12 @@ const isEmptySlotSelected =
                                 </button>
                               );
                             })}
+                            {otherTimeChip}
                           </div>
                         )}
+                        {showStandaloneChip ? (
+                          <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-5">{otherTimeChip}</div>
+                        ) : null}
                         {draft.requested_time_unavailable ? (
                           <p className="mt-1.5 text-xs font-medium text-amber-600">
                             {daySlots.length > 0
@@ -10429,24 +10605,20 @@ const isEmptySlotSelected =
                           </p>
                         ) : null}
 
-                        {readyForSlots ? (
-                          <div className="mt-3">
-                            <label
-                              htmlFor="manual-booking-time"
-                              className={labelClass}
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              Hora manual (opcional)
-                            </label>
+                        {readyForSlots && manualTimeOpen ? (
+                          <div className="mt-2">
                             <div className="relative">
                               <input
                                 id="manual-booking-time"
+                                ref={manualTimeInputRef}
+                                autoFocus
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 maxLength={5}
                                 placeholder="00:00"
                                 autoComplete="off"
+                                aria-label="Otra hora (24 horas)"
                                 aria-invalid={manualTimeError ? true : undefined}
                                 aria-describedby="manual-booking-time-help"
                                 value={manualTimeInput}
@@ -10464,6 +10636,7 @@ const isEmptySlotSelected =
                                   title="Borrar hora manual"
                                   onClick={() => {
                                     handleManualTimeChange("");
+                                    manualTimeInputRef.current?.focus();
                                   }}
                                   className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-base leading-none transition hover:opacity-70"
                                   style={{ color: "var(--text-muted)" }}
@@ -10482,9 +10655,9 @@ const isEmptySlotSelected =
                               className="mt-1 text-xs"
                               style={{ color: "var(--text-muted)" }}
                             >
-                              Formato 24 horas, de 5 en 5 minutos (ej. 19:15 o 08:20). Si se cruza con otra
-                              reserva o queda fuera de tu horario, te avisamos antes de agendar.
+                              Formato 24 h, de 5 en 5 minutos (ej. 19:15 u 08:20).
                             </p>
+                            {renderManualCheckLines(false)}
                           </div>
                         ) : null}
                       </div>
