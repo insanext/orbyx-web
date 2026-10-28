@@ -371,6 +371,97 @@ function dedupeSlots(slots: SlotItem[]) {
   );
 }
 
+// Encabezado de cada día del calendario de reservas: degradado del color
+// principal de la plantilla (indigo-600 y sus derivados con color-mix, así
+// funciona con cualquier plantilla). El brillo va a la derecha para no restar
+// contraste al texto, que va a la izquierda. Sábado y domingo: mismo estilo,
+// bastante más oscuro; en plantillas oscuras (texto oscuro en el resto de la
+// página) el fin de semana pasa a texto claro sobre fondo oscuro.
+const DAY_HEADER_CSS = `
+.orbyx-day-head {
+  --oh-base: var(--color-indigo-600, #4f46e5);
+  background-image:
+    radial-gradient(90% 140% at 100% 0%, rgba(255,255,255,0.18), transparent 60%),
+    linear-gradient(135deg, var(--oh-base) 0%, color-mix(in srgb, var(--oh-base) 90%, white) 45%, color-mix(in srgb, var(--oh-base) 78%, black) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
+}
+.orbyx-day-head-weekend { --oh-base: color-mix(in srgb, var(--color-indigo-600, #4f46e5) 56%, black); }
+html[data-public-dark] .orbyx-day-head-weekend { --oh-base: color-mix(in srgb, var(--color-indigo-600, #4f46e5) 40%, black); }
+html[data-public-dark] .orbyx-day-head-weekend,
+html[data-public-dark] .orbyx-day-head-weekend * { color: #f8fafc; }
+`;
+
+function dayHeaderClass(date: Date) {
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  return isWeekend ? "orbyx-day-head orbyx-day-head-weekend" : "orbyx-day-head";
+}
+
+// Junta, en orden de hora, los horarios libres con los ocupados del día (si el
+// servidor los informa). Los ocupados solo se muestran: no se pueden elegir.
+function mergeDaySlots(available: SlotItem[], occupied: SlotItem[]) {
+  return [
+    ...available.map((slot) => ({ slot, occupied: false })),
+    ...occupied.map((slot) => ({ slot, occupied: true })),
+  ].sort((a, b) => a.slot.slot_start.localeCompare(b.slot.slot_start));
+}
+
+// Horario ya tomado: bloque gris con degradado, igual para todos. El tachado va
+// solo en la hora; "Ocupado" queda sin tachar y con texto oscuro (contraste).
+function OccupiedSlot({ slot, variant }: { slot: SlotItem; variant: "desktop" | "mobile" }) {
+  const isMobile = variant === "mobile";
+  return (
+    <div
+      aria-disabled="true"
+      title="Horario ocupado"
+      className={
+        isMobile
+          ? "min-h-[54px] cursor-not-allowed rounded-none border border-slate-300 bg-gradient-to-b from-slate-200 to-slate-300 px-3 py-2.5 text-center text-slate-700"
+          : "flex min-h-[40px] w-full cursor-not-allowed flex-row items-center justify-between gap-2 rounded-none border border-slate-300 bg-gradient-to-b from-slate-200 to-slate-300 px-2.5 py-1.5 text-slate-700 md:min-h-[34px] md:flex-col md:justify-center md:px-2 md:py-1 md:text-center"
+      }
+    >
+      <span
+        className={
+          isMobile
+            ? "block text-base font-bold leading-none line-through decoration-slate-500"
+            : "text-sm font-semibold leading-none line-through decoration-slate-500 md:text-[11px]"
+        }
+      >
+        {formatHour(slot.slot_start)}
+      </span>
+      <span
+        className={
+          isMobile
+            ? "mt-1.5 block text-[10px] font-medium leading-tight"
+            : "text-[11px] font-medium leading-none md:mt-1 md:text-[9px]"
+        }
+      >
+        Ocupado
+      </span>
+    </div>
+  );
+}
+
+// Día sin atención (o sin horarios): aviso compacto dentro de la columna.
+function NoAvailabilityNotice() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-none bg-slate-100/80 px-2 py-6 text-center text-slate-500">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 13l4 4M14 13l-4 4" />
+      </svg>
+      <p className="text-xs font-semibold leading-tight">No disponible</p>
+    </div>
+  );
+}
+
 function normalizeEmail(value?: string | null) {
   return String(value || "").trim().toLowerCase();
 }
@@ -1930,6 +2021,10 @@ const isGroupBookingBusiness =
     keys: Set<string>;
   }>({ term: "", keys: new Set() });
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
+  // Horarios ya tomados de cada día (`occupied_slots` de /public/slots). Solo se
+  // muestran, tachados; es opcional: si el servidor no los informa queda vacío
+  // y el calendario se ve como siempre (solo horarios libres).
+  const [weekOccupiedSlots, setWeekOccupiedSlots] = useState<Record<string, SlotItem[]>>({});
 const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
 const [loadingNextSlots, setLoadingNextSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
@@ -2263,6 +2358,10 @@ const nextAvailableDays = useMemo(() => {
   const mobileSelectedDateSlots = mobileSelectedDate
     ? weekSlots[formatDate(mobileSelectedDate)] || []
     : [];
+  const mobileSelectedDateEntries = mergeDaySlots(
+    mobileSelectedDateSlots,
+    mobileSelectedDate ? weekOccupiedSlots[formatDate(mobileSelectedDate)] || [] : []
+  );
   // Sin servicio: todos los profesionales activos. Con servicio: solo los que
   // lo realizan (staffOptions viene de /public/staff/:slug/:service_id).
   const panelStaff = selectedService ? staffOptions : allStaff;
@@ -2351,6 +2450,7 @@ const nextAvailableDays = useMemo(() => {
     setSelectedStaffId("");
     setSelectedSlot(null);
     setWeekSlots({});
+    setWeekOccupiedSlots({});
     setSubmitError("");
     setBookingSuccess(null);
   }
@@ -2360,6 +2460,7 @@ const nextAvailableDays = useMemo(() => {
     setSelectedStaffId("");
     setSelectedSlot(null);
     setWeekSlots({});
+    setWeekOccupiedSlots({});
     setSubmitError("");
     setBookingSuccess(null);
   }
@@ -2746,6 +2847,7 @@ const nextAvailableDays = useMemo(() => {
 
     if (!slug || !serviceId) {
       setWeekSlots({});
+      setWeekOccupiedSlots({});
       setSelectedSlot(null);
       return;
     }
@@ -2785,19 +2887,27 @@ const nextAvailableDays = useMemo(() => {
               ? data.slots
               : [];
 
+            const rawOccupied: SlotItem[] = Array.isArray(data.occupied_slots)
+              ? data.occupied_slots
+              : [];
+
             return {
               date,
               slots: dedupeSlots(rawSlots),
+              occupied: dedupeSlots(rawOccupied),
             };
           })
         );
 
         const mapped: Record<string, SlotItem[]> = {};
+        const mappedOccupied: Record<string, SlotItem[]> = {};
         results.forEach((item) => {
           mapped[item.date] = item.slots;
+          mappedOccupied[item.date] = item.occupied;
         });
 
         setWeekSlots(mapped);
+        setWeekOccupiedSlots(mappedOccupied);
 
         if (selectedSlot) {
           const stillExists = results.some((item) =>
@@ -2813,6 +2923,7 @@ const nextAvailableDays = useMemo(() => {
       } catch (error) {
         console.error("Error cargando horarios:", error);
         setWeekSlots({});
+        setWeekOccupiedSlots({});
       } finally {
         setLoadingSlots(false);
       }
@@ -3888,6 +3999,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
             </div>
 
             <div className="border-t border-slate-200 pt-3 md:pt-4">
+              <style>{DAY_HEADER_CSS}</style>
               <BookingStepHeader step={selectedService ? 3 : 2} title="Elige día y hora" />
             </div>
 
@@ -3909,46 +4021,43 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                 const dateKey = formatDate(dateObj);
                 const slots = weekSlots[dateKey] || [];
                 const isToday = todayKey === dateKey;
+                const occupiedSlots = weekOccupiedSlots[dateKey] || [];
+                const daySlotEntries = mergeDaySlots(slots, occupiedSlots);
                 const isClosedDay =
-                  Boolean(selectedService) && !loadingSlots && slots.length === 0;
+                  Boolean(selectedService) &&
+                  !loadingSlots &&
+                  slots.length === 0 &&
+                  occupiedSlots.length === 0;
 
                 return (
                   <div
                     key={dateKey}
-                    className={`rounded-none border p-3 transition ${
+                    className={`flex min-w-0 flex-col rounded-none border transition ${
                       isToday
-  ? "border-sky-500 bg-sky-100 shadow-md"
-                        : isClosedDay
-                        ? "orbyx-closed-day border-rose-100 bg-[repeating-linear-gradient(135deg,rgba(254,226,226,0.9)_0px,rgba(254,226,226,0.9)_9px,rgba(255,241,242,0.75)_9px,rgba(255,241,242,0.75)_18px)]"
+                        ? "border-indigo-600 bg-white shadow-[0_12px_30px_-18px_rgb(var(--pt-glow-rgb,79_70_229)/0.85)] ring-1 ring-indigo-600"
                         : "border-slate-200 bg-slate-50/60"
-                    }`}
+                    } ${isClosedDay ? "self-stretch" : ""}`}
                   >
                     <div
-                      className={`-mx-3 mb-3 border-b px-3 pb-2 pt-1 md:sticky md:top-0 md:z-30 ${
-                        isClosedDay
-                          ? "border-rose-100 bg-rose-50/95"
-                          : "border-slate-200 bg-white"
-                      }`}
+                      className={`px-3 py-2.5 text-white md:sticky md:top-0 md:z-30 ${dayHeaderClass(dateObj)}`}
                     >
-                      <p
-                        className={`text-sm font-bold ${
-                          isClosedDay ? "text-rose-900" : "text-slate-900"
-                        }`}
-                      >
+                      <p className="flex items-center gap-2 text-sm font-bold">
                         {getWeekdayLabel(dateObj)}
                         {isToday ? (
-                          <span className="ml-2 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                          <span className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold text-white ring-1 ring-white/50">
                             Hoy
                           </span>
                         ) : null}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-0.5 text-xs text-white/85">
                         {dateObj.toLocaleDateString("es-CL", {
-  day: "numeric",
-  month: "long",
-})}
+                          day: "numeric",
+                          month: "long",
+                        })}
                       </p>
                     </div>
+
+                    <div className={`p-3 ${isClosedDay ? "flex flex-1 flex-col" : ""}`}>
 
 
 
@@ -3966,31 +4075,13 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
   <p className="text-xs text-slate-500">
     Selecciona un servicio.
   </p>
-) : slots.length === 0 ? (
-  <div className="flex items-center justify-center rounded-none border border-rose-100 bg-white/35 px-2 py-4 text-center">
-    <div>
-      <div className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-500">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          className="h-5 w-5"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M7 11V8a5 5 0 0110 0v3M6 11h12v9H6z"
-          />
-        </svg>
-      </div>
-      <p className="text-xs font-bold leading-tight text-rose-700">Sin horario disponible</p>
-    </div>
-  </div>
+) : daySlotEntries.length === 0 ? (
+  <NoAvailabilityNotice />
 ) : (
   <div className="space-y-1.5">
-    {slots.map((slot, index) => (
+    {daySlotEntries.map(({ slot, occupied }, index) => occupied ? (
+      <OccupiedSlot key={`occ-${slot.slot_start}-${index}`} slot={slot} variant="desktop" />
+    ) : (
       <button
         key={`${slot.slot_start}-${index}`}
         type="button"
@@ -4053,6 +4144,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
     ))}
   </div>
 )}
+                    </div>
                   </div>
                 );
               })}
@@ -4067,7 +4159,10 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                   const isToday = todayKey === dateKey;
                   const daySlots = weekSlots[dateKey] || [];
                   const isClosedDay =
-                    Boolean(selectedService) && !loadingSlots && daySlots.length === 0;
+                    Boolean(selectedService) &&
+                    !loadingSlots &&
+                    daySlots.length === 0 &&
+                    (weekOccupiedSlots[dateKey] || []).length === 0;
 
                   return (
                     <button
@@ -4086,9 +4181,9 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                       aria-pressed={isActiveMobileDay}
                       className={`relative min-w-0 rounded-md border px-0.5 py-1.5 text-center transition ${
                         isActiveMobileDay
-                          ? "border-indigo-600 bg-indigo-600 text-white shadow-[0_10px_20px_-14px_rgb(var(--pt-glow-rgb,79_70_229)/0.9)]"
+                          ? `border-transparent text-white shadow-[0_10px_20px_-14px_rgb(var(--pt-glow-rgb,79_70_229)/0.9)] ${dayHeaderClass(dateObj)}`
                           : isClosedDay
-                          ? "border-rose-100 bg-rose-50 text-rose-700"
+                          ? "border-slate-200 bg-slate-100 text-slate-500"
                           : isToday
                           ? "border-indigo-300 bg-indigo-50 text-indigo-900"
                           : "border-slate-200 bg-white text-slate-700"
@@ -4105,9 +4200,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                         <p
                           className={`mt-1 truncate text-[9px] font-medium leading-none ${
                             isActiveMobileDay
-                              ? "text-indigo-100"
-                              : isClosedDay
-                              ? "text-rose-500"
+                              ? "text-white/85"
                               : "text-slate-400"
                           }`}
                         >
@@ -4127,27 +4220,33 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                 })}
               </div>
 
-              <div className="rounded-none border border-slate-200 bg-white p-3 shadow-sm">
-                <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm">
+                <div
+                  className={`flex items-start justify-between gap-3 px-3 py-2.5 text-white ${
+                    mobileSelectedDate ? dayHeaderClass(mobileSelectedDate) : ""
+                  }`}
+                >
                   <div>
-                  <p className="text-sm font-bold text-slate-950">
-                    {mobileSelectedDate ? getWeekdayLabel(mobileSelectedDate) : "Día"}
-                  </p>
-                  {mobileSelectedDate ? (
-                    <p className="mt-1 text-xs text-slate-500">
-                      {mobileSelectedDate.toLocaleDateString("es-CL", {
-                        day: "numeric",
-                        month: "long",
-                      })}
+                    <p className="text-sm font-bold">
+                      {mobileSelectedDate ? getWeekdayLabel(mobileSelectedDate) : "Día"}
                     </p>
-                  ) : null}
+                    {mobileSelectedDate ? (
+                      <p className="mt-0.5 text-xs text-white/85">
+                        {mobileSelectedDate.toLocaleDateString("es-CL", {
+                          day: "numeric",
+                          month: "long",
+                        })}
+                      </p>
+                    ) : null}
                   </div>
                   {selectedService && mobileSelectedDateSlots.length > 0 ? (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                    <span className="rounded-full bg-white/25 px-2.5 py-1 text-[11px] font-semibold text-white ring-1 ring-white/40">
                       {mobileSelectedDateSlots.length} disponibles
                     </span>
                   ) : null}
                 </div>
+
+                <div className="p-3">
 
                 {loadingSlots ? (
                   <div className="grid grid-cols-2 gap-2">
@@ -4162,19 +4261,15 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                   <div className="rounded-none border border-amber-100 bg-amber-50 px-4 py-4 text-sm text-amber-800">
                     Selecciona un servicio para ver horarios disponibles.
                   </div>
-                ) : mobileSelectedDateSlots.length === 0 ? (
-                  <div className="rounded-none border border-rose-100 bg-rose-50 px-4 py-5 text-center">
-                    <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-rose-200" />
-                    <p className="text-sm font-bold text-rose-700">
-                      Sin horario disponible
-                    </p>
-                    <p className="mt-1 text-xs text-rose-600">
-                      Prueba otro día o revisa los próximos horarios sugeridos.
-                    </p>
+                ) : mobileSelectedDateEntries.length === 0 ? (
+                  <div className="flex">
+                    <NoAvailabilityNotice />
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
-                    {mobileSelectedDateSlots.map((slot, index) => (
+                    {mobileSelectedDateEntries.map(({ slot, occupied }, index) => occupied ? (
+                      <OccupiedSlot key={`occ-${slot.slot_start}-${index}`} slot={slot} variant="mobile" />
+                    ) : (
                       <button
                         key={`${slot.slot_start}-${index}`}
                         type="button"
@@ -4219,6 +4314,7 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
                     ))}
                   </div>
                 )}
+                </div>
               </div>
             </div>
 
@@ -4683,130 +4779,53 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
             ) : null}
 
 
-            <div className="mt-5 grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4 lg:pt-6">
-              <div className="rounded-none border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-none border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 3l7 4v5c0 4.5-2.8 7.7-7 9-4.2-1.3-7-4.5-7-9V7l7-4z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.5 12l1.7 1.7 3.3-3.4"
-                      />
-                    </svg>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Reserva segura
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Tus datos están protegidos y tu reserva queda registrada al instante.
-                    </p>
-                  </div>
+            <div className="mt-5 grid gap-3 rounded-none border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 px-4 py-4 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-indigo-100 lg:mt-6 lg:px-6">
+              <div className="flex items-center gap-3 sm:pr-6">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 4.5-2.8 7.7-7 9-4.2-1.3-7-4.5-7-9V7l7-4z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12l1.7 1.7 3.3-3.4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Tu reserva queda registrada al instante
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Datos protegidos y una experiencia segura.
+                  </p>
                 </div>
               </div>
 
-              <div className="rounded-none border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-none border border-violet-100 bg-violet-50 text-violet-600 shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 6v6l4 2"
-                      />
-                      <circle cx="12" cy="12" r="9" />
-                    </svg>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Confirmación inmediata
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Recibirás el detalle de tu reserva apenas confirmes la hora.
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3 sm:pl-6">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 3L5 13h6l-1 8 8-10h-6l1-8z" />
+                  </svg>
                 </div>
-              </div>
-
-              <div className="rounded-none border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-none border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M8 10h8M8 14h5"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M21 12c0 4.97-4.03 9-9 9a8.96 8.96 0 0 1-4.24-1.06L3 21l1.19-4.01A8.96 8.96 0 0 1 3 12c0-4.97 4.03-9 9-9s9 4.03 9 9z"
-                      />
-                    </svg>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      ¿Necesitas ayuda?
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Puedes escribirnos por WhatsApp si tienes dudas antes de reservar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-none border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-none bg-emerald-500 text-white shadow-sm">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="h-5 w-5"
-                    >
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.966-.273-.099-.471-.148-.67.15-.198.297-.768.966-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.787-1.48-1.759-1.653-2.056-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.793.372-.273.297-1.04 1.016-1.04 2.479s1.065 2.875 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.174-1.413-.075-.124-.273-.198-.57-.347z" />
-                      <path d="M20.52 3.449A11.94 11.94 0 0 0 12.043 0C5.495 0 .161 5.334.161 11.882c0 2.094.547 4.139 1.587 5.945L0 24l6.356-1.667a11.86 11.86 0 0 0 5.687 1.448h.005c6.548 0 11.882-5.334 11.882-11.882a11.8 11.8 0 0 0-3.41-8.45zm-8.477 18.32h-.004a9.86 9.86 0 0 1-5.026-1.378l-.361-.214-3.772.99 1.007-3.676-.235-.377a9.86 9.86 0 0 1-1.52-5.232c.003-5.44 4.43-9.867 9.875-9.867 2.637 0 5.114 1.027 6.978 2.893a9.82 9.82 0 0 1 2.889 6.983c-.003 5.443-4.43 9.878-9.87 9.878z" />
-                    </svg>
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {business?.whatsapp || visiblePhone || "WhatsApp disponible"}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Responderemos lo antes posible.
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Confirmación inmediata
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Recibirás los detalles de tu reserva apenas confirmes la hora.
+                  </p>
                 </div>
               </div>
             </div>
