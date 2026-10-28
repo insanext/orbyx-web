@@ -71,6 +71,8 @@ type Appointment = {
   deposit_status?: string | null;
   notes?: string | null;
   wa_confirmacion_enviada?: boolean | null;
+  // true: agendada encima de otra a propósito desde el panel (sobrecupo).
+  sobrecupo?: boolean | null;
   has_review?: boolean;
   customer_data?: {
     pet_name?: string;
@@ -282,6 +284,32 @@ type ManualBookingDraft = {
   date_locked?: boolean;
   time_locked?: boolean;
   origin_slot_start?: string;
+  // Hora escrita a mano ("HH:MM", múltiplo de 5). Si está, reemplaza a
+  // slot_start: elegir un botón de horario la limpia y viceversa.
+  manual_time?: string;
+};
+
+// Advertencias que devuelve el backend (409 requires_confirmation) cuando la
+// hora manual se cruza con otras reservas y/o queda fuera del horario de
+// atención. Se muestran juntas en un solo modal.
+type ManualBookingWarnings = {
+  conflicts: {
+    id: string;
+    start_at: string;
+    end_at: string;
+    customer_name: string | null;
+    service_name: string | null;
+    sobrecupo?: boolean;
+  }[];
+  outOfHours: boolean;
+  reason: string | null;
+};
+
+const OUT_OF_HOURS_REASON_LABEL: Record<string, string> = {
+  antes_apertura: "Es antes de la hora de apertura.",
+  despues_cierre: "Termina después de la hora de cierre.",
+  dia_cerrado: "Ese día está cerrado.",
+  bloqueo: "Cae sobre un horario bloqueado.",
 };
 
 type ManualBookingSlot = {
@@ -716,6 +744,7 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   // avisa si hay que confirmar por WhatsApp manualmente o si ya se mandó sola).
   const [manualBookingResult, setManualBookingResult] = useState<Appointment | null>(null);
   const [manualBookingError, setManualBookingError] = useState("");
+  const [manualWarnings, setManualWarnings] = useState<ManualBookingWarnings | null>(null);
   const [freeSlotActionDraft, setFreeSlotActionDraft] =
     useState<FreeSlotActionDraft | null>(null);
   const [quickBlockDraft, setQuickBlockDraft] =
@@ -2197,8 +2226,43 @@ function getSelectedStaffDayWindow(day: Date) {
       ? Array.from(slots)
       : fallback.map((slot) => formatHour(slot));
 
-    return source.sort((a, b) => a.localeCompare(b));
-  }, [weekDays, selectedStaffId, staffHours, businessHours, staffSpecialDates, businessSpecialDates]);
+    const sortedSource = source.sort((a, b) => a.localeCompare(b));
+
+    // Reservas fuera del horario de atención (hora manual con "agendar
+    // igual", o datos antiguos): la grilla se amplía hacia arriba/abajo para
+    // dibujarlas a su hora real. Antes quedaban pegadas al borde de la grilla.
+    const firstMinutes = timeStringToMinutes(sortedSource[0]);
+    const lastMinutes = timeStringToMinutes(sortedSource[sortedSource.length - 1]);
+    if (firstMinutes === null || lastMinutes === null) return sortedSource;
+
+    const step = Math.max(slotMinutes, 5);
+    let earliestStart = Infinity;
+    let latestEnd = -Infinity;
+    for (const appt of appointments) {
+      if (appt.status === "canceled") continue;
+      if (selectedStaffId && appt.staff_id !== selectedStaffId) continue;
+      const startMinutes = timeStringToMinutes(getTimeKey(appt.start_at));
+      if (startMinutes === null) continue;
+      const durationMinutes = Math.max(
+        Math.round((new Date(appt.end_at).getTime() - new Date(appt.start_at).getTime()) / 60000),
+        5
+      );
+      earliestStart = Math.min(earliestStart, startMinutes);
+      latestEnd = Math.max(latestEnd, Math.min(startMinutes + durationMinutes, 24 * 60));
+    }
+
+    const extraRows: string[] = [];
+    for (let m = firstMinutes - step; m >= 0 && m + step > earliestStart; m -= step) {
+      extraRows.push(minutesToTimeString(m));
+    }
+    for (let m = lastMinutes + step; m < 24 * 60 && m < latestEnd; m += step) {
+      extraRows.push(minutesToTimeString(m));
+    }
+
+    return extraRows.length
+      ? [...sortedSource, ...extraRows].sort((a, b) => a.localeCompare(b))
+      : sortedSource;
+  }, [weekDays, selectedStaffId, staffHours, businessHours, staffSpecialDates, businessSpecialDates, appointments, slotMinutes]);
 
 
 
@@ -2590,6 +2654,7 @@ next_control_custom_value:
     setManualSlotsError("");
     setManualBookingSaving(false);
     setManualBookingResult(null);
+    setManualWarnings(null);
   }
 
   function openManualBooking(
@@ -2904,7 +2969,15 @@ next_control_custom_value:
     if (!selectedBranchId) return "Debes seleccionar una sucursal.";
     if (!draft.staff_id) return "Debes seleccionar un profesional.";
     if (!draft.service_id) return "Debes seleccionar un servicio.";
-    if (!draft.slot_start) return "Selecciona un horario disponible.";
+    if (!draft.slot_start && !draft.manual_time) {
+      return "Selecciona un horario disponible o escribe una hora manual.";
+    }
+    if (draft.manual_time) {
+      const manualMatch = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(draft.manual_time);
+      if (!manualMatch) return "La hora manual no es válida (formato HH:MM).";
+      if (Number(manualMatch[2]) % 5 !== 0) return "La hora manual debe ser múltiplo de 5 minutos (ej. 19:00, 08:20).";
+      if (!draft.date) return "Selecciona una fecha.";
+    }
     if (!draft.customer_name.trim()) return "Ingresa el nombre del cliente.";
     if (!draft.customer_phone.trim()) return "Ingresa el teléfono del cliente.";
     if (!isValidPhoneForCountry("CL", draft.customer_phone)) {
@@ -2925,7 +2998,10 @@ next_control_custom_value:
     return "";
   }
 
-  async function handleConfirmManualBooking() {
+  async function handleConfirmManualBooking(force?: {
+    overlap?: boolean;
+    outOfHours?: boolean;
+  }) {
     if (manualBookingSaving) return;
     if (!manualBookingDraft) return;
 
@@ -2957,7 +3033,15 @@ next_control_custom_value:
         service_id: manualBookingDraft.service_id,
         staff_id: manualBookingDraft.staff_id,
         date: manualBookingDraft.date,
-        slot_start: manualBookingDraft.slot_start,
+        // Hora manual: el backend arma la hora (zona America/Santiago) a
+        // partir de date + manual_time; slot_start solo va con los botones.
+        ...(manualBookingDraft.manual_time
+          ? {
+              manual_time: manualBookingDraft.manual_time,
+              ...(force?.overlap ? { forzar_sobrecupo: true } : {}),
+              ...(force?.outOfHours ? { forzar_fuera_horario: true } : {}),
+            }
+          : { slot_start: manualBookingDraft.slot_start }),
         customer_name: manualBookingDraft.customer_name.trim(),
         // Mismo formato que la reserva pública: +56 fijo fuera del campo.
         customer_phone: toE164("CL", manualBookingDraft.customer_phone.trim()),
@@ -2979,9 +3063,22 @@ next_control_custom_value:
 
       const data = await res.json();
 
+      // Cruce con otras reservas y/o fuera de horario: no es un error, hay que
+      // confirmarlo. Un solo modal con todas las advertencias.
+      if (res.status === 409 && data?.requires_confirmation) {
+        setManualWarnings({
+          conflicts: Array.isArray(data.conflicts) ? data.conflicts : [],
+          outOfHours: Boolean(data.out_of_hours),
+          reason: data.out_of_hours_reason ?? null,
+        });
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data?.error || "No se pudo crear la reserva.");
       }
+
+      setManualWarnings(null);
 
       // No se cierra el modal todavía — punto 4a: se muestra un paso final
       // avisando si hace falta confirmar por WhatsApp a mano o si ya se
@@ -2992,6 +3089,7 @@ next_control_custom_value:
       setManualBookingStep("success");
       await loadAppointments({ preserveSelected: true, silent: true });
     } catch (err: unknown) {
+      setManualWarnings(null);
       setManualBookingError(
         err instanceof Error ? err.message : "Error creando reserva"
       );
@@ -3099,7 +3197,7 @@ next_control_custom_value:
                 };
           }
           if (next.auto_pick_date) {
-            if (daySlots.length === 0 && !next.slot_start) {
+            if (daySlots.length === 0 && !next.slot_start && !next.manual_time) {
               const firstAvailable = dates.find((date) => (map[date] || []).length > 0);
               if (firstAvailable) next = { ...next, date: firstAvailable };
             }
@@ -4055,7 +4153,7 @@ const hasActiveFilters =
     const title = isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name;
     const subtitle = isGroupSlot
       ? `${group.length}/${capacity} inscritos`
-      : (first.service_name_snapshot || "Reserva");
+      : `${first.service_name_snapshot || "Reserva"}${first.sobrecupo ? " · Sobrecupo" : ""}`;
 
     if (compact) {
       return (
@@ -4243,11 +4341,19 @@ const hasActiveFilters =
               style={{ ...laneStyle, borderLeftWidth: 4, borderLeftColor: isGroupSlot ? undefined : staffColor }}
               title={`${timeLabel} · ${isGroupSlot ? appt.service_name_snapshot || "Clase" : appt.customer_name}${
                 appt.service_name_snapshot && !isGroupSlot ? ` · ${appt.service_name_snapshot}` : ""
-              }${staff ? ` · ${staff.name}` : ""}`}
+              }${staff ? ` · ${staff.name}` : ""}${appt.sobrecupo && !isGroupSlot ? " · Sobrecupo" : ""}`}
             >
               {newAppointmentIds.has(appt.id) ? (
                 <span className="absolute right-0.5 top-0.5 z-20 rounded-full bg-rose-500 px-1 py-px text-[7px] font-bold leading-none text-white">
                   Nueva
+                </span>
+              ) : null}
+              {appt.sobrecupo && !isGroupSlot ? (
+                <span
+                  className="absolute bottom-0.5 right-0.5 z-20 rounded-full bg-amber-500 px-1 py-px text-[7px] font-bold leading-none text-white"
+                  title="Sobrecupo: agendada encima de otra reserva"
+                >
+                  {narrow ? "S" : "Sobrecupo"}
                 </span>
               ) : null}
               {isGroupSlot && groupStyles ? (
@@ -8144,8 +8250,15 @@ const isEmptySlotSelected =
                           style={{ borderColor: "var(--border-color)" }}
                         >
                           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Estado actual</p>
-                          <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getStatusBadgeClass(selectedAppointment)}`}>
-                            {getStatusLabel(selectedAppointment)}
+                          <span className="flex flex-wrap items-center justify-end gap-1.5">
+                            {selectedAppointment.sobrecupo ? (
+                              <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800" title="Agendada encima de otra reserva desde el panel">
+                              Sobrecupo
+                            </span>
+                            ) : null}
+                            <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${getStatusBadgeClass(selectedAppointment)}`}>
+                              {getStatusLabel(selectedAppointment)}
+                            </span>
                           </span>
                         </div>
 
@@ -8358,18 +8471,25 @@ const isEmptySlotSelected =
                           {selectedAppointment.service_name_snapshot || "Reserva"}
                         </p>
 
-                        <span
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                            isSelectedGroupAppointment &&
-                            selectedGroupVisualState &&
-                            selectedGroupStyles
-                              ? selectedGroupStyles.stateBadge
-                              : getStatusBadgeClass(selectedAppointment)
-                          }`}
-                        >
-                          {isSelectedGroupAppointment && selectedGroupVisualState
-                            ? selectedGroupVisualState.label
-                            : getStatusLabel(selectedAppointment)}
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          {selectedAppointment.sobrecupo && !isSelectedGroupAppointment ? (
+                            <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800" title="Agendada encima de otra reserva desde el panel">
+                              Sobrecupo
+                            </span>
+                          ) : null}
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                              isSelectedGroupAppointment &&
+                              selectedGroupVisualState &&
+                              selectedGroupStyles
+                                ? selectedGroupStyles.stateBadge
+                                : getStatusBadgeClass(selectedAppointment)
+                            }`}
+                          >
+                            {isSelectedGroupAppointment && selectedGroupVisualState
+                              ? selectedGroupVisualState.label
+                              : getStatusLabel(selectedAppointment)}
+                          </span>
                         </span>
                       </div>
 
@@ -9794,6 +9914,13 @@ const isEmptySlotSelected =
                   {formatLongDate(manualBookingDraft.slot_start)} ·{" "}
                   {formatHour(manualBookingDraft.slot_start)}
                 </p>
+              ) : manualBookingStep === "confirm" && manualBookingDraft.manual_time ? (
+                <p
+                  className="mt-1 text-sm leading-6"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {formatLongDate(`${manualBookingDraft.date}T12:00:00`)} · {manualBookingDraft.manual_time}
+                </p>
               ) : null}
             </div>
 
@@ -9813,8 +9940,18 @@ const isEmptySlotSelected =
                       (staff) => staff.id === manualBookingDraft.staff_id
                     )?.name || "Profesional",
                   ],
-                  ["Fecha", formatLongDate(manualBookingDraft.slot_start)],
-                  ["Hora", formatHour(manualBookingDraft.slot_start)],
+                  [
+                    "Fecha",
+                    manualBookingDraft.manual_time
+                      ? formatLongDate(`${manualBookingDraft.date}T12:00:00`)
+                      : formatLongDate(manualBookingDraft.slot_start),
+                  ],
+                  [
+                    "Hora",
+                    manualBookingDraft.manual_time
+                      ? `${manualBookingDraft.manual_time} (hora manual)`
+                      : formatHour(manualBookingDraft.slot_start),
+                  ],
                 ].map(([label, value]) => (
                   <div
                     key={label}
@@ -10026,8 +10163,11 @@ const isEmptySlotSelected =
                             const slotsForDay = manualWeekSlots[dateKey];
                             const isPastDay = dateKey < todayDateKey;
                             const hasSlots = Boolean(slotsForDay && slotsForDay.length > 0);
+                            // Un día sin horarios (cerrado, bloqueado o lleno) se
+                            // puede elegir igual: sirve para una hora manual
+                            // "fuera de horario" (el backend pide confirmación).
                             const isDisabled =
-                              !readyForSlots || manualSlotsLoading || isPastDay || !hasSlots;
+                              !readyForSlots || manualSlotsLoading || isPastDay;
                             const isSelected = draft.date === dateKey;
                             return (
                               <button
@@ -10041,6 +10181,7 @@ const isEmptySlotSelected =
                                           ...prev,
                                           date: dateKey,
                                           slot_start: "",
+                                          manual_time: "",
                                           auto_pick_date: false,
                                           requested_time_unavailable: "",
                                         }
@@ -10050,7 +10191,7 @@ const isEmptySlotSelected =
                                 aria-pressed={isSelected}
                                 title={
                                   readyForSlots && !manualSlotsLoading && !isPastDay && !hasSlots
-                                    ? "Sin horarios disponibles"
+                                    ? "Sin horarios disponibles: puedes escribir una hora manual"
                                     : undefined
                                 }
                                 className="flex flex-col items-center justify-center gap-0.5 rounded-xl border py-1.5 transition disabled:cursor-not-allowed"
@@ -10121,7 +10262,7 @@ const isEmptySlotSelected =
                           </p>
                         ) : daySlots.length === 0 ? (
                           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                            No hay horarios disponibles este día. Elige otro día.
+                            No hay horarios disponibles este día. Elige otro día o escribe una hora manual.
                           </p>
                         ) : (
                           <div className="grid max-h-44 grid-cols-4 gap-1.5 overflow-y-auto pr-0.5 sm:grid-cols-5">
@@ -10156,6 +10297,7 @@ const isEmptySlotSelected =
                                         ? {
                                             ...prev,
                                             slot_start: slot.slot_start,
+                                            manual_time: "",
                                             requested_time_unavailable: "",
                                           }
                                         : prev
@@ -10199,6 +10341,45 @@ const isEmptySlotSelected =
                               ? `Las ${draft.requested_time_unavailable} ya no cabe con este servicio. Te marcamos los horarios más cercanos.`
                               : `Ese día no quedan horarios para este servicio (querías las ${draft.requested_time_unavailable}). Elige otra fecha.`}
                           </p>
+                        ) : null}
+
+                        {readyForSlots ? (
+                          <div className="mt-3">
+                            <label
+                              htmlFor="manual-booking-time"
+                              className={labelClass}
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Hora manual (opcional)
+                            </label>
+                            <input
+                              id="manual-booking-time"
+                              type="time"
+                              step={300}
+                              value={draft.manual_time || ""}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                setManualBookingDraft((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        manual_time: value,
+                                        // Hora manual y botón de horario son excluyentes.
+                                        slot_start: value ? "" : prev.slot_start,
+                                        requested_time_unavailable: value ? "" : prev.requested_time_unavailable,
+                                        time_locked: value ? false : prev.time_locked,
+                                      }
+                                    : prev
+                                );
+                              }}
+                              className={fieldClass}
+                              style={fieldStyle}
+                            />
+                            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                              Escribe cualquier hora, de 5 en 5 minutos (ej. 19:00 u 08:20). Si se cruza con otra
+                              reserva o queda fuera de tu horario, te avisamos antes de agendar.
+                            </p>
+                          </div>
                         ) : null}
                       </div>
                     </>
@@ -10479,6 +10660,102 @@ const isEmptySlotSelected =
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {manualBookingDraft && manualWarnings ? (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manual-warnings-title"
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border p-5 shadow-2xl"
+            style={{
+              borderColor: "var(--border-color)",
+              background: "var(--bg-card)",
+            }}
+          >
+            <h3
+              id="manual-warnings-title"
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-main)" }}
+            >
+              Revisa antes de agendar
+            </h3>
+            <p className="mt-1 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
+              Esta reserva necesita tu confirmación:
+            </p>
+
+            <div className="mt-3 space-y-3">
+              {manualWarnings.conflicts.length > 0 ? (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="font-semibold">
+                    Se cruza con {manualWarnings.conflicts.length === 1 ? "otra reserva" : `${manualWarnings.conflicts.length} reservas`} de este profesional
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {manualWarnings.conflicts.map((conflict) => (
+                      <li key={conflict.id} className="leading-snug">
+                        <span className="font-semibold">
+                          {formatHour(conflict.start_at)} – {formatHour(conflict.end_at)}
+                        </span>
+                        {" · "}
+                        {conflict.customer_name || "Sin nombre"}
+                        {" · "}
+                        {conflict.service_name || "Servicio"}
+                        {conflict.sobrecupo ? (
+                          <span className="ml-1.5 rounded-full bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold">
+                            Sobrecupo
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs">
+                    Se agendará como sobrecupo, encima de lo anterior. La página pública seguirá sin ofrecer ese horario.
+                  </p>
+                </div>
+              ) : null}
+
+              {manualWarnings.outOfHours ? (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p className="font-semibold">Esta hora queda fuera de tu horario de atención</p>
+                  <p className="mt-1">
+                    {(manualWarnings.reason && OUT_OF_HOURS_REASON_LABEL[manualWarnings.reason]) ||
+                      "No está dentro de tu horario disponible."}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setManualWarnings(null)}
+                disabled={manualBookingSaving}
+                className="inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: "var(--border-color)",
+                  background: "var(--bg-soft)",
+                  color: "var(--text-main)",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleConfirmManualBooking({
+                    overlap: manualWarnings.conflicts.length > 0,
+                    outOfHours: manualWarnings.outOfHours,
+                  })
+                }
+                disabled={manualBookingSaving}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {manualBookingSaving ? "Creando..." : "Agendar igual"}
+              </button>
             </div>
           </div>
         </div>

@@ -50,6 +50,18 @@ export async function POST(req: Request) {
       source: isDashboardBooking ? "dashboard" : "public_page",
       customer_data: body.customer_data || null,
       ...(isDashboardBooking ? { booking_origin: "dashboard" } : {}),
+      // Hora libre, sobrecupo y fuera de horario: solo desde el panel. En la
+      // reserva pública nunca se reenvían (y el backend además los ignora si
+      // no hay sesión de un miembro con permiso de Agenda).
+      ...(isDashboardBooking
+        ? {
+            ...(typeof body.manual_time === "string" && body.manual_time
+              ? { manual_time: body.manual_time }
+              : {}),
+            ...(body.forzar_sobrecupo === true ? { forzar_sobrecupo: true } : {}),
+            ...(body.forzar_fuera_horario === true ? { forzar_fuera_horario: true } : {}),
+          }
+        : {}),
     };
 
     const res = await fetch(`${BACKEND_URL}/appointments/slot`, {
@@ -68,6 +80,17 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: data?.error || "No se pudo crear la reserva",
+          // 409 de confirmación del panel (cruce y/o fuera de horario): el
+          // modal necesita el detalle. Solo se agrega cuando viene.
+          ...(data?.requires_confirmation
+            ? {
+                requires_confirmation: true,
+                conflicts: Array.isArray(data.conflicts) ? data.conflicts : [],
+                out_of_hours: Boolean(data.out_of_hours),
+                out_of_hours_reason: data.out_of_hours_reason ?? null,
+              }
+            : {}),
+          ...(data?.code ? { code: data.code } : {}),
         },
         { status: res.status }
       );
