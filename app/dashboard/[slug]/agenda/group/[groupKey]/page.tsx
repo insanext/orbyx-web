@@ -56,9 +56,10 @@ function formatHour(value?: string) {
   if (!value) return "--:--";
 
   return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
+    hourCycle: "h23",
   }).format(new Date(value));
 }
 

@@ -745,6 +745,10 @@ const [showPendingClinicalPanel, setShowPendingClinicalPanel] = useState(false);
   const [manualBookingResult, setManualBookingResult] = useState<Appointment | null>(null);
   const [manualBookingError, setManualBookingError] = useState("");
   const [manualWarnings, setManualWarnings] = useState<ManualBookingWarnings | null>(null);
+  // Texto del campo "Hora manual" tal como se escribe (con máscara HH:MM). A
+  // draft.manual_time solo llega una hora completa y válida.
+  const [manualTimeInput, setManualTimeInput] = useState("");
+  const [manualTimeError, setManualTimeError] = useState("");
   const [freeSlotActionDraft, setFreeSlotActionDraft] =
     useState<FreeSlotActionDraft | null>(null);
   const [quickBlockDraft, setQuickBlockDraft] =
@@ -870,10 +874,13 @@ next_control_custom_unit: "days",
   }
 
   function formatHour(dateString: string) {
+    // Siempre 24 h ("19:15"), nunca "7:15 p. m.": el locale es-CL por defecto
+    // usa 12 h, y hour12:false puede dar "24:15"; hourCycle h23 evita ambos.
     return new Date(dateString).toLocaleTimeString("es-CL", {
+      timeZone: "America/Santiago",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false,
+      hourCycle: "h23",
     });
   }
 
@@ -1043,12 +1050,13 @@ function formatMobileDateLabel(date: Date) {
 
   function formatCompactDateTime(dateString: string) {
     return new Date(dateString).toLocaleString("es-CL", {
+      timeZone: "America/Santiago",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: false,
+      hourCycle: "h23",
     });
   }
 
@@ -2655,6 +2663,58 @@ next_control_custom_value:
     setManualBookingSaving(false);
     setManualBookingResult(null);
     setManualWarnings(null);
+    resetManualTimeInput();
+  }
+
+  function resetManualTimeInput() {
+    setManualTimeInput("");
+    setManualTimeError("");
+  }
+
+  // Máscara 24 h: solo dígitos, ":" automático tras el 2º dígito. Borrar el ":"
+  // quita también el dígito anterior (si no, la máscara lo volvería a poner y no
+  // se podría borrar). Solo una hora válida (00-23 : 00-59, de 5 en 5) pasa a
+  // draft.manual_time; no se redondea en silencio.
+  function handleManualTimeChange(rawValue: string) {
+    let digits = rawValue.replace(/\D/g, "").slice(0, 4);
+    if (
+      rawValue.length < manualTimeInput.length &&
+      manualTimeInput.includes(":") &&
+      !rawValue.includes(":") &&
+      digits.length >= 3
+    ) {
+      digits = digits.slice(0, 1) + digits.slice(2);
+    }
+    const text = digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+    setManualTimeInput(text);
+
+    let validTime = "";
+    let errorText = "";
+    if (digits.length === 4) {
+      const hours = Number(digits.slice(0, 2));
+      const minutes = Number(digits.slice(2));
+      if (hours > 23 || minutes > 59) {
+        errorText = "Hora no válida";
+      } else if (minutes % 5 !== 0) {
+        errorText = "Usa minutos de 5 en 5 (ej. 19:10 o 19:15)";
+      } else {
+        validTime = text;
+      }
+    }
+    setManualTimeError(errorText);
+
+    setManualBookingDraft((prev) =>
+      prev
+        ? {
+            ...prev,
+            manual_time: validTime,
+            // Hora manual válida y botón de horario son excluyentes.
+            slot_start: validTime ? "" : prev.slot_start,
+            requested_time_unavailable: validTime ? "" : prev.requested_time_unavailable,
+            time_locked: validTime ? false : prev.time_locked,
+          }
+        : prev
+    );
   }
 
   function openManualBooking(
@@ -2675,6 +2735,7 @@ next_control_custom_value:
     );
     setManualWeekSlots({});
     setManualSlotsError("");
+    resetManualTimeInput();
     setManualBookingDraft({
       slot_start: editable ? "" : slotStart,
       date: initialDate,
@@ -2701,6 +2762,8 @@ next_control_custom_value:
   // Al cambiar profesional/servicio en una reserva abierta desde un bloque,
   // se vuelve a probar la fecha/hora original del bloque (fijas otra vez).
   function restoreManualOriginSlot(draft: ManualBookingDraft): Partial<ManualBookingDraft> {
+    // Con hora manual escrita no se vuelve a la hora del bloque original.
+    if (draft.manual_time) return { requested_time_unavailable: "" };
     if (!draft.origin_slot_start) {
       return { slot_start: "", requested_time_unavailable: "" };
     }
@@ -2943,6 +3006,7 @@ next_control_custom_value:
     );
     setManualWeekSlots({});
     setManualSlotsError("");
+    resetManualTimeInput();
     setManualBookingDraft({
       slot_start: appt.start_at,
       date: groupDate,
@@ -2971,6 +3035,9 @@ next_control_custom_value:
     if (!draft.service_id) return "Debes seleccionar un servicio.";
     if (!draft.slot_start && !draft.manual_time) {
       return "Selecciona un horario disponible o escribe una hora manual.";
+    }
+    if (!draft.manual_time && manualTimeInput) {
+      return manualTimeError || "Completa la hora manual (ej. 19:15) o bórrala.";
     }
     if (draft.manual_time) {
       const manualMatch = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(draft.manual_time);
@@ -5991,6 +6058,23 @@ const hasActiveFilters =
                     <List className="h-4 w-4" />
                     Lista
                   </button>
+
+                  {/* Escritorio: abre "Nueva reserva" (en móvil sigue el botón "+" flotante). */}
+                  {selectedBranchId ? (
+                    <button
+                      type="button"
+                      onClick={() => openManualBooking(new Date().toISOString(), null, { editableSlot: true })}
+                      className="orbyx-header-btn hidden h-9 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold md:inline-flex"
+                      style={{
+                        borderColor: "var(--accent-solid)",
+                        background: "var(--accent-solid)",
+                        color: "#fff",
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Nueva reserva
+                    </button>
+                  ) : null}
 
                   {depositRequired ? (
                     <button
@@ -9240,6 +9324,7 @@ const isEmptySlotSelected =
                               month: "short",
                               hour: "2-digit",
                               minute: "2-digit",
+                              hourCycle: "h23",
                             })}
                           </p>
                         </div>
@@ -9257,6 +9342,7 @@ const isEmptySlotSelected =
                                       timeZone: "America/Santiago",
                                       hour: "2-digit",
                                       minute: "2-digit",
+                                      hourCycle: "h23",
                                     })}
                                     {" · "}
                                     {waitingMinutes <= 0
@@ -10181,7 +10267,6 @@ const isEmptySlotSelected =
                                           ...prev,
                                           date: dateKey,
                                           slot_start: "",
-                                          manual_time: "",
                                           auto_pick_date: false,
                                           requested_time_unavailable: "",
                                         }
@@ -10291,7 +10376,8 @@ const isEmptySlotSelected =
                                         }
                                       : undefined
                                   }
-                                  onClick={() =>
+                                  onClick={() => {
+                                    resetManualTimeInput();
                                     setManualBookingDraft((prev) =>
                                       prev
                                         ? {
@@ -10301,8 +10387,8 @@ const isEmptySlotSelected =
                                             requested_time_unavailable: "",
                                           }
                                         : prev
-                                    )
-                                  }
+                                    );
+                                  }}
                                   className="flex h-9 flex-col items-center justify-center rounded-xl border text-sm font-semibold transition"
                                   style={{
                                     borderColor: isSelected
@@ -10352,31 +10438,51 @@ const isEmptySlotSelected =
                             >
                               Hora manual (opcional)
                             </label>
-                            <input
-                              id="manual-booking-time"
-                              type="time"
-                              step={300}
-                              value={draft.manual_time || ""}
-                              onChange={(event) => {
-                                const value = event.target.value;
-                                setManualBookingDraft((prev) =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        manual_time: value,
-                                        // Hora manual y botón de horario son excluyentes.
-                                        slot_start: value ? "" : prev.slot_start,
-                                        requested_time_unavailable: value ? "" : prev.requested_time_unavailable,
-                                        time_locked: value ? false : prev.time_locked,
-                                      }
-                                    : prev
-                                );
-                              }}
-                              className={fieldClass}
-                              style={fieldStyle}
-                            />
-                            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                              Escribe cualquier hora, de 5 en 5 minutos (ej. 19:00 u 08:20). Si se cruza con otra
+                            <div className="relative">
+                              <input
+                                id="manual-booking-time"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={5}
+                                placeholder="00:00"
+                                autoComplete="off"
+                                aria-invalid={manualTimeError ? true : undefined}
+                                aria-describedby="manual-booking-time-help"
+                                value={manualTimeInput}
+                                onChange={(event) => handleManualTimeChange(event.target.value)}
+                                className={`${fieldClass} pr-10 tabular-nums`}
+                                style={{
+                                  ...fieldStyle,
+                                  ...(manualTimeError ? { borderColor: "rgb(244,63,94)" } : {}),
+                                }}
+                              />
+                              {manualTimeInput ? (
+                                <button
+                                  type="button"
+                                  aria-label="Borrar hora manual"
+                                  title="Borrar hora manual"
+                                  onClick={() => {
+                                    handleManualTimeChange("");
+                                  }}
+                                  className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-base leading-none transition hover:opacity-70"
+                                  style={{ color: "var(--text-muted)" }}
+                                >
+                                  ×
+                                </button>
+                              ) : null}
+                            </div>
+                            {manualTimeError ? (
+                              <p role="alert" className="mt-1 text-xs font-medium text-rose-500">
+                                {manualTimeError}
+                              </p>
+                            ) : null}
+                            <p
+                              id="manual-booking-time-help"
+                              className="mt-1 text-xs"
+                              style={{ color: "var(--text-muted)" }}
+                            >
+                              Formato 24 horas, de 5 en 5 minutos (ej. 19:15 o 08:20). Si se cruza con otra
                               reserva o queda fuera de tu horario, te avisamos antes de agendar.
                             </p>
                           </div>
