@@ -413,6 +413,9 @@ function formatHourLabel(time?: string | null) {
 }
 
 const UNGROUPED_CATEGORY_KEY = "__sin_categoria__";
+// Con más servicios que esto (en total) el catálogo parte compacto: solo la
+// primera categoría abierta y, al abrir otra, las demás se cierran.
+const COMPACT_CATALOG_MIN_SERVICES = 8;
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const WEEKDAY_LABELS: Record<number, string> = {
@@ -1116,6 +1119,12 @@ function ServiceCatalogAccordion({
   }
 
   return (
+    <>
+    <style>{`
+      @keyframes orbyxCatalogOpen { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+      .orbyx-catalog-open { animation: orbyxCatalogOpen 0.18s ease-out; }
+      @media (prefers-reduced-motion: reduce) { .orbyx-catalog-open { animation: none; } }
+    `}</style>
     <div className="space-y-3">
       {categories.map((category) => {
         const open = !collapsedKeys.has(category.key);
@@ -1123,11 +1132,27 @@ function ServiceCatalogAccordion({
         return (
           <div
             key={category.key}
-            className="overflow-hidden rounded-none border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]"
+            data-catalog-category={category.key}
+            className="scroll-mt-3 overflow-hidden rounded-none border border-slate-100 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.2)]"
           >
             <button
               type="button"
-              onClick={() => onToggleCategory(category.key)}
+              aria-expanded={open}
+              onClick={(event) => {
+                const section = event.currentTarget.closest(
+                  "[data-catalog-category]"
+                ) as HTMLElement | null;
+                onToggleCategory(category.key);
+                // Al abrir una categoría las demás se cierran y la página se
+                // acorta: si su encabezado queda arriba de la pantalla, se trae a la vista.
+                if (section && !open) {
+                  requestAnimationFrame(() => {
+                    if (section.getBoundingClientRect().top < 0) {
+                      section.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  });
+                }
+              }}
               className="flex w-full items-center justify-between gap-2 border-b border-indigo-100 border-l-4 border-l-indigo-600 px-3 py-3.5 text-left transition hover:brightness-[0.98] md:px-5"
               style={{ background: CATEGORY_HEADER_GRADIENT }}
             >
@@ -1152,7 +1177,7 @@ function ServiceCatalogAccordion({
             </button>
 
             {open ? (
-              <div className="divide-y divide-slate-100 bg-white">
+              <div className="orbyx-catalog-open divide-y divide-slate-100 bg-white">
                 {category.services.length === 0 ? (
                   <p className="px-4 py-6 text-center text-sm text-slate-500 md:px-5">
                     No encontramos servicios con ese nombre.
@@ -1222,6 +1247,7 @@ function ServiceCatalogAccordion({
         );
       })}
     </div>
+    </>
   );
 }
 
@@ -1824,9 +1850,19 @@ const isGroupBookingBusiness =
   const [viewStep, setViewStep] = useState<"catalog" | "booking">("catalog");
   const [catalogSearchQuery, setCatalogSearchQuery] = useState("");
   const [activeCategoryKey, setActiveCategoryKey] = useState("todos");
-  const [collapsedCatalogSections, setCollapsedCatalogSections] = useState<
-    Set<string>
-  >(new Set());
+  // Acordeón del catálogo (solo presentación). null = vista inicial: con más de
+  // COMPACT_CATALOG_MIN_SERVICES servicios solo la primera categoría abierta,
+  // si no todas abiertas. `sig` es la firma de las categorías: si cambian (otra
+  // sucursal) se vuelve a la vista inicial sin necesidad de un efecto.
+  const [collapsedCatalogSections, setCollapsedCatalogSections] = useState<{
+    sig: string;
+    keys: Set<string>;
+  } | null>(null);
+  // Cambios manuales del acordeón durante una búsqueda; valen solo para ese texto.
+  const [searchToggledSections, setSearchToggledSections] = useState<{
+    term: string;
+    keys: Set<string>;
+  }>({ term: "", keys: new Set() });
   const [weekSlots, setWeekSlots] = useState<Record<string, SlotItem[]>>({});
 const [nextAvailableSlots, setNextAvailableSlots] = useState<SlotItem[]>([]);
 const [loadingNextSlots, setLoadingNextSlots] = useState(false);
@@ -2053,6 +2089,79 @@ const nextAvailableDays = useMemo(() => {
 
     return categories;
   }, [services, serviceGroups, catalogSearchQuery]);
+
+  // --- Presentación del acordeón (solo UI: no cambia consultas, filtros ni datos) ---
+  const catalogSearchTerm = catalogSearchQuery.trim().toLowerCase();
+  const isCompactCatalog = services.length > COMPACT_CATALOG_MIN_SERVICES;
+  const catalogSignature = catalogCategories.map((category) => category.key).join("|");
+
+  // Categorías contraídas. Con búsqueda: abiertas las que tienen resultados y
+  // cerradas las que no (más lo que el usuario cambie para ese texto). Sin
+  // búsqueda: lo que el usuario dejó, o la vista inicial.
+  const catalogCollapsedKeys = useMemo(() => {
+    if (catalogSearchTerm) {
+      const next = new Set(
+        catalogCategories.filter((c) => c.services.length === 0).map((c) => c.key)
+      );
+      if (searchToggledSections.term === catalogSearchTerm) {
+        searchToggledSections.keys.forEach((key) => {
+          if (next.has(key)) next.delete(key);
+          else next.add(key);
+        });
+      }
+      return next;
+    }
+    if (collapsedCatalogSections && collapsedCatalogSections.sig === catalogSignature) {
+      return collapsedCatalogSections.keys;
+    }
+    if (!isCompactCatalog) return new Set<string>();
+    const firstOpenKey = catalogCategories.find((c) => c.totalCount > 0)?.key;
+    return new Set(
+      catalogCategories.filter((c) => c.key !== firstOpenKey).map((c) => c.key)
+    );
+  }, [
+    catalogCategories,
+    catalogSearchTerm,
+    catalogSignature,
+    collapsedCatalogSections,
+    isCompactCatalog,
+    searchToggledSections,
+  ]);
+
+  function toggleCatalogCategory(key: string) {
+    if (catalogSearchTerm) {
+      setSearchToggledSections((prev) => {
+        const keys = new Set<string>(prev.term === catalogSearchTerm ? prev.keys : []);
+        if (keys.has(key)) keys.delete(key);
+        else keys.add(key);
+        return { term: catalogSearchTerm, keys };
+      });
+      return;
+    }
+
+    const next = new Set(catalogCollapsedKeys);
+    if (!next.has(key)) {
+      next.add(key); // contraer
+    } else {
+      if (isCompactCatalog) {
+        // Acordeón: al abrir una categoría se cierran las demás.
+        catalogCategories.forEach((category) => next.add(category.key));
+      }
+      next.delete(key);
+    }
+    setCollapsedCatalogSections({ sig: catalogSignature, keys: next });
+  }
+
+  // Menú lateral: elegir una categoría muestra directamente sus servicios
+  // (la abre); "Todos" vuelve a la vista inicial del catálogo.
+  function selectCatalogCategory(key: string) {
+    setActiveCategoryKey(key);
+    if (key === "todos") {
+      if (isCompactCatalog) setCollapsedCatalogSections(null);
+      return;
+    }
+    if (catalogCollapsedKeys.has(key)) toggleCatalogCategory(key);
+  }
 
   const visibleCatalogCategories =
     activeCategoryKey === "todos"
@@ -3541,7 +3650,7 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                     totalCount: category.totalCount,
                   }))}
                   activeCategoryKey={activeCategoryKey}
-                  onCategoryChange={setActiveCategoryKey}
+                  onCategoryChange={selectCatalogCategory}
                   staff={panelStaff}
                   hasSelectedService={Boolean(selectedService)}
                 />
@@ -3558,18 +3667,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       onSelect={selectCatalogService}
                       selectedExtraIds={selectedExtraIds}
                       onToggleExtra={toggleSelectedExtra}
-                      collapsedKeys={collapsedCatalogSections}
-                      onToggleCategory={(key) =>
-                        setCollapsedCatalogSections((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(key)) {
-                            next.delete(key);
-                          } else {
-                            next.add(key);
-                          }
-                          return next;
-                        })
-                      }
+                      collapsedKeys={catalogCollapsedKeys}
+                      onToggleCategory={toggleCatalogCategory}
                     />
                   )}
 
