@@ -3880,6 +3880,37 @@ loadPendingClinicalNotes();
     );
   }, [appointments, activeFilter, selectedServiceId]);
 
+  // Citas del mismo profesional que se cruzan en el tiempo (sobrecupo): se
+  // marcan en naranjo en la lista, la grilla y la semana móvil.
+  const overlappingIds = useMemo(() => {
+    const byStaff = new Map<string, Appointment[]>();
+    for (const appt of appointments) {
+      if (appt.status === "canceled" || !appt.staff_id || appt.service_is_group) continue;
+      const list = byStaff.get(appt.staff_id) || [];
+      list.push(appt);
+      byStaff.set(appt.staff_id, list);
+    }
+    const ids = new Set<string>();
+    for (const list of byStaff.values()) {
+      const sorted = [...list].sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+      let prev: Appointment | null = null;
+      let prevEnd = -Infinity;
+      for (const appt of sorted) {
+        const start = new Date(appt.start_at).getTime();
+        if (prev && start < prevEnd) {
+          ids.add(prev.id);
+          ids.add(appt.id);
+        }
+        const end = new Date(appt.end_at).getTime();
+        if (end > prevEnd) {
+          prev = appt;
+          prevEnd = end;
+        }
+      }
+    }
+    return ids;
+  }, [appointments]);
+
   const appointmentsByDay = useMemo(() => {
     const result: Record<string, Appointment[]> = {};
 
@@ -4361,14 +4392,16 @@ const hasActiveFilters =
       : `${first.staff_id ? `Prof. ${getStaffName(first.staff_id)}` : "Sin profesional asignado"}${
           branchName ? ` · ${branchName}` : ""
         }`;
+    const isOverlapped = group.some((a) => overlappingIds.has(a.id));
     const cardStyle = {
-      borderColor: isSelected ? "var(--accent-solid)" : "var(--border-color)",
-      background: "var(--bg-card)",
+      borderColor: isSelected ? "var(--accent-solid)" : isOverlapped ? "#f97316" : "var(--border-color)",
+      background: isOverlapped ? "rgba(249,115,22,0.12)" : "var(--bg-card)",
+      ...(isOverlapped ? { boxShadow: "inset 3px 0 0 #f97316" } : {}),
     };
     const title = isGroupSlot ? (first.service_name_snapshot || "Actividad grupal") : first.customer_name;
     const subtitle = isGroupSlot
       ? `${group.length}/${capacity} inscritos`
-      : `${first.service_name_snapshot || "Reserva"}${first.sobrecupo ? " · Sobrecupo" : ""}`;
+      : `${first.service_name_snapshot || "Reserva"}${isOverlapped ? " · Traslapada" : ""}`;
 
     if (compact) {
       return (
@@ -4553,7 +4586,14 @@ const hasActiveFilters =
               )} ${isGroupSlot && groupStyles ? groupStyles.card : getCardClass(appt, isSelected)} ${
                 isPastBlock && !isSelected ? "opacity-70 hover:opacity-100" : ""
               }`}
-              style={{ ...laneStyle, borderLeftWidth: 4, borderLeftColor: isGroupSlot ? undefined : staffColor }}
+              style={{
+                ...laneStyle,
+                borderLeftWidth: 4,
+                borderLeftColor: isGroupSlot ? undefined : staffColor,
+                ...(overlappingIds.has(appt.id) && !isGroupSlot
+                  ? { boxShadow: "inset 0 0 0 2px #f97316", backgroundImage: "linear-gradient(rgba(249,115,22,0.35), rgba(249,115,22,0.35))" }
+                  : {}),
+              }}
               title={`${timeLabel} · ${isGroupSlot ? appt.service_name_snapshot || "Clase" : appt.customer_name}${
                 appt.service_name_snapshot && !isGroupSlot ? ` · ${appt.service_name_snapshot}` : ""
               }${staff ? ` · ${staff.name}` : ""}${appt.sobrecupo && !isGroupSlot ? " · Sobrecupo" : ""}`}
@@ -6713,10 +6753,16 @@ const hasActiveFilters =
                             // (en el orden en que empiezan): 1 → degradado liso,
                             // 2+ → franjas diagonales.
                             const statusKeys = blockGroups.map((group) => getStatusColorKey(group[0]));
-                            const tileStyle: CSSProperties = {
-                              background: statusSplitGradient(statusKeys),
-                              boxShadow: statusTileShadow(statusKeys[0]),
-                            };
+                            const cellOverlapped = blockGroups.some((g) => g.some((a) => overlappingIds.has(a.id)));
+                            const tileStyle: CSSProperties = cellOverlapped
+                              ? {
+                                  background: "linear-gradient(135deg, #fb923c, #ea580c)",
+                                  boxShadow: "0 0 0 2px rgba(249,115,22,0.5)",
+                                }
+                              : {
+                                  background: statusSplitGradient(statusKeys),
+                                  boxShadow: statusTileShadow(statusKeys[0]),
+                                };
 
                             if (blockGroups.length > 1) {
                               return (
