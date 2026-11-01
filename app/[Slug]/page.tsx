@@ -1111,6 +1111,85 @@ type CatalogCategoryOption = {
   totalCount: number;
 };
 
+// Quita mayúsculas y tildes para buscar servicios.
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+// Profesionales replegados (etapa de elegir servicio): fila compacta con
+// avatares superpuestos; al tocarla se despliegan las tarjetas en horizontal.
+function TeamCollapsible({ staff, size }: { staff: StaffItem[]; size: "sm" | "lg" }) {
+  const [open, setOpen] = useState(false);
+  if (staff.length === 0) return null;
+  const visible = staff.slice(0, 3);
+  const extra = staff.length - visible.length;
+  const panelId = `orbyx-team-panel-${size}`;
+
+  return (
+    <div className="min-w-0 border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex h-11 w-full items-center gap-2.5 px-3 text-left transition hover:bg-slate-50"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.5" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
+        </svg>
+        <span className="text-sm font-semibold text-slate-900">Profesionales</span>
+        <span className="ml-auto flex items-center -space-x-2" aria-hidden="true">
+          {visible.map((member) => (
+            <span
+              key={member.id}
+              className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-slate-100 text-[11px] font-semibold text-slate-600"
+            >
+              {member.photo_url ? (
+                <img src={member.photo_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                getStaffInitial(member.name)
+              )}
+            </span>
+          ))}
+          {extra > 0 ? (
+            <span className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-slate-200 px-1 text-[11px] font-semibold text-slate-700">
+              +{extra}
+            </span>
+          ) : null}
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      <div
+        id={panelId}
+        className={`grid transition-[grid-template-rows,visibility] duration-200 ${
+          open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className={`border-t border-slate-100 pb-3 pt-3 ${size === "lg" ? "px-4" : "px-3"}`}>
+            <TeamStrip staff={staff} size={size} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CatalogSidebar({
   searchQuery,
   onSearchChange,
@@ -1118,7 +1197,6 @@ function CatalogSidebar({
   activeCategoryKey,
   onCategoryChange,
   staff,
-  hasSelectedService,
 }: {
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -1126,69 +1204,103 @@ function CatalogSidebar({
   activeCategoryKey: string;
   onCategoryChange: (key: string) => void;
   staff: StaffItem[];
-  hasSelectedService: boolean;
 }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  function openSearch() {
+    onCategoryChange("todos");
+    setSearchOpen(true);
+  }
+
+  function closeSearch() {
+    onSearchChange("");
+    setSearchOpen(false);
+  }
+
+  const tabClass = (active: boolean) =>
+    `flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
+      active
+        ? "border-l-[3px] border-indigo-600 bg-[color:var(--pt-selected-bg,#EDEBFB)] font-semibold text-indigo-700"
+        : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
+    }`;
+
   return (
     <div className="min-w-0 space-y-3 rounded-none border border-slate-200 bg-white p-3 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:space-y-4 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-      <div className="relative">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 110-15 7.5 7.5 0 010 15z"
-          />
-        </svg>
-        <input
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="¿Qué servicio buscas?"
-          className="h-10 w-full rounded-none border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white lg:h-11"
-        />
-      </div>
-
-      <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:gap-1 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-        <button
-          type="button"
-          onClick={() => onCategoryChange("todos")}
-          className={`flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
-            activeCategoryKey === "todos"
-              ? "border-l-[3px] border-indigo-600 bg-[color:var(--pt-selected-bg,#EDEBFB)] font-semibold text-indigo-700"
-              : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          Todos
-        </button>
-
-        {categories.map((category) => (
-          <button
-            key={category.key}
-            type="button"
-            onClick={() => onCategoryChange(category.key)}
-            className={`flex shrink-0 items-center gap-2 rounded-none px-3 py-1.5 text-left text-xs transition lg:w-full lg:rounded-l-none lg:rounded-r-none lg:px-3.5 lg:py-2.5 lg:text-sm ${
-              activeCategoryKey === category.key
-                ? "border-l-[3px] border-indigo-600 bg-[color:var(--pt-selected-bg,#EDEBFB)] font-semibold text-indigo-700"
-                : "border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50"
-            }`}
+      {searchOpen ? (
+        <div className="relative flex h-9 items-center lg:h-11">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400"
+            aria-hidden="true"
           >
-            {category.name}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 110-15 7.5 7.5 0 010 15z" />
+          </svg>
+          <input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") closeSearch();
+            }}
+            placeholder="Buscar servicio"
+            aria-label="Buscar servicio"
+            className="h-full w-full rounded-none border border-slate-200 bg-slate-50 pl-9 pr-10 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white"
+          />
+          <button
+            type="button"
+            onClick={closeSearch}
+            aria-label="Cerrar búsqueda"
+            className="absolute right-0 flex h-full w-9 items-center justify-center text-slate-500 transition hover:text-slate-900"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="flex items-stretch gap-1.5 lg:flex-col lg:gap-1">
+          <button
+            type="button"
+            onClick={openSearch}
+            aria-label="Buscar servicio"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700 lg:h-10 lg:w-full lg:justify-start lg:gap-2 lg:px-3.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 110-15 7.5 7.5 0 010 15z" />
+            </svg>
+            <span className="hidden text-sm lg:inline">Buscar servicio</span>
+          </button>
+          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none] lg:flex-none lg:flex-col lg:gap-1 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+            <button type="button" onClick={() => onCategoryChange("todos")} className={tabClass(activeCategoryKey === "todos")}>
+              Todos
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.key}
+                type="button"
+                onClick={() => onCategoryChange(category.key)}
+                className={tabClass(activeCategoryKey === category.key)}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Equipo en móvil (en escritorio va en una tarjeta arriba del catálogo). */}
+      {/* Equipo en móvil (en escritorio va arriba del catálogo). */}
       {staff.length > 0 ? (
-        <div className="border-t border-slate-100 pt-3 lg:hidden">
-          <p className="mb-2 text-xs font-semibold text-slate-900">
-            {hasSelectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
-          </p>
-          <TeamStrip staff={staff} size="sm" />
+        <div className="lg:hidden">
+          <TeamCollapsible staff={staff} size="sm" />
         </div>
       ) : null}
     </div>
@@ -1258,6 +1370,7 @@ function ServiceCatalogAccordion({
   onToggleCategory,
   selectedExtraIds,
   onToggleExtra,
+  searchActive,
 }: {
   categories: { key: string; name: string; totalCount: number; services: ServiceItem[] }[];
   selectedServiceId: string;
@@ -1266,11 +1379,12 @@ function ServiceCatalogAccordion({
   onToggleCategory: (key: string) => void;
   selectedExtraIds: string[];
   onToggleExtra: (extraId: string) => void;
+  searchActive: boolean;
 }) {
   if (categories.length === 0) {
     return (
       <div className="rounded-none border border-slate-100 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
-        No hay servicios disponibles.
+        {searchActive ? "No encontramos servicios con ese nombre" : "No hay servicios disponibles."}
       </div>
     );
   }
@@ -1282,7 +1396,7 @@ function ServiceCatalogAccordion({
       .orbyx-catalog-open { animation: orbyxCatalogOpen 0.18s ease-out; }
       @media (prefers-reduced-motion: reduce) { .orbyx-catalog-open { animation: none; } }
     `}</style>
-    <div className="space-y-3">
+    <div className="space-y-2">
       {categories.map((category) => {
         const open = !collapsedKeys.has(category.key);
 
@@ -1310,10 +1424,10 @@ function ServiceCatalogAccordion({
                   });
                 }
               }}
-              className="flex w-full items-center justify-between gap-2 border-b border-indigo-100 border-l-4 border-l-indigo-600 px-3 py-3.5 text-left transition hover:brightness-[0.98] md:px-5"
+              className="flex min-h-[48px] w-full items-center justify-between gap-2 border-b border-indigo-100 border-l-4 border-l-indigo-600 px-3 py-2 text-left transition hover:brightness-[0.98] md:px-5"
               style={{ background: CATEGORY_HEADER_GRADIENT }}
             >
-              <span className="flex items-center gap-2 text-sm font-bold text-indigo-950 md:text-base">
+              <span className="flex items-center gap-2 text-[13.5px] font-bold text-indigo-950 md:text-[15px]">
                 {category.name}
                 <span className="rounded-full bg-indigo-600/10 px-2 py-0.5 text-xs font-semibold text-indigo-700">
                   {category.totalCount}
@@ -1325,7 +1439,7 @@ function ServiceCatalogAccordion({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className={`h-4 w-4 shrink-0 text-indigo-600 transition-transform ${
+                className={`h-4 w-4 shrink-0 text-indigo-600 transition-transform duration-200 ${
                   open ? "rotate-180" : ""
                 }`}
               >
@@ -1348,14 +1462,14 @@ function ServiceCatalogAccordion({
                       <button
                         type="button"
                         onClick={() => onSelect(service)}
-                        className={`flex w-full items-center justify-between gap-2 border-l-4 px-3 py-3.5 text-left transition sm:gap-3 md:px-5 ${
+                        className={`flex w-full items-center justify-between gap-2 border-l-4 px-3 py-2.5 text-left transition sm:gap-3 md:px-5 ${
                           isSelected
                             ? "border-indigo-600 bg-indigo-50 shadow-[inset_0_0_0_1px_rgb(var(--pt-glow-rgb,79_70_229)/0.35)]"
                             : "border-transparent hover:border-slate-300 hover:bg-slate-50"
                         }`}
                       >
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 md:text-base">
+                          <p className="text-[13.5px] font-semibold text-slate-900 md:text-[15px]">
                             {service.name}
                           </p>
                           {service.description?.trim() ? (
@@ -2208,10 +2322,10 @@ const nextAvailableDays = useMemo(() => {
   );
 
   const catalogCategories = useMemo(() => {
-    const term = catalogSearchQuery.trim().toLowerCase();
+    const term = normalizeSearchText(catalogSearchQuery);
     const matchesSearch = (service: ServiceItem) => {
       if (!term) return true;
-      const haystack = `${service.name} ${service.description || ""}`.toLowerCase();
+      const haystack = normalizeSearchText(`${service.name} ${service.description || ""}`);
       return haystack.includes(term);
     };
 
@@ -2275,11 +2389,9 @@ const nextAvailableDays = useMemo(() => {
     if (collapsedCatalogSections && collapsedCatalogSections.sig === catalogSignature) {
       return collapsedCatalogSections.keys;
     }
-    if (!isCompactCatalog) return new Set<string>();
-    const firstOpenKey = catalogCategories.find((c) => c.totalCount > 0)?.key;
-    return new Set(
-      catalogCategories.filter((c) => c.key !== firstOpenKey).map((c) => c.key)
-    );
+    // Vista inicial: todo cerrado, salvo que el negocio tenga una sola categoría.
+    if (catalogCategories.length <= 1) return new Set<string>();
+    return new Set(catalogCategories.map((c) => c.key));
   }, [
     catalogCategories,
     catalogSearchTerm,
@@ -2318,16 +2430,18 @@ const nextAvailableDays = useMemo(() => {
   function selectCatalogCategory(key: string) {
     setActiveCategoryKey(key);
     if (key === "todos") {
-      if (isCompactCatalog) setCollapsedCatalogSections(null);
+      setCollapsedCatalogSections(null);
       return;
     }
     if (catalogCollapsedKeys.has(key)) toggleCatalogCategory(key);
   }
 
-  const visibleCatalogCategories =
+  // Con búsqueda activa se ocultan las categorías sin coincidencias.
+  const visibleCatalogCategories = (
     activeCategoryKey === "todos"
       ? catalogCategories
-      : catalogCategories.filter((category) => category.key === activeCategoryKey);
+      : catalogCategories.filter((category) => category.key === activeCategoryKey)
+  ).filter((category) => !catalogSearchTerm || category.services.length > 0);
 
   const weeklyHoursOrdered = WEEKDAY_ORDER.map((day) => {
     const row = businessHours.find((h) => h.day_of_week === day);
@@ -3793,7 +3907,11 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
           html[data-public-dark] .orbyx-closed-day { background: repeating-linear-gradient(135deg, rgba(244,63,94,0.10) 0px, rgba(244,63,94,0.10) 9px, rgba(244,63,94,0.04) 9px, rgba(244,63,94,0.04) 18px) !important; }
         `}</style>
       ) : null}
-      <div className="mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8">
+      <div
+        className={`mx-auto w-full max-w-[1280px] px-3 py-4 sm:px-4 md:px-6 md:py-8 xl:px-8 ${
+          viewStep === "catalog" && selectedService ? "pb-28 md:pb-28" : ""
+        }`}
+      >
         {viewStep === "catalog" ? (
           <div className="mx-auto grid w-full max-w-[1080px] gap-4 lg:gap-6">
             <div className="min-w-0 space-y-4 md:space-y-6">
@@ -3809,11 +3927,8 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
               />
 
               {panelStaff.length > 0 ? (
-                <div className="hidden min-w-0 rounded-none border border-slate-200 bg-white p-4 shadow-[0_16px_45px_-34px_rgba(15,23,42,0.25)] lg:block">
-                  <p className="mb-3 text-sm font-bold text-slate-950">
-                    {selectedService ? "Profesionales de este servicio" : "Nuestro equipo"}
-                  </p>
-                  <TeamStrip staff={panelStaff} size="lg" />
+                <div className="hidden min-w-0 lg:block">
+                  <TeamCollapsible staff={panelStaff} size="lg" />
                 </div>
               ) : null}
 
@@ -3829,7 +3944,6 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                   activeCategoryKey={activeCategoryKey}
                   onCategoryChange={selectCatalogCategory}
                   staff={panelStaff}
-                  hasSelectedService={Boolean(selectedService)}
                 />
 
                 <div className="min-w-0 space-y-4">
@@ -3846,19 +3960,9 @@ const subtypeFieldsPayload = visibleSubtypeBookingFields.reduce<
                       onToggleExtra={toggleSelectedExtra}
                       collapsedKeys={catalogCollapsedKeys}
                       onToggleCategory={toggleCatalogCategory}
+                      searchActive={Boolean(catalogSearchTerm)}
                     />
                   )}
-
-                  {selectedService ? (
-                    <button
-                      type="button"
-                      onClick={goToBooking}
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-sm font-semibold text-white shadow-[0_16px_35px_-22px_rgba(15,23,42,0.9)] transition hover:opacity-95"
-                    >
-                      Ir a Agendar
-                      <span aria-hidden="true">→</span>
-                    </button>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -4836,6 +4940,31 @@ className={`flex min-h-[40px] w-full flex-row items-center justify-between gap-2
         ) : null}
 
         <OrbyxPromoFooter />
+
+        {viewStep === "catalog" && selectedService ? (
+          <div
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.25)]"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
+            <div className="mx-auto flex w-full max-w-[1080px] items-center gap-3 px-3 py-2.5 sm:px-4 md:px-6">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-900">{bookingServiceLabel}</p>
+                <p className="truncate text-xs text-slate-500">
+                  {bookingTotalMinutes > 0 ? `${bookingTotalMinutes} min · ` : ""}
+                  {formatPrice(bookingTotalPrice)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={goToBooking}
+                className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                Ir a agendar
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {showStaffDrawer ? (
           <div className="fixed inset-0 z-50">
