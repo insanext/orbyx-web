@@ -52,6 +52,8 @@ import { isValidPhoneForCountry, toE164 } from "@/components/auth/countries";
 import { BACKEND_URL } from "@/lib/backend-url";
 import { layoutWeekAppointments } from "@/lib/agenda-week-layout";
 import Select from "@/components/ui/Select";
+import RescheduleAppointmentModal from "@/components/agenda/RescheduleAppointmentModal";
+import { CustomerNameLookup, DuplicateCustomerNotice } from "@/components/agenda/CustomerLookup";
 
 type Appointment = {
   id: string;
@@ -535,7 +537,14 @@ const [slotMinutes, setSlotMinutes] = useState(30);
   const [businessAddress, setBusinessAddress] = useState<string | null>(null);
   const [requestingReview, setRequestingReview] = useState(false);
   // Bloquear contactos de la reserva pública: solo dueño/admin.
-  const { isOwnerOrAdmin: canBlockContacts } = usePermissions();
+  const { isOwnerOrAdmin: canBlockContacts, canEdit: canEditModule } = usePermissions();
+  // Cambiar fecha/hora de una cita: requiere permiso de edición en Agenda
+  // (el backend lo exige igual).
+  const canEditAgenda = canEditModule("agenda");
+  const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null);
+  // Clienta elegida en el buscador del modal "Nueva reserva" (para no avisar
+  // "ya registrada" de la misma que se acaba de elegir).
+  const [pickedCustomerId, setPickedCustomerId] = useState<string | null>(null);
   const [blockingContact, setBlockingContact] = useState(false);
 
   async function handleBlockContactFromAppointment(appt: {
@@ -3211,6 +3220,10 @@ next_control_custom_value:
   const manualDraftStaffId = manualBookingDraft?.staff_id || "";
   const manualDraftServiceId = manualBookingDraft?.service_id || "";
   const manualDraftOpen = Boolean(manualBookingDraft);
+  // Al cerrar el modal "Nueva reserva" se olvida la clienta elegida.
+  useEffect(() => {
+    if (!manualDraftOpen) setPickedCustomerId(null);
+  }, [manualDraftOpen]);
   useEffect(() => {
     if (!manualDraftOpen || !manualDraftStaffId || !tenantId) {
       setModalServiceIds(null);
@@ -8586,6 +8599,25 @@ const isEmptySlotSelected =
                             </button>
                           </div>
 
+                          {canEditAgenda &&
+                          isFutureBookedAppointment(selectedAppointment) &&
+                          selectedAppointment.deposit_status !== "pending" ? (
+                            <button
+                              type="button"
+                              onClick={() => setRescheduleAppointment(selectedAppointment)}
+                              disabled={statusSaving}
+                              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                borderColor: "var(--border-color)",
+                                background: "var(--bg-card)",
+                                color: "var(--text-main)",
+                              }}
+                            >
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              Cambiar fecha/hora
+                            </button>
+                          ) : null}
+
                           <button
                             type="button"
                             onClick={() => setCancelConfirmAppointment(selectedAppointment)}
@@ -10718,22 +10750,26 @@ const isEmptySlotSelected =
                   >
                     Nombre *
                   </label>
-                  <input
-                    placeholder="Ej: María González"
-                    autoComplete="off"
+                  <CustomerNameLookup
+                    slug={slug}
                     value={manualBookingDraft.customer_name}
-                    onChange={(event) =>
+                    onChange={(value) => {
+                      setManualBookingDraft((prev) =>
+                        prev ? { ...prev, customer_name: value } : prev
+                      );
+                    }}
+                    onPick={(customer) => {
+                      setPickedCustomerId(customer.id);
                       setManualBookingDraft((prev) =>
                         prev
-                          ? { ...prev, customer_name: event.target.value }
+                          ? {
+                              ...prev,
+                              customer_name: customer.name,
+                              customer_phone: customer.phoneNational,
+                              customer_email: customer.email,
+                            }
                           : prev
-                      )
-                    }
-                    className="h-10 w-full rounded-xl border px-3 text-sm outline-none transition"
-                    style={{
-                      borderColor: "var(--border-color)",
-                      background: "var(--bg-soft)",
-                      color: "var(--text-main)",
+                      );
                     }}
                   />
                 </div>
@@ -10795,6 +10831,26 @@ const isEmptySlotSelected =
                     </p>
                   </div>
                 </div>
+
+                <DuplicateCustomerNotice
+                  slug={slug}
+                  phone={manualBookingDraft.customer_phone}
+                  email={manualBookingDraft.customer_email}
+                  pickedCustomerId={pickedCustomerId}
+                  onUse={(customer) => {
+                    setPickedCustomerId(customer.id);
+                    setManualBookingDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            customer_name: customer.name,
+                            customer_phone: customer.phoneNational,
+                            customer_email: customer.email,
+                          }
+                        : prev
+                    );
+                  }}
+                />
 
                 {isVeterinaria ? (
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -11148,6 +11204,18 @@ const isEmptySlotSelected =
             </div>
           </div>
         </div>
+      ) : null}
+
+      {rescheduleAppointment ? (
+        <RescheduleAppointmentModal
+          appointment={rescheduleAppointment}
+          staffList={staffList.filter((staff) => staff.is_active !== false)}
+          onClose={() => setRescheduleAppointment(null)}
+          onRescheduled={(updated) => {
+            if (updated) applyAppointmentUpdate(updated as Appointment);
+            void loadAppointments({ preserveSelected: true, silent: true });
+          }}
+        />
       ) : null}
 
       {cancelConfirmAppointment ? (
