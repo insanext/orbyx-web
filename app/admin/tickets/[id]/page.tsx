@@ -146,7 +146,7 @@ export default function AdminTicketDetailPage() {
   const status = STATUS_LABEL[ticket.status] ?? STATUS_LABEL.open
 
   return (
-    <div className="min-h-screen p-6" style={{ background: '#060a14' }}>
+    <div className="min-h-screen p-3 md:p-6 min-w-0 max-w-full" style={{ background: '#060a14' }}>
       <div className="max-w-3xl mx-auto">
         <button
           onClick={() => router.push('/admin/tickets')}
@@ -156,9 +156,9 @@ export default function AdminTicketDetailPage() {
         </button>
 
         {/* Header del ticket */}
-        <div className="rounded-2xl border border-blue-900/25 p-5 mb-4" style={{ background: '#0f1729' }}>
+        <div className="rounded-2xl border border-blue-900/25 p-4 md:p-5 mb-4" style={{ background: '#0f1729' }}>
           <div className="flex items-start justify-between gap-3 mb-2">
-            <h2 className="text-base font-semibold text-white">{ticket.subject}</h2>
+            <h2 className="text-base font-semibold text-white break-words min-w-0">{ticket.subject}</h2>
             <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border ${status.color} border-current/20`}>
               {status.label}
             </span>
@@ -173,7 +173,7 @@ export default function AdminTicketDetailPage() {
               {new Date(ticket.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-          <p className="text-sm text-blue-100/80 mb-3">{ticket.description}</p>
+          <p className="text-sm text-blue-100/80 mb-3 break-words whitespace-pre-wrap">{ticket.description}</p>
           {ticket.attachments?.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {ticket.attachments.map((url: string, i: number) => (
@@ -191,7 +191,7 @@ export default function AdminTicketDetailPage() {
             <button
               onClick={handleResolve}
               disabled={resolving}
-              className="px-4 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/30 text-amber-400 text-sm font-medium transition-all active:scale-95 disabled:opacity-50"
+              className="w-full md:w-auto px-4 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/30 text-amber-400 text-sm font-medium transition-all active:scale-95 disabled:opacity-50"
             >
               {resolving ? 'Marcando...' : 'Marcar como resuelto'}
             </button>
@@ -209,7 +209,7 @@ export default function AdminTicketDetailPage() {
           {messages.map(m => (
             <div
               key={m.id}
-              className={`p-3 rounded-xl max-w-[85%] border ${
+              className={`p-3 rounded-xl max-w-[92%] md:max-w-[85%] border ${
                 m.sender_type === 'support'
                   ? 'bg-blue-600/20 border-blue-600/30 ml-auto'
                   : 'border-blue-900/25'
@@ -222,7 +222,7 @@ export default function AdminTicketDetailPage() {
                   {new Date(m.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </p>
-              <p className="text-sm text-white">{m.message}</p>
+              <p className="text-sm text-white break-words whitespace-pre-wrap">{m.message}</p>
               {m.attachments?.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {m.attachments.map((url: string, i: number) => (
@@ -245,13 +245,13 @@ export default function AdminTicketDetailPage() {
               onChange={e => setReplyText(e.target.value)}
               rows={3}
               placeholder="Escribe tu respuesta como soporte..."
-              className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500/50 transition-colors mb-3"
+              className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-base md:text-sm text-white resize-none focus:outline-none focus:border-blue-500/50 transition-colors mb-3"
             />
-            <div className="flex justify-end">
+            <div className="flex md:justify-end">
               <button
                 onClick={handleReply}
                 disabled={sending || !replyText.trim()}
-                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50"
+                className="w-full md:w-auto px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium transition-all disabled:opacity-50"
               >
                 {sending ? 'Enviando...' : 'Enviar como Soporte'}
               </button>

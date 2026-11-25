@@ -296,19 +296,19 @@ export default function AdminTaxDocumentsPage() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div className="p-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <div className="p-3 md:p-6 min-w-0 max-w-full">
+      <div className="mx-auto max-w-6xl min-w-0">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-start md:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-white">Documentos tributarios</h1>
             <p className="text-sm text-blue-300/50">Boleta o factura por cada pago de Flow. Emítelas en el SII y sube el PDF aquí.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               type="button"
               onClick={syncWithFlow}
               disabled={syncing}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-blue-700/40 px-3 py-2 text-xs font-semibold text-blue-200 hover:bg-blue-900/30 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-700/40 px-3 py-2 text-xs font-semibold text-blue-200 hover:bg-blue-900/30 disabled:opacity-50"
               title="Trae de Flow los pagos que aún no tienen documento (histórico o avisos perdidos)"
             >
               {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
@@ -318,7 +318,7 @@ export default function AdminTaxDocumentsPage() {
               type="button"
               onClick={exportCsv}
               disabled={exporting}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
             >
               {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
               Exportar CSV del mes
@@ -326,7 +326,7 @@ export default function AdminTaxDocumentsPage() {
           </div>
         </div>
 
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-blue-900/25 p-4" style={{ background: '#0f1729' }}>
             <p className="text-xs text-blue-300/50">Pendientes</p>
             <p className={`mt-1 text-2xl font-semibold ${summary && summary.pendientes > 0 ? 'text-red-400' : 'text-white'}`}>{summary?.pendientes ?? '—'}</p>
@@ -350,18 +350,18 @@ export default function AdminTaxDocumentsPage() {
           </div>
         </div>
 
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center [&>*]:w-full md:[&>*]:w-auto">
           <Select
             value={estado}
             onChange={(e) => { setEstado(e.target.value); setPage(1) }}
-            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-base md:text-xs text-white focus:outline-none focus:border-blue-500/50"
           >
             {ESTADO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </Select>
           <Select
             value={tipo}
             onChange={(e) => { setTipo(e.target.value); setPage(1) }}
-            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-base md:text-xs text-white focus:outline-none focus:border-blue-500/50"
           >
             {TIPO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </Select>
@@ -369,7 +369,7 @@ export default function AdminTaxDocumentsPage() {
             type="month"
             value={mes}
             onChange={(e) => { if (e.target.value) { setMes(e.target.value); setAllMonths(false); setPage(1) } }}
-            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500/50"
+            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-blue-500/50"
             aria-label="Mes del pago"
           />
           {!allMonths ? (
@@ -381,7 +381,7 @@ export default function AdminTaxDocumentsPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar negocio, folio, orden Flow..."
-            className="min-w-[200px] flex-1 bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-xs text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50"
+            className="md:min-w-[200px] md:flex-1 bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-base md:text-xs text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50"
           />
         </div>
 
@@ -476,7 +476,7 @@ export default function AdminTaxDocumentsPage() {
         )}
 
         {pageCount > 1 ? (
-          <div className="mt-3 flex items-center justify-between text-xs text-blue-300/60">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-blue-300/60">
             <span>{total} documentos</span>
             <div className="flex items-center gap-2">
               <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-blue-900/40 px-3 py-1.5 disabled:opacity-40">Anterior</button>
@@ -511,9 +511,9 @@ type AuthFetch = (url: string, init?: RequestInit) => Promise<Response>
 
 function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-3 sm:p-4" onClick={onClose}>
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-blue-900/40 p-5"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-blue-900/40 p-4 sm:p-5"
         style={{ background: '#0b1220' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -529,7 +529,7 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
   )
 }
 
-const inputCls = 'w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 text-sm text-white outline-none focus:border-blue-500/60'
+const inputCls = 'w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 text-base md:text-sm text-white outline-none focus:border-blue-500/60'
 
 function UploadModal({ doc, authFetch, onClose, onDone }: { doc: AdminDoc; authFetch: AuthFetch; onClose: () => void; onDone: (d: AdminDoc) => void }) {
   const replacing = doc.estado === 'emitido'
@@ -589,7 +589,7 @@ function UploadModal({ doc, authFetch, onClose, onDone }: { doc: AdminDoc; authF
       </div>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-[11px] font-medium text-blue-300/60">Folio</label>
             <input value={folio} onChange={(e) => setFolio(e.target.value)} className={inputCls} placeholder="N° del documento" />
@@ -601,7 +601,7 @@ function UploadModal({ doc, authFetch, onClose, onDone }: { doc: AdminDoc; authF
         </div>
         <PdfDropzone file={file} onFile={setFile} label="PDF del documento" />
         {err ? <p className="text-xs text-red-400">{err}</p> : null}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:justify-center">
           <button type="button" onClick={onClose} className="rounded-xl border border-blue-900/40 px-4 py-2 text-xs text-blue-200 hover:bg-blue-900/20">Cancelar</button>
           <button type="button" onClick={submit} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50">
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
@@ -659,7 +659,7 @@ function VoidModal({ doc, authFetch, onClose, onDone }: { doc: AdminDoc; authFet
         </div>
         <PdfDropzone file={file} onFile={setFile} label="PDF de la nota de crédito" />
         {err ? <p className="text-xs text-red-400">{err}</p> : null}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:justify-center">
           <button type="button" onClick={onClose} className="rounded-xl border border-blue-900/40 px-4 py-2 text-xs text-blue-200 hover:bg-blue-900/20">Cancelar</button>
           <button type="button" onClick={submit} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-50">
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}

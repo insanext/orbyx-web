@@ -70,9 +70,9 @@ export default function AdminTicketsPage() {
   useEffect(() => { loadTickets(statusFilter || undefined) }, [statusFilter, loadTickets])
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6 min-w-0 max-w-full">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
           <div>
             <h1 className="text-lg font-semibold text-white">Tickets de Soporte</h1>
             <p className="text-sm text-blue-300/50">{tickets.length} ticket{tickets.length !== 1 ? 's' : ''}</p>
@@ -80,7 +80,7 @@ export default function AdminTicketsPage() {
           <Select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+            className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-2 text-base md:text-sm text-white focus:outline-none focus:border-blue-500/50 w-full md:w-auto"
           >
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </Select>
@@ -106,13 +106,13 @@ export default function AdminTicketsPage() {
                   {t.has_unread_for_customer === false && t.status === 'open' && (
                     <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-blue-500 rounded-full" />
                   )}
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5 pr-4">
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${plan.color}`}>{plan.label}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${prio.color}`}>{prio.label}</span>
-                    <span className="text-xs text-blue-300/30 ml-auto">{t.tenant_name}</span>
+                    <span className="text-xs text-blue-300/30 ml-auto break-words">{t.tenant_name}</span>
                   </div>
-                  <p className="text-sm font-medium text-white mb-1">{t.subject}</p>
-                  <div className="flex items-center gap-3 text-xs">
+                  <p className="text-sm font-medium text-white mb-1 break-words">{t.subject}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className={statusColor}>{STATUS_OPTIONS.find(o => o.value === t.status)?.label ?? t.status}</span>
                     <span className="text-blue-900/40">
                       {new Date(t.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}

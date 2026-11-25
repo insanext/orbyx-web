@@ -161,7 +161,7 @@ export default function AdminTenantsPage() {
     return rows
   }, [filteredTenants, view, trialSortDir])
 
-  const selectClass = 'bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50'
+  const selectClass = 'bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-2 md:py-1.5 text-base md:text-sm text-white focus:outline-none focus:border-blue-500/50'
 
   function handleTrialWhatsApp(t: TenantRow, e: React.MouseEvent) {
     e.stopPropagation()
@@ -172,7 +172,7 @@ export default function AdminTenantsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 min-w-0 max-w-full">
       <div>
         <h1 className="text-lg font-semibold text-white mb-1">Directorio de tenants</h1>
         <p className="text-sm text-blue-300/50 mb-6">
@@ -187,12 +187,12 @@ export default function AdminTenantsPage() {
         </div>
       ) : null}
 
-      <div className="flex gap-1 border-b border-blue-900/25">
+      <div className="flex gap-1 border-b border-blue-900/25 overflow-x-auto">
         {(['all', 'trials', 'expired'] as const).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-3 md:px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               view === v
                 ? 'border-blue-500 text-white'
                 : 'border-transparent text-blue-300/50 hover:text-blue-200'
@@ -207,12 +207,12 @@ export default function AdminTenantsPage() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col md:flex-row md:flex-wrap gap-3 [&>*]:w-full md:[&>*]:w-auto">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre o slug..."
-          className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50 min-w-[220px]"
+          className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-2 md:py-1.5 text-base md:text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50 md:min-w-[220px]"
         />
         <Select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className={selectClass}>
           <option value="all">Todos los planes</option>
@@ -234,7 +234,73 @@ export default function AdminTenantsPage() {
       </div>
 
       {!loading && (
-        <div className="rounded-2xl border border-blue-900/25 overflow-hidden" style={{ background: '#0f1729' }}>
+        <div className="space-y-3 md:hidden">
+          {visibleTenants.length === 0 ? (
+            <p className="rounded-2xl border border-blue-900/25 px-4 py-8 text-center text-sm text-blue-300/40" style={{ background: '#0f1729' }}>
+              No hay tenants que coincidan con los filtros.
+            </p>
+          ) : (
+            visibleTenants.map((t) => (
+              <div
+                key={t.id}
+                onClick={() => router.push(`/admin/tenants/${t.id}`)}
+                className="cursor-pointer rounded-2xl border border-blue-900/25 p-4 space-y-2 active:bg-blue-900/10"
+                style={{ background: '#0f1729' }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-white font-medium break-words">{t.name}</p>
+                    <p className="text-xs text-blue-300/40 break-all">{t.slug}</p>
+                    {t.owner_name ? (
+                      <p className="text-xs text-blue-300/40 break-words">👤 {t.owner_name}</p>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0"><StatusBadge status={t.status} /></div>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-blue-100">{getPlanLabel(t.plan_slug)}</span>
+                  <span className="text-white">{formatCLP(t.amount)}</span>
+                </div>
+                <p className="text-xs text-blue-300/60">{t.business_category_label}</p>
+                {t.addons_summary ? (
+                  <p className="text-xs text-blue-300/60 break-words">Add-ons: {t.addons_summary}</p>
+                ) : null}
+                {view !== 'all' ? (
+                  <div className="flex items-center justify-between gap-2 pt-1 text-sm">
+                    <span className="text-blue-100">
+                      {view === 'trials'
+                        ? (() => {
+                            const dias = diasRestantesTrial(t.trial_ends_at)
+                            if (dias === null) return '—'
+                            return dias <= 0 ? 'Vencida' : `${dias} día${dias === 1 ? '' : 's'}`
+                          })()
+                        : (() => {
+                            const dias = diasVencidoTrial(t.trial_ends_at)
+                            if (dias === null) return '—'
+                            return `Vencida hace ${dias} día${dias === 1 ? '' : 's'}`
+                          })()}
+                    </span>
+                    {t.owner_phone ? (
+                      <button
+                        onClick={(e) => handleTrialWhatsApp(t, e)}
+                        title="Enviar WhatsApp"
+                        className="rounded-lg border border-emerald-700/40 px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/20 transition-colors"
+                      >
+                        WhatsApp
+                      </button>
+                    ) : (
+                      <span className="text-xs text-blue-300/30">Sin teléfono</span>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {!loading && (
+        <div className="hidden md:block rounded-2xl border border-blue-900/25 overflow-hidden" style={{ background: '#0f1729' }}>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-blue-300/50 border-b border-blue-900/25">

@@ -94,11 +94,11 @@ export default function AdminEstadisticasPage() {
   useEffect(() => { loadStats() }, [loadStats])
 
   if (loading) {
-    return <div className="p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
+    return <div className="p-3 md:p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
   }
 
   return (
-    <div className="p-6 space-y-10">
+    <div className="p-3 md:p-6 space-y-8 md:space-y-10 min-w-0 max-w-full">
       <div>
         <h1 className="text-lg font-semibold text-white mb-1">Estadísticas del negocio</h1>
         <p className="text-sm text-blue-300/50 mb-6">
@@ -121,7 +121,7 @@ export default function AdminEstadisticasPage() {
           <div className="space-y-8">
             <div>
               <h2 className="text-sm font-semibold text-white mb-3">Tenants por estado</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <StatTile label="Activos" value={String(stats.tenants.active)} />
                 <StatTile label="En prueba" value={String(stats.tenants.trial)} />
                 <StatTile label="Vencidos / cancelados" value={String(stats.tenants.expired_or_canceled)} />
@@ -156,7 +156,7 @@ export default function AdminEstadisticasPage() {
 
               {Object.keys(stats.revenue.by_plan).length > 0 ? (
                 <div
-                  className="rounded-2xl border border-blue-900/25 overflow-hidden mb-4"
+                  className="rounded-2xl border border-blue-900/25 overflow-x-auto mb-4"
                   style={{ background: '#0f1729' }}
                 >
                   <table className="w-full text-sm">
