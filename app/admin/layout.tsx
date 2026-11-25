@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LogOut, KeyRound, X } from 'lucide-react'
+import { LogOut, KeyRound, X, Menu } from 'lucide-react'
 import { PasswordVisibilityToggle } from '@/components/ui/password-visibility-toggle'
 import { BACKEND_URL } from "@/lib/backend-url";
 
@@ -25,6 +25,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [migrationsPending, setMigrationsPending] = useState(0)
   // Boletas/facturas por emitir: badge rojo en el menú + banner en todo el panel.
   const [docsPending, setDocsPending] = useState(0)
+
+  // Solo presentación: drawer del menú en móvil (bajo md).
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const [changePwdOpen, setChangePwdOpen] = useState(false)
   const [currentPwd, setCurrentPwd] = useState('')
@@ -207,9 +210,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#060a14', colorScheme: 'dark' }}>
-      <aside className="w-56 shrink-0 border-r border-blue-900/30 p-4 flex flex-col">
-        <h2 className="text-sm font-semibold text-white mb-6 px-2">Orbyx Admin</h2>
+    <div className="min-h-screen flex overflow-x-hidden" style={{ background: '#060a14', colorScheme: 'dark' }}>
+      {menuOpen ? (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      ) : null}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-[#060a14] transition-transform duration-200 md:static md:z-auto md:w-56 md:max-w-none md:translate-x-0 md:overflow-visible shrink-0 border-r border-blue-900/30 p-4 flex flex-col ${
+          menuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="mb-6 flex items-center justify-between px-2">
+          <h2 className="text-sm font-semibold text-white">Orbyx Admin</h2>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(false)}
+            className="text-blue-300/50 hover:text-blue-200 md:hidden"
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
+        </div>
         <nav className="space-y-1 flex-1">
           {NAV_ITEMS.map((item) => {
             const active = pathname?.startsWith(item.href)
@@ -217,7 +241,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <a
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center justify-between gap-2 px-3 py-3 md:py-2 rounded-xl text-sm transition-colors ${
                   active
                     ? 'bg-blue-600/20 text-blue-300'
                     : 'text-blue-300/50 hover:text-blue-200 hover:bg-blue-900/20'
@@ -253,8 +278,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ) : null}
           <button
             type="button"
-            onClick={() => setChangePwdOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-blue-300/50 hover:text-blue-200 hover:bg-blue-900/20 transition-colors"
+            onClick={() => { setChangePwdOpen(true); setMenuOpen(false) }}
+            className="w-full flex items-center gap-2 px-3 py-3 md:py-2 rounded-xl text-sm text-blue-300/50 hover:text-blue-200 hover:bg-blue-900/20 transition-colors"
           >
             <KeyRound size={15} />
             Cambiar contraseña
@@ -262,14 +287,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-blue-300/50 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-3 md:py-2 rounded-xl text-sm text-blue-300/50 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
           >
             <LogOut size={15} />
             Cerrar sesión
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 w-full max-w-full">
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-blue-900/30 px-3 py-2.5 md:hidden" style={{ background: '#060a14' }}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="rounded-xl p-2 text-blue-200 hover:bg-blue-900/20"
+            aria-label="Abrir menú"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="text-sm font-semibold text-white">Orbyx Admin</span>
+        </div>
         {docsPending > 0 ? (
           <Link
             href="/admin/documentos-tributarios?estado=pendiente"
@@ -283,11 +319,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {changePwdOpen ? (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-3 sm:p-4"
           onClick={() => { setChangePwdOpen(false); resetChangePwdForm() }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-blue-900/40 p-5"
+            className="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl border border-blue-900/40 p-4 sm:p-5"
             style={{ background: '#0b1220' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -314,7 +350,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     value={currentPwd}
                     onChange={(e) => setCurrentPwd(e.target.value)}
                     type={showCurrentPwd ? 'text' : 'password'}
-                    className="w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 pr-10 text-sm text-white outline-none focus:border-blue-500/60"
+                    className="w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 pr-10 text-base sm:text-sm text-white outline-none focus:border-blue-500/60"
                   />
                   <PasswordVisibilityToggle
                     visible={showCurrentPwd}
@@ -330,7 +366,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
                     type={showNewPwd ? 'text' : 'password'}
-                    className="w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 pr-10 text-sm text-white outline-none focus:border-blue-500/60"
+                    className="w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 pr-10 text-base sm:text-sm text-white outline-none focus:border-blue-500/60"
                   />
                   <PasswordVisibilityToggle
                     visible={showNewPwd}
@@ -346,7 +382,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     value={confirmPwd}
                     onChange={(e) => setConfirmPwd(e.target.value)}
                     type={showConfirmPwd ? 'text' : 'password'}
-                    className="w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 pr-10 text-sm text-white outline-none focus:border-blue-500/60"
+                    className="w-full rounded-xl border border-blue-900/40 bg-[#060a14] px-3 py-2 pr-10 text-base sm:text-sm text-white outline-none focus:border-blue-500/60"
                   />
                   <PasswordVisibilityToggle
                     visible={showConfirmPwd}

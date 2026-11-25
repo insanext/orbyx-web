@@ -67,13 +67,13 @@ function NumberField({
   onChange: (value: number) => void
 }) {
   return (
-    <label className="flex flex-col gap-1">
+    <label className="flex flex-col gap-1 min-w-0">
       <span className="text-xs text-blue-300/50">{label}</span>
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+        className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none min-w-0 w-full focus:border-blue-500/50"
       />
     </label>
   )
@@ -230,11 +230,11 @@ export default function AdminPlanesPage() {
   }
 
   if (loading) {
-    return <div className="p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
+    return <div className="p-3 md:p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
   }
 
   return (
-    <div className="p-6 space-y-10">
+    <div className="p-3 md:p-6 space-y-8 md:space-y-10 min-w-0 max-w-full">
       <div>
         <h1 className="text-lg font-semibold text-white mb-1">Planes</h1>
         {/* Aviso visible (auditoría 2026-09-30, I15): los precios de plan que
@@ -255,7 +255,7 @@ export default function AdminPlanesPage() {
             const plan = plans.find((p) => p.plan_slug === slug)
             if (!plan) return null
             return (
-              <div key={slug} className="rounded-2xl border border-blue-900/25 p-4" style={{ background: '#0f1729' }}>
+              <div key={slug} className="rounded-2xl border border-blue-900/25 p-3 sm:p-4 min-w-0" style={{ background: '#0f1729' }}>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-sm font-semibold text-white">{PLAN_LABEL[slug] ?? slug}</h2>
                   <ToggleField
@@ -277,11 +277,11 @@ export default function AdminPlanesPage() {
                   <NumberField label="Campañas WA" value={plan.max_campanas_wa} onChange={(v) => updatePlanField(slug, 'max_campanas_wa', v)} />
                   <NumberField label="Cupos grupales" value={plan.max_group_capacity} onChange={(v) => updatePlanField(slug, 'max_group_capacity', v)} />
                 </div>
-                <div className="flex items-center gap-3 mt-4">
+                <div className="flex flex-wrap items-center gap-3 mt-4">
                   <button
                     onClick={() => savePlan(plan)}
                     disabled={planSaving[slug]}
-                    className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     {planSaving[slug] ? 'Guardando...' : 'Guardar'}
                   </button>
@@ -304,7 +304,7 @@ export default function AdminPlanesPage() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {addons.map((addon) => (
-            <div key={addon.addon_key} className="rounded-2xl border border-blue-900/25 p-4" style={{ background: '#0f1729' }}>
+            <div key={addon.addon_key} className="rounded-2xl border border-blue-900/25 p-3 sm:p-4 min-w-0" style={{ background: '#0f1729' }}>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-white">{addon.name}</h2>
                 <ToggleField
@@ -320,7 +320,7 @@ export default function AdminPlanesPage() {
                   type="text"
                   value={addon.description ?? ''}
                   onChange={(e) => updateAddonField(addon.addon_key, 'description', e.target.value)}
-                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none min-w-0 w-full focus:border-blue-500/50"
                 />
               </label>
 
@@ -336,7 +336,7 @@ export default function AdminPlanesPage() {
                 <Select
                   value={addon.min_plan}
                   onChange={(e) => updateAddonField(addon.addon_key, 'min_plan', e.target.value)}
-                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none min-w-0 w-full focus:border-blue-500/50"
                 >
                   {ADDON_PLAN_OPTIONS.map((p) => (
                     <option key={p} value={p}>{PLAN_LABEL[p]}</option>
@@ -392,7 +392,7 @@ export default function AdminPlanesPage() {
                     <DateInputDMY
                       value={addon.promo_starts_at ? addon.promo_starts_at.slice(0, 10) : ''}
                       onChange={(e) => updateAddonField(addon.addon_key, 'promo_starts_at', e.target.value || null)}
-                      className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                      className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none min-w-0 w-full focus:border-blue-500/50"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
@@ -400,17 +400,17 @@ export default function AdminPlanesPage() {
                     <DateInputDMY
                       value={addon.promo_ends_at ? addon.promo_ends_at.slice(0, 10) : ''}
                       onChange={(e) => updateAddonField(addon.addon_key, 'promo_ends_at', e.target.value || null)}
-                      className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                      className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none min-w-0 w-full focus:border-blue-500/50"
                     />
                   </label>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => saveAddon(addon)}
                   disabled={addonSaving[addon.addon_key]}
-                  className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {addonSaving[addon.addon_key] ? 'Guardando...' : 'Guardar'}
                 </button>

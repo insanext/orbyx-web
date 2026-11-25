@@ -150,7 +150,7 @@ export default function AdminMigrationsPage() {
   const pendingCount = rows.filter((r) => r.status !== 'done').length
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6 min-w-0 max-w-full">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-white">Migraciones de datos</h1>
@@ -179,7 +179,7 @@ export default function AdminMigrationsPage() {
               return (
                 <div
                   key={row.id}
-                  className={`rounded-2xl border p-4 ${row.status === 'pending' ? 'border-red-500/40' : 'border-blue-900/25'}`}
+                  className={`rounded-2xl border p-3 sm:p-4 min-w-0 ${row.status === 'pending' ? 'border-red-500/40' : 'border-blue-900/25'}`}
                   style={{ background: '#0f1729' }}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -189,15 +189,15 @@ export default function AdminMigrationsPage() {
                           {STATUS_OPTIONS.find((o) => o.value === row.status)?.label || row.status}
                         </span>
                         {row.tenant_id ? (
-                          <a href={`/admin/tenants/${row.tenant_id}`} className="text-sm font-semibold text-white hover:text-blue-300">
+                          <a href={`/admin/tenants/${row.tenant_id}`} className="text-sm font-semibold text-white hover:text-blue-300 break-words">
                             {row.tenant_name || 'Negocio'}
                           </a>
                         ) : (
                           <span className="text-sm font-semibold text-white">Negocio eliminado</span>
                         )}
-                        {row.tenant_slug ? <span className="text-xs text-blue-300/40">/{row.tenant_slug}</span> : null}
+                        {row.tenant_slug ? <span className="text-xs text-blue-300/40 break-all">/{row.tenant_slug}</span> : null}
                       </div>
-                      <p className="mt-1 text-xs text-blue-300/50">
+                      <p className="mt-1 text-xs text-blue-300/50 break-words">
                         Subida el {formatDateTime(row.created_at)}
                         {row.created_by_email ? ` · por ${row.created_by_email}` : ''}
                         {row.completed_at ? ` · lista el ${formatDateTime(row.completed_at)}` : ''}
@@ -208,7 +208,7 @@ export default function AdminMigrationsPage() {
                         value={row.status}
                         disabled={busy}
                         onChange={(e) => updateRequest(row.id, { status: e.target.value })}
-                        className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                        className="bg-[#0a0f1e] border border-blue-900/30 rounded-xl px-3 py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-blue-500/50"
                       >
                         {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </Select>
@@ -225,7 +225,7 @@ export default function AdminMigrationsPage() {
                   </div>
 
                   {row.notes ? (
-                    <div className="mt-3 rounded-xl border border-blue-900/25 px-3 py-2 text-xs text-blue-100/80 whitespace-pre-wrap">
+                    <div className="mt-3 rounded-xl border border-blue-900/25 px-3 py-2 text-xs text-blue-100/80 whitespace-pre-wrap break-words">
                       <span className="text-blue-300/50">Nota del negocio: </span>
                       {row.notes}
                     </div>
@@ -255,7 +255,7 @@ export default function AdminMigrationsPage() {
                       value={draft}
                       onChange={(e) => setNotesDraft((prev) => ({ ...prev, [row.id]: e.target.value }))}
                       rows={2}
-                      className="w-full resize-none rounded-xl border border-blue-900/30 bg-[#0a0f1e] px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                      className="w-full resize-none rounded-xl border border-blue-900/30 bg-[#0a0f1e] px-3 py-2 text-base md:text-xs text-white focus:outline-none focus:border-blue-500/50"
                     />
                     {draft !== (row.admin_notes || '') ? (
                       <button

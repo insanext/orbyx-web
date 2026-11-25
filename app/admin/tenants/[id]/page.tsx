@@ -152,7 +152,7 @@ function formatTrialDate(value?: string | null): string {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-blue-900/25 p-4" style={{ background: '#0f1729' }}>
+    <div className="rounded-2xl border border-blue-900/25 p-3 sm:p-4 min-w-0" style={{ background: '#0f1729' }}>
       <h2 className="text-sm font-semibold text-white mb-3">{title}</h2>
       {children}
     </div>
@@ -161,9 +161,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-xs text-blue-300/50">{label}</p>
-      <p className="text-sm text-white mt-0.5">{value ?? '—'}</p>
+      <p className="text-sm text-white mt-0.5 break-words">{value ?? '—'}</p>
     </div>
   )
 }
@@ -537,12 +537,12 @@ export default function AdminTenantDetailPage() {
   }, [data?.plan.trial_ends_at])
 
   if (loading) {
-    return <div className="p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
+    return <div className="p-3 md:p-6"><p className="text-sm text-blue-300/50">Cargando...</p></div>
   }
 
   if (error || !data) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-3 md:p-6 space-y-4">
         <button onClick={() => router.push('/admin/tenants')} className="text-sm text-blue-300/60 hover:text-blue-200">
           ← Volver al directorio
         </button>
@@ -565,20 +565,20 @@ export default function AdminTenantDetailPage() {
   const canEditTrialEnd = plan.subscription_status !== 'active' && plan.subscription_status !== 'trialing'
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 min-w-0 max-w-full">
       <button onClick={() => router.push('/admin/tenants')} className="text-sm text-blue-300/60 hover:text-blue-200">
         ← Volver al directorio
       </button>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold text-white mb-1">{tenant.name}</h1>
-          <p className="text-sm text-blue-300/50">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold text-white mb-1 break-words">{tenant.name}</h1>
+          <p className="text-sm text-blue-300/50 break-all">
             {tenant.slug} · {tenant.business_category_label} · {STATUS_LABEL[plan.status] || plan.status}
           </p>
         </div>
-        <div className="shrink-0 flex flex-col items-end gap-1.5">
-          <div className="flex items-center gap-2">
+        <div className="w-full md:w-auto md:shrink-0 flex flex-col md:items-end gap-1.5">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap md:justify-end gap-2 [&>button]:w-full sm:[&>button]:w-auto">
             <button
               onClick={handleViewAsTenant}
               disabled={viewSessionLoading}
@@ -622,7 +622,7 @@ export default function AdminTenantDetailPage() {
           ) : (
             <div className="space-y-3">
               {owners.map((owner) => (
-                <div key={owner.user_id} className="grid grid-cols-3 gap-3">
+                <div key={owner.user_id} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Field label="Email" value={owner.email} />
                   <Field
                     label="Nombre"
@@ -652,7 +652,7 @@ export default function AdminTenantDetailPage() {
             Nombre y teléfono del administrador se piden y guardan desde el registro de negocios nuevos — tenants anteriores a esos cambios quedan sin estos datos.
           </p>
           {owners.length > 0 ? (
-            <div className="mt-3 pt-3 border-t border-blue-900/15 flex flex-wrap gap-2 items-center">
+            <div className="mt-3 pt-3 border-t border-blue-900/15 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center [&>button]:w-full sm:[&>button]:w-auto [&>button]:py-2 sm:[&>button]:py-1">
               <button
                 onClick={handleResendWelcomeEmail}
                 disabled={resendingWelcome}
@@ -673,7 +673,7 @@ export default function AdminTenantDetailPage() {
         </Section>
 
         <Section title="Identificación">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Slug" value={tenant.slug} />
             <Field label="ID interno" value={<span className="text-xs break-all">{tenant.id}</span>} />
             <Field label="Tipo de negocio" value={tenant.business_category_label} />
@@ -685,7 +685,7 @@ export default function AdminTenantDetailPage() {
         </Section>
 
         <Section title="Plan y facturación">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Plan actual" value={getPlanLabel(plan.plan_slug)} />
             <Field label="Monto" value={formatCLP(plan.amount)} />
             <Field label="Estado suscripción (Flow)" value={plan.subscription_status} />
@@ -717,11 +717,11 @@ export default function AdminTenantDetailPage() {
           {canEditTrialEnd ? (
             <div className="mt-4 border-t border-blue-900/25 pt-3">
               <p className="text-xs text-blue-300/50 mb-1">Fin de prueba (editable mientras no tenga suscripción activa)</p>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 [&>button]:w-full sm:[&>button]:w-auto">
                 <DateInputDMY
                   value={trialEndInput}
                   onChange={(e) => setTrialEndInput(e.target.value)}
-                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none focus:border-blue-500/50"
                 />
                 <button
                   onClick={handleSaveTrialEnd}
@@ -747,10 +747,10 @@ export default function AdminTenantDetailPage() {
           ) : (
             <div className="space-y-2">
               {branches.map((b) => (
-                <div key={b.id} className="flex items-center justify-between border-b border-blue-900/10 last:border-0 pb-2 last:pb-0">
-                  <div>
-                    <p className="text-sm text-white">{b.name}</p>
-                    <p className="text-xs text-blue-300/40">{[b.commune, b.city].filter(Boolean).join(', ') || b.address || 'Sin dirección'}</p>
+                <div key={b.id} className="flex items-center justify-between gap-2 border-b border-blue-900/10 last:border-0 pb-2 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="text-sm text-white break-words">{b.name}</p>
+                    <p className="text-xs text-blue-300/40 break-words">{[b.commune, b.city].filter(Boolean).join(', ') || b.address || 'Sin dirección'}</p>
                   </div>
                   <span
                     className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
@@ -773,7 +773,7 @@ export default function AdminTenantDetailPage() {
           <p className="text-sm text-blue-300/40">Sin add-ons activos.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="text-left text-xs text-blue-300/50 border-b border-blue-900/25">
                   <th className="py-2 pr-4 font-medium">Add-on</th>
@@ -804,13 +804,13 @@ export default function AdminTenantDetailPage() {
       </Section>
 
       <Section title="Otorgar crédito de saldo (compensación)">
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-2 [&>button]:w-full sm:[&>button]:w-auto">
           <div>
             <p className="text-xs text-blue-300/50 mb-1">Recurso</p>
             <Select
               value={creditAddonKey}
               onChange={(e) => setCreditAddonKey(e.target.value)}
-              className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500/50"
+              className="bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white focus:outline-none focus:border-blue-500/50"
             >
               {CREDITABLE_ADDONS.map((a) => (
                 <option key={a.key} value={a.key}>{a.label}</option>
@@ -825,7 +825,7 @@ export default function AdminTenantDetailPage() {
               value={creditAmount}
               onChange={(e) => setCreditAmount(e.target.value)}
               placeholder="Ej: 50"
-              className="w-28 bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50"
+              className="w-full sm:w-28 bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50"
             />
           </div>
           <button
@@ -863,7 +863,7 @@ export default function AdminTenantDetailPage() {
                       className="w-full text-left rounded-lg border border-blue-900/20 hover:border-blue-700/40 px-3 py-2 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-white">{t.subject}</p>
+                        <p className="text-sm text-white break-words min-w-0">{t.subject}</p>
                         <span className="text-xs text-blue-300/50 shrink-0">{TICKET_STATUS_LABEL[t.status] || t.status}</span>
                       </div>
                       <p className="text-xs text-blue-300/40 mt-0.5">{t.category} · {formatDate(t.created_at)}</p>
@@ -906,14 +906,14 @@ export default function AdminTenantDetailPage() {
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Agregar una nota interna sobre este tenant..."
             rows={3}
-            className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-2 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50 resize-none"
+            className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-2 text-base md:text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-blue-500/50 resize-none"
           />
           {noteError ? <p className="text-sm text-rose-300">{noteError}</p> : null}
-          <div className="flex justify-end">
+          <div className="flex md:justify-end">
             <button
               onClick={handleAddNote}
               disabled={!newNote.trim() || savingNote}
-              className="text-sm font-medium text-white bg-blue-600 rounded-lg px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
+              className="w-full md:w-auto text-sm font-medium text-white bg-blue-600 rounded-lg px-3 py-2 md:py-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
             >
               {savingNote ? 'Guardando...' : 'Agregar nota'}
             </button>
@@ -927,8 +927,8 @@ export default function AdminTenantDetailPage() {
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {notes.map((n) => (
               <div key={n.id} className="border-b border-blue-900/10 last:border-0 pb-2 last:pb-0">
-                <p className="text-sm text-white whitespace-pre-wrap">{n.note}</p>
-                <p className="text-xs text-blue-300/40 mt-0.5">{n.admin_email || 'admin'} · {formatDate(n.created_at)}</p>
+                <p className="text-sm text-white whitespace-pre-wrap break-words">{n.note}</p>
+                <p className="text-xs text-blue-300/40 mt-0.5 break-all">{n.admin_email || 'admin'} · {formatDate(n.created_at)}</p>
               </div>
             ))}
           </div>
@@ -936,12 +936,12 @@ export default function AdminTenantDetailPage() {
       </Section>
 
       {showDeleteModal ? (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
           <div
-            className="w-full max-w-md rounded-2xl border border-rose-900/40 p-5"
+            className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-rose-900/40 p-4 sm:p-5"
             style={{ background: '#0f1729' }}
           >
-            <h2 className="text-base font-semibold text-white mb-2">Eliminar tenant "{tenant.name}"</h2>
+            <h2 className="text-base font-semibold text-white mb-2 break-words">Eliminar tenant "{tenant.name}"</h2>
             <p className="text-sm text-blue-300/60 mb-3">
               Esta acción es <strong className="text-rose-300">irreversible</strong>. Se borrarán permanentemente:
             </p>
@@ -960,11 +960,11 @@ export default function AdminTenantDetailPage() {
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder={tenant.slug}
-              className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-rose-500/50 mb-3"
+              className="w-full bg-[#0a0f1e] border border-blue-900/30 rounded-lg px-3 py-1.5 text-base md:text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-rose-500/50 mb-3"
               autoFocus
             />
             {deleteError ? <p className="text-sm text-rose-300 mb-3">{deleteError}</p> : null}
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:py-2 sm:[&>button]:py-1.5">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleting}
@@ -985,12 +985,12 @@ export default function AdminTenantDetailPage() {
       ) : null}
 
       {showFinalDeleteModal ? (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+        <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
           <div
-            className="w-full max-w-md rounded-2xl border-2 border-rose-500 p-6"
+            className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border-2 border-rose-500 p-4 sm:p-6"
             style={{ background: '#1a0a0e' }}
           >
-            <h2 className="text-xl font-bold text-rose-300 mb-3">
+            <h2 className="text-lg sm:text-xl font-bold text-rose-300 mb-3 break-words">
               ¿Estás seguro que quieres eliminar el tenant "{tenant.name}"? Esta acción es irreversible.
             </h2>
             <p className="text-sm text-blue-300/60 mb-2">
@@ -1000,11 +1000,11 @@ export default function AdminTenantDetailPage() {
               value={finalConfirmText}
               onChange={(e) => setFinalConfirmText(e.target.value)}
               placeholder="BORRAR"
-              className="w-full bg-[#0a0f1e] border border-rose-900/50 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-rose-500 mb-3"
+              className="w-full bg-[#0a0f1e] border border-rose-900/50 rounded-lg px-3 py-1.5 text-base md:text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-rose-500 mb-3"
               autoFocus
             />
             {deleteError ? <p className="text-sm text-rose-300 mb-3">{deleteError}</p> : null}
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:py-2 sm:[&>button]:py-1.5">
               <button
                 onClick={() => { setShowFinalDeleteModal(false); setShowDeleteModal(false) }}
                 disabled={deleting}
